@@ -1024,6 +1024,19 @@ def render_health_dashboard(wiki: WikiReader):
             st.success("Todo actualizado.")
 
 def render_logs_section(config: AppConfig):
+    # Also print to terminal (CMD)
+    try:
+        with open(config.log_file, "r", encoding="utf-8", errors="ignore") as f:
+            recent_logs = f.readlines()[-10:]
+        print("\n" + "="*50)
+        print("📜 RECENT LOGS:")
+        print("="*50)
+        for line in recent_logs:
+            print(line.strip())
+        print("="*50 + "\n")
+    except Exception as e:
+        pass
+    
     col1, col2, col3 = st.columns([2, 1, 1])
 
     with col1:
