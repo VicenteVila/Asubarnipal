@@ -219,6 +219,13 @@ El agente mantiene un índice vectorial híbrido:
 
 ## 🚀 Ejecución
 
+### Banner y Arte ASCII
+Al iniciar el agente (`python agente.py`), se muestra:
+- Banner ASCII de Asubarnipal V18
+- (Opcional) `asubarnipal.png` en la carpeta raíz → se convierte a ASCII
+
+### Comandos
+
 ```bash
 # Agente (Terminal 1)
 python agente.py
