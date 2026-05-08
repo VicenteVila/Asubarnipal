@@ -1237,6 +1237,86 @@ def render_analytics_section():
         history.clear()
         st.success("Historial limpiado")
         st.rerun()
+    
+    st.divider()
+    st.subheader("💾 Memoria Persistente")
+    st.caption("Sistema de memoria con categorías y prioridad")
+    
+    try:
+        from core.memory import EnhancedMemory
+        memory = EnhancedMemory()
+        mem_stats = memory.get_stats()
+        
+        cols_m1, cols_m2, cols_m3 = st.columns(3)
+        
+        with cols_m1:
+            st.metric("💾 Total", mem_stats.get("total", 0))
+        with cols_m2:
+            by_cat = mem_stats.get("by_category", {})
+            st.metric("📁 Categorías", len(by_cat))
+        with cols_m3:
+            last_mem = mem_stats.get("last_memory", "N/A")[:10] if mem_stats.get("last_memory") else "N/A"
+            st.metric("⏱️ Última", last_mem)
+        
+        st.divider()
+        
+        with st.expander("➕ Añadir Memoria"):
+            mem_content = st.text_area("Contenido", key="new_memory_content")
+            mem_category = st.selectbox("Categoría", 
+                ["fact", "idea", "task", "preference", "learning", "error", "plan", "conversation"],
+                key="new_memory_category"
+            )
+            mem_priority = st.slider("Prioridad", 1, 10, 5, key="new_memory_priority")
+            mem_importance = st.selectbox("Importancia", ["low", "normal", "high", "critical"], key="new_memory_importance")
+            
+            if st.button("💾 Guardar Memoria"):
+                if mem_content:
+                    memory.add(mem_content, mem_category, mem_priority, importance=mem_importance)
+                    st.success("�� Memoria guardada")
+                    st.rerun()
+        
+        st.divider()
+        
+        st.subheader("🔍 Buscar Memorias")
+        
+        mem_search = st.text_input("Buscar en memorias", key="mem_search")
+        if mem_search:
+            results = memory.search(mem_search, limit=10)
+            st.write(f"**{len(results)} resultados:**")
+            for r in results:
+                st.markdown(f"**[{r.get('category')}]** {r.get('content', '')[:80]}")
+        
+        st.divider()
+        
+        st.subheader("📋 Memorias Recientes")
+        
+        recent_mem = memory.get_recent(10)
+        if recent_mem:
+            for m in recent_mem:
+                importance_emoji = {"critical": "🔴", "high": "🟠", "normal": "🟢", "low": "⚪"}.get(m.get("importance"), "🟢")
+                st.markdown(f"{importance_emoji} **[{m.get('category')}]** {m.get('content', '')[:60]}...")
+                st.caption(f"⏱️ {m.get('timestamp', '')[:19]} | Accesos: {m.get('access_count', 0)}")
+        else:
+            st.info("Sin memorias guardadas")
+        
+        st.divider()
+        
+        col_mb1, col_mb2 = st.columns(2)
+        
+        with col_mb1:
+            if st.button("🗑️ Limpiar Memorias"):
+                count = memory.clear()
+                st.success(f"Eliminadas {count} memorias")
+                st.rerun()
+        
+        with col_mb2:
+            if st.button("🔄 Consolidar"):
+                result = memory.consolidate()
+                st.success(f"Duplicados eliminados: {result.get('removed_duplicates', 0)}")
+                st.rerun()
+                
+    except Exception as e:
+        st.error(f"Error con memoria: {e}")
 
 
 def render_skills_section():
