@@ -38,6 +38,32 @@ logging.basicConfig(
         logging.FileHandler(config.LOG_FILE, encoding="utf-8"),
     ],
 )
+
+# Add terminal output with emojis for live status
+terminal_handler = logging.StreamHandler(sys.stdout)
+terminal_handler.setFormatter(logging.Formatter("%(message)s"))
+terminal_logger = logging.getLogger("terminal")
+terminal_logger.addHandler(terminal_handler)
+terminal_logger.setLevel(logging.INFO)
+terminal_logger.propagate = False
+
+# Status emojis for terminal
+STATUS = {
+    "start": "🟢",
+    "ingest": "📥",
+    "query": "🔎",
+    "search": "🔍",
+    "index": "🏗️",
+    "save": "💾",
+    "done": "✅",
+    "error": "🔴",
+    "thinking": "🧠",
+    "alive": "💚",
+}
+
+def print_status(emoji, message):
+    """Print status with emoji to terminal."""
+    terminal_logger.info(f"{emoji} {message}")
 logger = logging.getLogger(__name__)
 
 service = AsubarnipalService()
@@ -199,7 +225,8 @@ async def model_cmd(update: Update, context: CallbackContext):
 
 
 async def ingest_cmd(update: Update, context: CallbackContext):
-    """Ingest URL to wiki."""
+    """Ingest a URL to wiki."""
+    print_status(STATUS["ingest"], "Ingestando URL...")
     url = " ".join(context.args)
     
     if not url:
@@ -218,15 +245,18 @@ async def ingest_cmd(update: Update, context: CallbackContext):
 
 async def sync_obsidian_cmd(update: Update, context: CallbackContext):
     """Sync from Obsidian vault."""
+    print_status(STATUS["index"], "Sincronizando Obsidian...")
     await update.message.reply_text("🔄 Sincronizando Obsidian...")
     
     result = wiki.sync_obsidian()
     
     await update.message.reply_text(f"✅ Importadas: {result.get('imported', 0)} notas")
+    print_status(STATUS["done"], f"Sincronizado: {result.get('imported', 0)} notas")
 
 
 async def investigar_cmd(update: Update, context: CallbackContext):
-    """Deep research on a topic."""
+    """Research a topic deeply."""
+    print_status(STATUS["search"], "Investigando tema...")
     topic = " ".join(context.args)
     
     if not topic:
@@ -257,6 +287,7 @@ async def investigar_cmd(update: Update, context: CallbackContext):
 
 async def query_cmd(update: Update, context: CallbackContext):
     """Query the wiki."""
+    print_status(STATUS["query"], "Consultando wiki...")
     query = " ".join(context.args)
     
     if not query:
@@ -316,18 +347,8 @@ async def lint_cmd(update: Update, context: CallbackContext):
 
 
 async def indexar_wiki_cmd(update: Update, context: CallbackContext):
-    """Rebuild knowledge graph index."""
-    await update.message.reply_text("🔄 Reindexando wiki...")
-    
-    from index.rag import RAGEngine
-    engine = RAGEngine()
-    result = engine.index_directory(config.WIKI_DIR)
-    
-    await update.message.reply_text(f"✅ Indexadas: {result.get('indexed', 0)} notas")
-
-
-async def charlar_cmd(update: Update, context: CallbackContext):
-    """Start specialized chat mode."""
+    """Build wiki index."""
+    print_status(STATUS["index"], "Indexando wiki...")
     topic = " ".join(context.args)
     
     if not topic:
