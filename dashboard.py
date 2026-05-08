@@ -1675,12 +1675,9 @@ def main():
     render_kpi_cards(wiki, telemetry)
     st.divider()
 
-    tabs = st.tabs([
-        "📊 Dashboard", "🛠️ Skills", "🕸️ Wiki", "📥 Raw", "🧠 Grafo", "📜 Logs", "🏥 Salud", "📋 Schema", "💓 Latido", "📡 Feeds", "📈 Analytics"
-    ])
+    selected = st.session_state.get("selected_tab", 0)
 
-    # --- TAB 1: DASHBOARD ---
-    with tabs[0]:
+    if selected == 0:
         col_left, col_right = st.columns([2, 1])
 
         with col_left:
@@ -1709,26 +1706,22 @@ def main():
                 "Última ingesta": stats["last_ingest"],
             })
 
-    # --- TAB 2: SKILLS ---
-    with tabs[1]:
+    elif selected == 1:
         render_skills_section()
 
-    # --- TAB 3: WIKI ---
-    with tabs[2]:
+    elif selected == 2:
         st.subheader("Inventario del Wiki")
         render_wiki_table(wiki)
         st.divider()
         st.subheader("Timeline de Conocimiento")
         render_wiki_timeline(wiki)
 
-    # --- TAB 4: RAW SOURCES ---
-    with tabs[3]:
+    elif selected == 3:
         st.subheader("Fuentes Crudas (Inmutables)")
         st.caption("Estas fuentes son la capa de verdad. El agente nunca las modifica.")
         render_raw_table(wiki)
 
-    # --- TAB 5: GRAFO VECTORIAL ---
-    with tabs[4]:
+    elif selected == 4:
         st.subheader("🧠 Grafo Vectorial del Wiki")
         st.caption("Visualización del grafo híbrido generado por /indexar_wiki")
 
@@ -1749,32 +1742,26 @@ def main():
         st.subheader("📄 Reporte del Grafo")
         render_graph_report(config)
 
-    # --- TAB 6: LOGS ---
-    with tabs[5]:
+    elif selected == 5:
         st.subheader("Flujo de Conciencia del Agente")
         render_logs_section(config)
 
-    # --- TAB 7: SALUD ---
-    with tabs[6]:
+    elif selected == 6:
         st.subheader("Diagnóstico del Wiki Karpathy")
         render_health_dashboard(wiki)
 
-    # --- TAB 8: SCHEMA ---
-    with tabs[7]:
+    elif selected == 7:
         st.subheader("📋 CLAUDE.md - Schema del Wiki")
         st.caption("Este documento define las reglas de comportamiento del agente.")
         render_schema_viewer(wiki)
 
-    # --- TAB 9: LATIDO ---
-    with tabs[8]:
+    elif selected == 8:
         render_heartbeat_section()
 
-    # --- TAB 10: FEEDS ---
-    with tabs[9]:
+    elif selected == 9:
         render_feeds_section()
 
-    # --- TAB 11: ANALYTICS ---
-    with tabs[10]:
+    elif selected == 10:
         render_analytics_section()
 
     st.divider()
