@@ -55,9 +55,12 @@ class BackgroundManager:
     
     def _heartbeat_loop(self):
         """Heartbeat - runs every minute."""
+        agent_state = AgentState()
+        
         while self.running:
             try:
                 self._update_heartbeat()
+                agent_state.mark_alive()
             except Exception as e:
                 logger.error(f"Heartbeat error: {e}")
             time.sleep(config.HEARTBEAT_INTERVAL)
@@ -242,6 +245,83 @@ class WikiHealer:
                 pass
         
         return healed
+
+
+class AgentState:
+    """Tracks agent alive/failed state persistently."""
+    
+    def __init__(self):
+        self._load()
+    
+    def _load(self):
+        """Load state from file."""
+        if config.AGENT_STATE_FILE.exists():
+            try:
+                self.state = json.loads(config.AGENT_STATE_FILE.read_text())
+            except:
+                self.state = self._default()
+        else:
+            self.state = self._default()
+    
+    def _default(self) -> dict:
+        return {
+            "alive": False,
+            "last_alive": None,
+            "last_failure": None,
+            "failure_count": 0,
+            "success_count": 0,
+            "uptime_start": None,
+            "failures": [],
+        }
+    
+    def _save(self):
+        """Save state to file."""
+        config.AGENT_STATE_FILE.write_text(json.dumps(self.state, indent=2))
+    
+    def mark_alive(self):
+        """Mark agent as alive."""
+        now = datetime.now().isoformat()
+        self.state["alive"] = True
+        self.state["last_alive"] = now
+        if not self.state.get("uptime_start"):
+            self.state["uptime_start"] = now
+        self._save()
+    
+    def mark_dead(self):
+        """Mark agent as dead."""
+        self.state["alive"] = False
+        self.state["uptime_start"] = None
+        self._save()
+    
+    def record_failure(self, error: str):
+        """Record a failure."""
+        now = datetime.now().isoformat()
+        self.state["last_failure"] = now
+        self.state["failure_count"] += 1
+        self.state["failure_count_last"] = self.state.get("failure_count", 0)
+        self.state["failures"].append({
+            "error": error,
+            "time": now,
+        })
+        self.state["failures"] = self.state["failures"][-20:]
+        self._save()
+    
+    def record_success(self):
+        """Record a success."""
+        self.state["success_count"] += 1
+    
+    def get_status(self) -> dict:
+        """Get current status."""
+        self._load()
+        return {
+            "alive": self.state.get("alive", False),
+            "last_alive": self.state.get("last_alive"),
+            "last_failure": self.state.get("last_failure"),
+            "failure_count": self.state.get("failure_count", 0),
+            "success_count": self.state.get("success_count", 0),
+            "uptime_start": self.state.get("uptime_start"),
+            "recent_failures": self.state.get("failures", [])[-5:],
+        }
 
 
 class GraphBuilder:

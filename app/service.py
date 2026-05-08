@@ -7,9 +7,18 @@ from pathlib import Path
 import config
 from core.llm_router import LLMRouter
 from core.skill_registry import SkillRegistry
+from core.background_manager import AgentState
 from index.rag import RAGEngine
 
 logger = logging.getLogger(__name__)
+
+_agent_state = None
+
+def get_agent_state() -> AgentState:
+    global _agent_state
+    if _agent_state is None:
+        _agent_state = AgentState()
+    return _agent_state
 
 
 class AgentService:
@@ -24,6 +33,8 @@ class AgentService:
     def agent_chat(self, message: str, hist_to_pass: list = None) -> dict:
         """Process an agent chat message."""
         start = time.time()
+        agent_state = get_agent_state()
+        agent_state.mark_alive()
         
         messages = hist_to_pass or []
         messages.append({"role": "user", "content": message})
@@ -46,10 +57,12 @@ class AgentService:
         try:
             result = self.llm.call_agent(messages, tools=tools)
             result["time"] = time.time() - start
+            agent_state.record_success()
             logger.info(f"Agent chat completed in {result['time']:.2f}s")
             return result
         except Exception as e:
             logger.error(f"Agent chat error: {e}", exc_info=True)
+            agent_state.record_failure(str(e))
             return {
                 "response": f"Error: {e}",
                 "tool_calls": [],
@@ -255,6 +268,8 @@ class AsubarnipalService:
     def agent_chat(self, message: str, hist_to_pass: list = None) -> dict:
         """Process an agent chat message."""
         start = time.time()
+        agent_state = get_agent_state()
+        agent_state.mark_alive()
         
         messages = hist_to_pass or []
         messages.append({"role": "user", "content": message})
@@ -264,8 +279,12 @@ class AsubarnipalService:
         try:
             result = self.llm.call_agent(messages, tools=tools)
             result["time"] = time.time() - start
+            agent_state.record_success()
+            logger.info(f"Agent chat completed in {result['time']:.2f}s")
             return result
         except Exception as e:
+            logger.error(f"Agent chat error: {e}", exc_info=True)
+            agent_state.record_failure(str(e))
             return {
                 "response": f"Error: {e}",
                 "tool_calls": [],
@@ -296,22 +315,22 @@ class WikiReader:
         if not self.conn:
             return []
         try:
-                cursor = self.conn.cursor()
-                cursor.execute(
-                    "SELECT name, content FROM entities WHERE content LIKE ?",
-                    (f"%{query}%",)
-                )
-                return cursor.fetchall()
-            except:
-                return []
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT name, content FROM entities WHERE content LIKE ?",
+                (f"%{query}%",)
+            )
+            return cursor.fetchall()
+        except Exception:
+            return []
     
     def get_all(self, limit: int = 100) -> list:
         """Get all wiki entries."""
         if not self.conn:
             return []
         try:
-                cursor = self.conn.cursor()
-                cursor.execute(f"SELECT name, type, content FROM entities LIMIT {limit}")
-                return cursor.fetchall()
-            except:
-                return []
+            cursor = self.conn.cursor()
+            cursor.execute(f"SELECT name, type, content FROM entities LIMIT {limit}")
+            return cursor.fetchall()
+        except Exception:
+            return []

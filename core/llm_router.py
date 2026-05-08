@@ -15,7 +15,25 @@ class LLMRouter:
         self.base_url = config.OLLAMA_BASE_URL
         self.model = config.OLLAMA_MODEL
         self.ollama_client = None
+        self.use_ollama = self._check_ollama()
+        self.gemini_keys = config.GEMINI_KEYS or []
+        self.current_key_index = 0
         self._init_ollama()
+    
+    def _check_ollama(self):
+        """Check if Ollama is running."""
+        try:
+            return requests.get(f"{self.base_url}/api/tags", timeout=3).status_code == 200
+        except:
+            return False
+    
+    def rotate_gemini(self):
+        """Rotate to next Gemini key."""
+        if self.gemini_keys:
+            self.current_key_index = (self.current_key_index + 1) % len(self.gemini_keys)
+            logger.info("🔄 Rotando clave Gemini...")
+    
+    def _init_ollama(self):
     
     def _init_ollama(self):
         try:
@@ -88,8 +106,43 @@ class LLMRouter:
         return self.chat(messages, tools=tools)
     
     def generate(self, prompt: str, **kwargs) -> str:
-        result = self.chat([{"role": "user", "content": prompt}], **kwargs)
-        return result.get("response", "")
+        """Generate with fallback: Ollama → Gemini."""
+        max_retries = 3
+        delay = 2
+        
+        for attempt in range(max_retries):
+            if self.use_ollama:
+                try:
+                    result = self.chat([{"role": "user", "content": prompt}], **kwargs)
+                    return result.get("response", "")
+                except Exception as e:
+                    logger.warning(f"⚠️ Ollama retry {attempt+1}: {e}")
+            
+            if self.gemini_keys:
+                try:
+                    key = self.gemini_keys[self.current_key_index % len(self.gemini_keys)]
+                    result = self._gemini_chat(prompt, key)
+                    return result.get("response", "")
+                except Exception as e:
+                    logger.warning(f"⚠️ Gemini retry {attempt+1}: {e}")
+                    self.rotate_gemini()
+                    time.sleep(delay)
+                    delay *= 2
+        
+        return "⚠️ Fallo crítico en el razonamiento."
+    
+    def _gemini_chat(self, prompt: str, key: str) -> dict:
+        """Chat using Gemini API."""
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}"
+        
+        payload = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
+        
+        resp = requests.post(url, json=payload, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+        return {"response": text, "model": "gemini-2.0-flash"}
 
 
 class GeminiRouter:
