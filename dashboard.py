@@ -48,10 +48,8 @@ class AppConfig:
         self.obsidian_path = r"c:\Obsidian"
         if not os.path.exists(self.obsidian_path):
             self.obsidian_path = r"C:\Obsidian"
-        if not os.path.exists(self.obsidian_path):
-            self.obsidian_path = str(config.BASE_DIR)
         
-        # Use Windows path for logs c:\Asubarnipal\data\agente.log
+        # Use paths from config (OBSIDIAN_PATH/wiki, OBSIDIAN_PATH/raw)
         self.log_file = os.path.join(str(config.BASE_DIR), "data", "agente.log")
     
     @property
