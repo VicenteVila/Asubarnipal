@@ -20,6 +20,7 @@ DATA_DIR = BASE_DIR / "data"
 INDEX_DIR = BASE_DIR / "index"
 STORAGE_DIR = BASE_DIR / "storage"
 SKILLS_DIR = BASE_DIR / "skills"
+STORAGE_DIR.mkdir(exist_ok=True)
 
 WIKI_PATH = DATA_DIR / "wiki.db"
 VECTOR_INDEX = DATA_DIR / "vector.index"
