@@ -13,7 +13,7 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.5:4b")
 
-GEMINI_KEYS = os.getenv("GEMINI_KEYS", "").split(",") if os.getenv("GEMINI_KEYS") else []
+GEMINI_KEYS = [k.strip() for k in os.getenv("GEMINI_KEYS", "").split(",") if k.strip()]
 GEMINI_CURRENT = 0
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY", "")
 HF_TOKEN = os.getenv("HF_TOKEN", "")
@@ -32,8 +32,10 @@ RAW_DIR = DATA_DIR / "raw"
 GRAPH_STORE = DATA_DIR / "graph_store"
 VECTOR_INDEX = DATA_DIR / "vector.index"
 HEARTBEAT_FILE = DATA_DIR / "heartbeat.json"
+AGENT_STATE_FILE = DATA_DIR / "agent_state.json"
 BRAVE_COUNTER_FILE = DATA_DIR / "brave_counter.json"
-OBSIDIAN_PATH = os.getenv("OBSIDIAN_PATH", str(BASE_DIR / "Obsidian"))
+OBSIDIAN_PATH = Path(os.getenv("OBSIDIAN_PATH", str(BASE_DIR / "Obsidian")))
+GRAPH_STORE_PATH = OBSIDIAN_PATH / "graph_store"
 
 LOG_FILE = DATA_DIR / "agente.log"
 

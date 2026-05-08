@@ -123,6 +123,9 @@ async def status_cmd(update: Update, context: CallbackContext):
         wiki_stats = wiki.get_all(limit=1000)
         
         bg_status = bg_manager.get_status()
+        from core.background_manager import AgentState
+        agent_state = AgentState()
+        state = agent_state.get_status()
         
         text = f"""📊 *Estado del Sistema*
 
@@ -130,6 +133,13 @@ async def status_cmd(update: Update, context: CallbackContext):
 • CPU: {heartbeat.get('cpu_percent', 'N/A')}%
 • RAM: {heartbeat.get('memory_percent', 'N/A')}%
 • Timestamp: {heartbeat.get('timestamp', 'N/A')}
+
+🤖 *Agente:*
+• Alive: {'✅ SI' if state.get('alive') else '❌ NO'}
+• Último alive: {state.get('last_alive', 'N/A')}
+• Último fallo: {state.get('last_failure', 'N/A')}
+• Fallos: {state.get('failure_count', 0)}
+• Éxitos: {state.get('success_count', 0)}
 
 📚 *Wiki:*
 • Entidades: {len(wiki_stats)}
@@ -516,6 +526,12 @@ def main():
         logger.warning(f"Service init: {e}")
     
     bg_manager.start()
+    
+    from core.background_manager import AgentState
+    agent_state = AgentState()
+    agent_state.mark_alive()
+    
+    logger.info("🤖 Agent marked as alive")
     
     app = Application.builder().token(config.TELEGRAM_TOKEN).build()
     
