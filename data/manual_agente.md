@@ -127,9 +127,49 @@ Usa `/charlar <tema>` para iniciar:
 # Agente
 python -m interface.telegram_bot
 
-# Dashboard
+# Dashboard (11 pestañas)
 streamlit run dashboard.py
+
+# API REST (opcional)
+python -m api.main
 ```
+
+---
+
+## 🌐 API REST (Opcional)
+
+Endpoints disponibles en `http://localhost:8000`:
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/` | GET | Info del agente |
+| `/health` | GET | Health check |
+| `/status` | GET | Estado del agente |
+| `/stats` | GET | Estadísticas wiki |
+| `/command` | POST | Ejecutar comando |
+| `/feeds` | GET | Listar suscripciones |
+| `/feeds/check` | GET | Verificar actualizaciones |
+| `/history` | GET | Historial de comandos |
+| `/logs` | GET | Logs del agente |
+
+---
+
+## 📡 Feed Tracker
+
+Suscribete a RSS/Atom feeds para recibir alertas:
+
+- Desde Dashboard → pestaña "📡 Feeds"
+- Añadir URL → Recibir alertas automáticas
+
+---
+
+## 📈 Analytics
+
+Historial de comandos y estadísticas:
+
+- Top 10 comandos más usados
+- Comandos por fecha
+- Primer y último comando
 
 ---
 

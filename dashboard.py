@@ -1020,6 +1020,298 @@ def render_health_dashboard(wiki: WikiReader):
         else:
             st.success("Todo actualizado.")
 
+
+def render_heartbeat_section():
+    """Render heartbeat and cron jobs section."""
+    import json
+    from pathlib import Path
+
+    st.subheader("💓 Latido del Agente")
+    st.caption("Configuración de trabajos en segundo plano (cron jobs)")
+
+    heartbeat_file = Path(config.DATA_DIR) / "heartbeat.json"
+    state_file = Path(config.DATA_DIR) / "agent_state.json"
+
+    col_h1, col_h2, col_h3 = st.columns(3)
+
+    with col_h1:
+        st.metric("💓 Heartbeat", "Activo" if config.ENABLE_HEARTBEAT else "Inactivo",
+                delta=f"Intervalo: {config.HEARTBEAT_INTERVAL}s", delta_color="normal" if config.ENABLE_HEARTBEAT else "off")
+    with col_h2:
+        st.metric("💉 Suture", f"{config.SUTURE_INTERVAL}s", delta="Cada 10 min", delta_color="normal")
+    with col_h3:
+        st.metric("🕸️ Graph", f"{config.GRAPH_INTERVAL}s", delta="Cada 30 min", delta_color="normal")
+
+    st.divider()
+
+    st.subheader("⚙️ Editar Intervalos")
+
+    with st.expander("✏️ Editar Cron Jobs"):
+        new_heartbeat = st.number_input("Heartbeat (segundos)", min_value=10, max_value=3600,
+                            value=config.HEARTBEAT_INTERVAL, key="edit_heartbeat")
+        new_suture = st.number_input("Suture (segundos)", min_value=60, max_value=7200,
+                              value=config.SUTURE_INTERVAL, key="edit_suture")
+        new_graph = st.number_input("Graph (segundos)", min_value=60, max_value=14400,
+                          value=config.GRAPH_INTERVAL, key="edit_graph")
+        enable_heartbeat = st.toggle("Habilitar Heartbeat", value=config.ENABLE_HEARTBEAT, key="edit_enable_hb")
+
+        col_btns1, col_btns2 = st.columns(2)
+        with col_btns1:
+            if st.button("💾 Guardar Cambios"):
+                import os
+                os.environ["HEARTBEAT_INTERVAL"] = str(new_heartbeat)
+                os.environ["SUTURE_INTERVAL"] = str(new_suture)
+                os.environ["GRAPH_INTERVAL"] = str(new_graph)
+                os.environ["ENABLE_HEARTBEAT"] = str(enable_heartbeat).lower()
+                st.success("✅ Configuración guardada")
+                st.rerun()
+        with col_btns2:
+            if st.button("🔄 Recargar"):
+                st.rerun()
+
+    st.divider()
+
+    st.subheader("📊 Estado Actual")
+
+    if heartbeat_file.exists():
+        try:
+            hb = json.loads(heartbeat_file.read_text())
+            cols_hb = st.columns(4)
+            with cols_hb[0]:
+                st.metric("Último Heartbeat", hb.get("timestamp", "N/A")[:19] if hb.get("timestamp") else "N/A")
+            with cols_hb[1]:
+                st.metric("CPU", f"{hb.get('cpu_percent', 0):.1f}%")
+            with cols_hb[2]:
+                st.metric("RAM", f"{hb.get('memory_percent', 0):.1f}%")
+            with cols_hb[3]:
+                st.metric("Disk", f"{hb.get('disk_percent', 0):.1f}%")
+        except Exception as e:
+            st.warning(f"No se pudo leer heartbeat: {e}")
+    else:
+        st.info(" heartbeat.json no encontrado. El agente debe estar ejecutándose.")
+
+    if state_file.exists():
+        try:
+            state = json.loads(state_file.read_text())
+            st.caption(f"**Último alive:** {state.get('last_alive', 'N/A')[:19] if state.get('last_alive') else 'N/A'}")
+            st.caption(f"**Fallos:** {state.get('failure_count', 0)} | **Éxitos:** {state.get('success_count', 0)}")
+        except Exception:
+            pass
+
+    st.divider()
+
+    st.subheader("🕐 Próximas Ejecuciones")
+
+    cols_next = st.columns(3)
+    with cols_next[0]:
+        st.info(f"💓 Heartbeat: cada {config.HEARTBEAT_INTERVAL}s")
+    with cols_next[1]:
+        st.info(f"💉 Suture: cada {config.SUTURE_INTERVAL // 60} min")
+    with cols_next[2]:
+        st.info(f"🕸️ Graph: cada {config.GRAPH_INTERVAL // 60} min")
+
+    st.divider()
+    st.caption("💡 Los cambios en los intervalos se guardan en memoria. Para persistir, exporta las variables al .env")
+
+
+def render_feeds_section():
+    """Render feed subscriptions and alerts."""
+    from core.feed_tracker import FeedTracker
+    
+    tracker = FeedTracker()
+    subscriptions = tracker.get_subscriptions()
+    alerts = tracker.get_alerts(unread_only=True)
+    
+    st.subheader("📡 Suscripciones RSS")
+    st.caption("Feeds seguidos para alertas de actualización")
+    
+    cols_f1, cols_f2 = st.columns(2)
+    
+    with cols_f1:
+        with st.expander("➕ Añadir Feed"):
+            feed_url = st.text_input("URL del Feed", key="new_feed_url")
+            feed_name = st.text_input("Nombre (opcional)", key="new_feed_name")
+            if st.button("📥 Suscribirse"):
+                if feed_url:
+                    result = tracker.subscribe(feed_url, feed_name)
+                    if result:
+                        st.success(f"✅ Suscrito a {feed_name or feed_url}")
+                        st.rerun()
+                    else:
+                        st.warning("Ya estás suscrito o feed inválido")
+    
+    with cols_f2:
+        if subscriptions:
+            st.metric("📡 Feeds", len(subscriptions))
+        else:
+            st.metric("📡 Feeds", 0)
+        st.metric("🔔 Alertas", len(alerts), delta="sin leer", delta_color="inverse" if len(alerts) > 0 else "normal")
+    
+    if subscriptions:
+        st.divider()
+        st.subheader("📋 Lista de Feeds")
+        feed_list = []
+        for sub in subscriptions:
+            feed_list.append({
+                "Nombre": sub.get("name", "Sin nombre"),
+                "URL": sub.get("url", ""),
+                "Agregado": sub.get("added", "")[:10],
+            })
+        st.dataframe(pd.DataFrame(feed_list), hide_index=True, width='stretch')
+    
+    st.divider()
+    st.subheader("🔔 Últimas Alertas")
+    
+    all_alerts = tracker.get_alerts()
+    if all_alerts:
+        for i, alert in enumerate(all_alerts[-10:]):
+            read_status = "" if alert.get("read") else "🔴"
+            st.markdown(f"**{read_status} {alert.get('title', 'Sin título')[:60]}**")
+            st.caption(f"📡 {alert.get('feed', '')} | {alert.get('published', '')[:19]}")
+            if alert.get("link"):
+                st.caption(f"[Leer más]({alert.get('link')})")
+    else:
+        st.info("No hay alertas.")
+    
+    st.divider()
+    
+    if st.button("🔄 Verificar Feeds"):
+        with st.spinner("Verificando..."):
+            updates = tracker.check_updates()
+            if updates:
+                st.success(f"🔔 {len(updates)} actualizaciones!")
+            else:
+                st.info("Sin actualizaciones")
+            st.rerun()
+
+
+def render_analytics_section():
+    """Render command history and analytics."""
+    from core.command_history import CommandHistory, get_command_analytics
+    
+    history = CommandHistory()
+    stats = history.get_stats()
+    
+    st.subheader("📊 Historial de Comandos")
+    st.caption("Analytics del uso del agente")
+    
+    cols_a1, cols_a2, cols_a3, cols_a4 = st.columns(4)
+    
+    with cols_a1:
+        st.metric("📝 Total", stats.get("total", 0))
+    with cols_a2:
+        st.metric("🔄 Únicos", stats.get("unique_commands", 0))
+    with cols_a3:
+        first = stats.get("first_command", "")[:10] if stats.get("first_command") else "N/A"
+        st.metric("📅 Primero", first)
+    with cols_a4:
+        last = stats.get("last_command", "")[:10] if stats.get("last_command") else "N/A"
+        st.metric("⏱️ Último", last)
+    
+    if stats.get("top_commands"):
+        st.divider()
+        st.subheader("🔝 Top Comandos")
+        top_data = []
+        for cmd in stats["top_commands"][:10]:
+            top_data.append({
+                "Comando": cmd["cmd"][:50],
+                "Usos": cmd["count"],
+            })
+        st.dataframe(pd.DataFrame(top_data), hide_index=True, width='stretch')
+    
+    st.divider()
+    st.subheader("📜 Últimos Comandos")
+    
+    recent = history.get(20)
+    if recent:
+        for cmd in reversed(recent):
+            ts = cmd.get("timestamp", "")[:19]
+            cmd_text = cmd.get("command", "")[:60]
+            st.code(f"[{ts}] {cmd_text}")
+    else:
+        st.info("Sin comandos ejecutados")
+    
+    st.divider()
+    
+    if st.button("🗑️ Limpiar Historial"):
+        history.clear()
+        st.success("Historial limpiado")
+        st.rerun()
+
+
+def render_skills_section():
+    """Render skills and tools available in the agent."""
+    try:
+        from core.skill_registry import SkillRegistry
+        registry = SkillRegistry()
+        skills = registry.list_skills()
+        tools = registry.get_tools()
+    except Exception as e:
+        st.error(f"Error loading skills: {e}")
+        return
+
+    st.subheader("🛠️ Skills Disponibles")
+    st.caption(f"El agente tiene acceso a {len(skills)} funciones ejecutables.")
+
+    if not skills:
+        st.info("No hay skills cargados.")
+        return
+
+    cols = st.columns(4)
+    for i, skill in enumerate(skills):
+        with cols[i % 4]:
+            st.success(f"🔧 {skill}")
+
+    st.divider()
+    st.subheader("📋 Definiciones de Herramientas (Tool Definitions)")
+
+    tool_data = []
+    for tool in tools:
+        func = tool.get("function", {})
+        params = func.get("parameters", {})
+        required = params.get("required", [])
+        tool_data.append({
+            "Nombre": func.get("name", "unknown"),
+            "Descripción": func.get("description", "N/A"),
+            "Parámetros": ", ".join(params.get("properties", {}).keys()) if params.get("properties") else "-",
+            "Requeridos": ", ".join(required) if required else "-",
+        })
+
+    if tool_data:
+        df_tools = pd.DataFrame(tool_data)
+        st.dataframe(df_tools, width='stretch', hide_index=True,
+                   column_config={
+                       "Nombre": st.column_config.TextColumn(width="medium"),
+                       "Descripción": st.column_config.TextColumn(width="large"),
+                       "Parámetros": st.column_config.TextColumn(width="medium"),
+                       "Requeridos": st.column_config.TextColumn(width="small"),
+                   })
+
+    st.divider()
+    st.subheader("🧩 Categorías de Skills")
+
+    categories = {
+        "Archivo": ["run_command", "read_file", "write_file", "list_files", "search_in_files"],
+        "Wiki": ["generate_project_knowledge_graph", "heal_orphans"],
+        "RSS/Podcasts": ["subscribe_podcast", "subscribe_rss", "fetch_new_articles", "list_subscribed_podcasts"],
+        "LLM/Ollama": ["list_ollama_models", "quantize_ollama_model", "get_quantization_info"],
+        "Quant": ["run_polar_quant_demo", "get_turboquant_capabilities", "suggest_quantization_strategy"],
+        "Recordatorio": ["add_reminder", "list_reminders", "delete_reminder", "check_due_reminders", "snooze_reminder"],
+        "Webhooks": ["register_webhook", "unregister_webhook", "list_webhooks", "trigger_webhook"],
+        "Varios": ["clone_repo", "translate", "detect_language", "search_arxiv", "get_audio_summary"],
+    }
+
+    for category, funcs in categories.items():
+        present = [f for f in funcs if f in skills]
+        if present:
+            with st.expander(f"📁 {category} ({len(present)})"):
+                for f in present:
+                    st.code(f, language="python")
+
+    st.divider()
+    st.caption("💡 Los skills se cargan desde skills/default_skills.py y se registran en SkillRegistry.")
+
+
 def render_logs_section(config: AppConfig):
     # Also print to terminal (CMD)
     try:
@@ -1195,7 +1487,36 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-        st.title("Navegación")
+        st.title("📍 Navegación")
+
+        tabs_info = [
+            ("📊 Dashboard", "panel general"),
+            ("🛠️ Skills", "herramientas"),
+            ("🕸️ Wiki", f"{stats['total_wiki']} notas"),
+            ("📥 Raw", f"{stats['total_raw']} fuentes"),
+            ("🧠 Grafo", "vectorial"),
+            ("📜 Logs", "actividad"),
+            ("🏥 Salud", "diagnostico"),
+            ("📋 Schema", "reglas"),
+            ("💓 Latido", "cron jobs"),
+            ("📡 Feeds", "rss"),
+            ("📈 Analytics", "comandos"),
+        ]
+
+        if "selected_tab" not in st.session_state:
+            st.session_state.selected_tab = 0
+
+        for i, (tab_name, tab_metric) in enumerate(tabs_info):
+            label = f"{tab_name}  |  {tab_metric}"
+            if st.button(label, key=f"nav_{i}"):
+                st.session_state.selected_tab = i
+
+        if st.session_state.selected_tab > 0:
+            st.rerun()
+
+        st.divider()
+
+        st.title("⚙️ Control")
 
         if st.button("⏸️ Pausar Refresh" if not st.session_state.paused else "▶️ Reanudar"):
             st.session_state.paused = not st.session_state.paused
@@ -1213,7 +1534,28 @@ def main():
             st.caption(f"🧵 Threads: {agente_status['threads']}")
         else:
             st.error("❌ Agente no detectado")
-            st.caption("Ejecuta `python agente_v4_karpathy_indexed_progress.py`")
+            st.caption("Ejecuta `python -m interface.telegram_bot`")
+
+        st.divider()
+
+        st.subheader("📊 Métricas por Tab")
+
+        tab_metrics = {
+            "Dashboard": f"CPU: {telemetry.snapshot()['cpu']:.1f}% | RAM: {telemetry.snapshot()['ram']:.1f}%",
+            "Skills": f"43 funciones",
+            "Wiki": f"{stats['total_wiki']} notas | {stats['total_words']} palabras",
+            "Raw": f"{stats['total_raw']} fuentes | {stats['sources']} sources",
+            "Grafo": "graph_store/indexado",
+            "Logs": f"{stats['log_entries']} entradas",
+            "Salud": f"{stats['orphans']} huerfanas | {stats['draft']} drafts",
+            "Schema": "CLAUDE.md activo",
+            "Latido": f"HB: {config.HEARTBEAT_INTERVAL}s | Suture: {config.SUTURE_INTERVAL}s",
+            "Feeds": "0 suscripciones",
+            "Analytics": "historial",
+        }
+
+        for tab_name, metric in tab_metrics.items():
+            st.caption(f"**{tab_name}**: {metric}")
 
         st.divider()
 
@@ -1252,7 +1594,7 @@ def main():
     st.divider()
 
     tabs = st.tabs([
-        "📊 Dashboard", "🕸️ Wiki", "📥 Raw", "🧠 Grafo", "📜 Logs", "🏥 Salud", "📋 Schema"
+        "📊 Dashboard", "🛠️ Skills", "🕸️ Wiki", "📥 Raw", "🧠 Grafo", "📜 Logs", "🏥 Salud", "📋 Schema", "💓 Latido", "📡 Feeds", "📈 Analytics"
     ])
 
     # --- TAB 1: DASHBOARD ---
@@ -1285,22 +1627,26 @@ def main():
                 "Última ingesta": stats["last_ingest"],
             })
 
-    # --- TAB 2: WIKI ---
+    # --- TAB 2: SKILLS ---
     with tabs[1]:
+        render_skills_section()
+
+    # --- TAB 3: WIKI ---
+    with tabs[2]:
         st.subheader("Inventario del Wiki")
         render_wiki_table(wiki)
         st.divider()
         st.subheader("Timeline de Conocimiento")
         render_wiki_timeline(wiki)
 
-    # --- TAB 3: RAW SOURCES ---
-    with tabs[2]:
+    # --- TAB 4: RAW SOURCES ---
+    with tabs[3]:
         st.subheader("Fuentes Crudas (Inmutables)")
         st.caption("Estas fuentes son la capa de verdad. El agente nunca las modifica.")
         render_raw_table(wiki)
 
-    # --- TAB 4: GRAFO VECTORIAL ---
-    with tabs[3]:
+    # --- TAB 5: GRAFO VECTORIAL ---
+    with tabs[4]:
         st.subheader("🧠 Grafo Vectorial del Wiki")
         st.caption("Visualización del grafo híbrido generado por /indexar_wiki")
 
@@ -1321,21 +1667,33 @@ def main():
         st.subheader("📄 Reporte del Grafo")
         render_graph_report(config)
 
-    # --- TAB 5: LOGS ---
-    with tabs[4]:
+    # --- TAB 6: LOGS ---
+    with tabs[5]:
         st.subheader("Flujo de Conciencia del Agente")
         render_logs_section(config)
 
-    # --- TAB 6: SALUD ---
-    with tabs[5]:
+    # --- TAB 7: SALUD ---
+    with tabs[6]:
         st.subheader("Diagnóstico del Wiki Karpathy")
         render_health_dashboard(wiki)
 
-    # --- TAB 7: SCHEMA ---
-    with tabs[6]:
+    # --- TAB 8: SCHEMA ---
+    with tabs[7]:
         st.subheader("📋 CLAUDE.md - Schema del Wiki")
         st.caption("Este documento define las reglas de comportamiento del agente.")
         render_schema_viewer(wiki)
+
+    # --- TAB 9: LATIDO ---
+    with tabs[8]:
+        render_heartbeat_section()
+
+    # --- TAB 10: FEEDS ---
+    with tabs[9]:
+        render_feeds_section()
+
+    # --- TAB 11: ANALYTICS ---
+    with tabs[10]:
+        render_analytics_section()
 
     st.divider()
     st.caption(f"🛰️ Última sincronización: {datetime.now().strftime('%H:%M:%S')} | "
