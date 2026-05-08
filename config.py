@@ -21,4 +21,9 @@ DATA_DIR = BASE_DIR / "data"
 INDEX_DIR = BASE_DIR / "index"
 STORAGE_DIR = BASE_DIR / "storage"
 
+WIKI_PATH = DATA_DIR / "wiki.db"
+WIKI_DIR = DATA_DIR / "wiki"
+GRAPH_STORE = DATA_DIR / "graph_store"
+VECTOR_INDEX = DATA_DIR / "vector.index"
+
 LOG_FILE = DATA_DIR / "agente.log"
