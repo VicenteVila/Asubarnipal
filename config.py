@@ -34,7 +34,7 @@ VECTOR_INDEX = DATA_DIR / "vector.index"
 HEARTBEAT_FILE = DATA_DIR / "heartbeat.json"
 AGENT_STATE_FILE = DATA_DIR / "agent_state.json"
 BRAVE_COUNTER_FILE = DATA_DIR / "brave_counter.json"
-OBSIDIAN_PATH = Path(os.getenv("OBSIDIAN_PATH", str(BASE_DIR / "Obsidian")))
+OBSIDIAN_PATH = Path(os.getenv("OBSIDIAN_PATH", r"C:\Obsidian"))
 GRAPH_STORE_PATH = OBSIDIAN_PATH / "graph_store"
 
 LOG_FILE = DATA_DIR / "agente.log"
