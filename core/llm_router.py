@@ -34,8 +34,6 @@ class LLMRouter:
             logger.info("🔄 Rotando clave Gemini...")
     
     def _init_ollama(self):
-    
-    def _init_ollama(self):
         try:
             from ollama import Client
             self.ollama_client = Client(self.base_url)
