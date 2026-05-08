@@ -1633,7 +1633,7 @@ def main():
             "Logs": f"{stats['log_entries']} entradas",
             "Salud": f"{stats['orphans']} huerfanas | {stats['draft']} drafts",
             "Schema": "CLAUDE.md activo",
-            "Latido": f"HB: {config.HEARTBEAT_INTERVAL}s | Suture: {config.SUTURE_INTERVAL}s",
+            "Latido": f"HB: 60s | Suture: 600s",
             "Feeds": "0 suscripciones",
             "Analytics": "historial",
         }
