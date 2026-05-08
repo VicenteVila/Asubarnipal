@@ -1,0 +1,49 @@
+# Core
+python-dotenv
+google-genai
+pyyaml
+
+# Web & Data
+trafilatura
+requests
+beautifulsoup4
+lxml
+newspaper3k
+feedparser
+nltk
+
+# PDF & Media
+PyPDF2
+pymupdf
+youtube-transcript-api
+
+# ML & NLP
+torch
+networkx
+sentence-transformers
+scikit-learn
+scipy
+
+# Telegram & Interface
+python-telegram-bot
+
+# Search
+ddgs
+
+# Utils
+psutil
+pyperclip
+
+# Web Server
+fastapi
+uvicorn
+
+# Optional (install only if needed)
+# faiss-cpu          # For vector similarity search
+# ollama             # For local LLM
+# streamlit          # For dashboard
+# plotly             # For dashboard
+# pandas             # For data analysis
+
+# Testing
+pytest
