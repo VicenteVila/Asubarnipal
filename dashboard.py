@@ -863,10 +863,10 @@ def render_graph_store_status(config: AppConfig):
         return
 
     files = {
-        "Grafo": graph_store / "wiki_graph.pkl",
-        "Embeddings": graph_store / "embeddings.pkl",
-        "Metadatos": graph_store / "metadata.json",
-        "Reporte": graph_store / "graph_report.md",
+        "🕸️ Grafo": graph_store / "graph.json",
+        "🔢 Embeddings": graph_store / "embeddings.pkl",
+        "📊 Metadatos": graph_store / "metadata.json",
+        "📝 Reporte": graph_store / "graph_report.md",
     }
 
     cols = st.columns(4)
@@ -932,7 +932,9 @@ def render_communities_and_hubs(config: AppConfig):
         with cols[1]:
             st.metric("🔗 Aristas", meta.get("total_aristas", 0))
         with cols[2]:
-            st.metric("📊 Comunidades", len(set(meta.get("comunidades", {}).values())))
+            comunidades = meta.get("comunidades", {})
+            num_communidades = len(set(comunidades.values())) if comunidades else 0
+            st.metric("📊 Comunidades", num_communidades)
         with cols[3]:
             st.metric("🏛️ Hubs", len(meta.get("hubs", [])))
 
