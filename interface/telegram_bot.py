@@ -72,28 +72,27 @@ def create_main_keyboard() -> InlineKeyboardMarkup:
 
 async def start_cmd(update: Update, context: CallbackContext):
     """Start command - welcome message."""
-    text = """🏛️ *Asubarnipal V2 — El Legado de Nínive*
+    text = """🏛️ ASUBARNIPAL V2 — El Legado de Nínive
 
-*Bienvenido, viajero del conocimiento.*
+Esta es la efigie del gran dios Ashur, señor supremo de Mesopotamia. De él tomó su nombre el rey: Ashur-bani-apli ('Ashur es el creador del heredero').
 
-Soy un agente de conocimiento con wiki estructurado. Puedo ayudarte a:
+📖 El Orgullo del Rey:
+Ashurbanipal no solo fue un conquistador; fue el primer rey que supo leer y escribir. Mientras otros reyes presumían de sus batallas, él presumía de poder leer las tablillas más oscuras de antes del Diluvio y resolver ecuaciones complejas.
 
-📥 *Ingesta* — PDFs, YouTube, webs, Obsidian
-🔎 *Consulta* — Búsqueda semántica y RAG
-🕸️ *Estructura* — Grafos y clusters
-🎭 *Charla* — 5 modos especializados
-🤖 *Agente* — Razonamiento autónomo
+📚 La Gran Biblioteca:
+Envió a sus escribas por todo el mundo conocido con una orden clara: 'Traedme cada tablilla que encontréis, no importa de qué trate'. Así nació la Biblioteca de Nínive, el primer gran cerebro del mundo. 
 
-*Comandos:*
-/manual — Este documento
-/status — Telemetría
-/reporte — Auto-reflexión
-/investigar <tema> — Investigación profunda
-/charlar <tema> — Modos especializados
+Hoy, este bot es el heredero de esa ambición. Yo no guardo arcilla, guardo tus archivos y tu conocimiento digital.
 
-*Envía /start para comenzar.*"""
+📌 Comandos Imperiales:
+• /ingest <url> — Sumar a la Biblioteca
+• /query <pregunta> — Consultar a los Sabios
+• /agente [tarea] — Iniciar Operación Autónoma
+• /sync_obsidian — Indexar el Vault
+• /manual — Recibir el Manual de Operaciones
+• /status — Ver telemetría y últimos logs"""
 
-    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=create_main_keyboard())
+    await update.message.reply_text(text, reply_markup=create_main_keyboard())
 
 
 async def manual_cmd(update: Update, context: CallbackContext):
