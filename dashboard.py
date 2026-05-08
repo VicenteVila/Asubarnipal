@@ -1564,106 +1564,100 @@ def main():
     
     with st.sidebar:
         st.markdown("""
-        <div style="text-align:center; margin-bottom:20px;">
-            <div style="font-size:2.5rem; margin-bottom:8px;">🌳</div>
-            <div style="font-weight:700; color:#58a6ff; font-size:1.1rem;">ASUBARNIPAL</div>
-            <div style="color:#8b949e; font-size:0.75rem;">V5 KARPATHY WIKI</div>
+        <div style="text-align:center; margin-bottom:24px; padding:16px; background:linear-gradient(135deg,#1a1a2e,#16213e); border-radius:12px;">
+            <div style="font-size:3rem; margin-bottom:4px;">🌳</div>
+            <div style="font-weight:700; color:#58a6ff; font-size:1.4rem;">ASUBARNIPAL</div>
+            <div style="color:#8b949e; font-size:0.8rem;">Karpathy Wiki Command Center</div>
+            <div style="color:#238636; font-size:0.75rem; margin-top:8px;">● ONLINE</div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.title("📍 Navegación")
+        if "selected_view" not in st.session_state:
+            st.session_state.selected_view = 0
 
-        tabs_info = [
-            ("📊 Dashboard", "panel general"),
-            ("🛠️ Skills", "herramientas"),
-            ("🕸️ Wiki", f"{stats['total_wiki']} notas"),
-            ("📥 Raw", f"{stats['total_raw']} fuentes"),
-            ("🧠 Grafo", "vectorial"),
-            ("📜 Logs", "actividad"),
-            ("🏥 Salud", "diagnostico"),
-            ("📋 Schema", "reglas"),
-            ("💓 Latido", "cron jobs"),
-            ("📡 Feeds", "rss"),
-            ("📈 Analytics", "comandos"),
-        ]
-
-        if "selected_tab" not in st.session_state:
-            st.session_state.selected_tab = 0
-
-        for i, (tab_name, tab_metric) in enumerate(tabs_info):
-            label = f"{tab_name}  |  {tab_metric}"
-            if st.button(label, key=f"nav_{i}"):
-                st.session_state.selected_tab = i
-
-        if st.session_state.selected_tab > 0:
+        st.markdown("### 📁 NAVEGACIÓN")
+        
+        st.radio("Selecciona una vista:", 
+            options=list(range(11)),
+            format_func=lambda x: [
+                "📊 Dashboard", "🛠️ Skills", "🕸️ Wiki", "📥 Raw", 
+                "🧠 Grafo", "📜 Logs", "🏥 Salud", "📋 Schema", 
+                "💓 Latido", "📡 Feeds", "📈 Analytics"
+            ][x],
+            key="selected_view",
+            label_visibility="collapsed")
+        
+        if st.session_state.get("last_view", 0) != st.session_state.selected_view:
+            st.session_state.last_view = st.session_state.selected_view
             st.rerun()
 
         st.divider()
 
-        st.title("⚙️ Control")
+        with st.expander("🛠️ Skills", expanded=True):
+            from core.skill_registry import SkillRegistry
+            registry = SkillRegistry()
+            skills = registry.list_skills()
+            st.caption(f"**{len(skills)}** funciones disponibles")
+            for skill in skills[:5]:
+                st.code(skill, language="python")
+            if len(skills) > 5:
+                st.caption(f"+ {len(skills)-5} más...")
 
-        if st.button("⏸️ Pausar Refresh" if not st.session_state.paused else "▶️ Reanudar"):
-            st.session_state.paused = not st.session_state.paused
-            st.rerun()
+        with st.expander("📡 Suscripciones RSS"):
+            from core.feed_tracker import FeedTracker
+            tracker = FeedTracker()
+            feeds = tracker.get_subscriptions()
+            st.metric("Feeds", len(feeds))
+            alerts = tracker.get_alerts(unread_only=True)
+            st.metric("🔔 Alertas", len(alerts), delta="sin leer" if alerts else "0")
+
+        with st.expander("💓 Cron Jobs"):
+            st.markdown("""
+            | Ritual | Intervalo |
+            |--------|----------|
+            | 💓 Heartbeat | 60s |
+            | 💉 Suture | 600s |
+            | 🕸️ Graph | 1800s |
+            """)
 
         st.divider()
 
-        st.subheader("🤖 Estado del Agente")
+        st.markdown("### 🤖 AGENTE")
+        
         if agente_status["running"]:
             st.success(f"✅ Activo (PID {agente_status['pid']})")
-            if agente_status["uptime"]:
-                st.caption(f"⏱️ Uptime: {str(agente_status['uptime']).split('.')[0]}")
-            st.caption(f"🧠 RAM: {agente_status['memory_mb']:.1f} MB")
-            st.caption(f"⚡ CPU: {agente_status['cpu']:.1f}%")
-            st.caption(f"🧵 Threads: {agente_status['threads']}")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("RAM", f"{agente_status['memory_mb']:.0f} MB")
+            with col2:
+                st.metric("CPU", f"{agente_status['cpu']:.0f}%")
+            st.caption(f"⏱️ Uptime: {str(agente_status['uptime']).split('.')[0]}")
         else:
-            st.error("❌ Agente no detectado")
-            st.caption("Ejecuta `python -m interface.telegram_bot`")
+            st.error("❌ Agente Offline")
+            st.caption("Ejecuta: `python -m interface.telegram_bot`")
 
         st.divider()
 
-        st.subheader("📊 Métricas por Tab")
-
-        tab_metrics = {
-            "Dashboard": f"CPU: {telemetry.snapshot()['cpu']:.1f}% | RAM: {telemetry.snapshot()['ram']:.1f}%",
-            "Skills": f"43 funciones",
-            "Wiki": f"{stats['total_wiki']} notas | {stats['total_words']} palabras",
-            "Raw": f"{stats['total_raw']} fuentes | {stats['sources']} sources",
-            "Grafo": "graph_store/indexado",
-            "Logs": f"{stats['log_entries']} entradas",
-            "Salud": f"{stats['orphans']} huerfanas | {stats['draft']} drafts",
-            "Schema": "CLAUDE.md activo",
-            "Latido": f"HB: 60s | Suture: 600s",
-            "Feeds": "0 suscripciones",
-            "Analytics": "historial",
-        }
-
-        for tab_name, metric in tab_metrics.items():
-            st.caption(f"**{tab_name}**: {metric}")
+        st.markdown("### 📊 ESTADÍSTICAS")
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.metric("Wiki", stats["total_wiki"])
+        with c2:
+            st.metric("Raw", stats["total_raw"])
+        
+        c3, c4 = st.columns(2)
+        with c3:
+            st.metric("Hubs", stats.get("entities", 0))
+        with c4:
+            st.metric("Links", stats["total_links"])
 
         st.divider()
-
-        with st.expander("⚙️ Configuración"):
-            new_path = st.text_input("Ruta Obsidian", value=config.obsidian_path)
-            new_refresh = st.slider("Intervalo (s)", 1, 10, config.refresh_interval)
-            if new_path != config.obsidian_path or new_refresh != config.refresh_interval:
-                config.obsidian_path = new_path
-                config.refresh_interval = new_refresh
-                st.session_state.config = config
-                st.rerun()
-
-        try:
-            proc_info = TelemetryEngine().get_process_info()
-            st.divider()
-            st.caption("📟 PROCESO DASHBOARD")
-            st.text(f"PID: {proc_info['pid']}")
-            st.text(f"Threads: {proc_info['threads']}")
-            st.text(f"Memoria: {proc_info['memory_mb']:.1f} MB")
-        except Exception:
-            pass
-
-        st.divider()
-        st.caption(f"🌳 v5.0 Árbol de la Sabiduría | {datetime.now().strftime('%Y-%m-%d')}")
+        
+        if st.button("↻ Reíniciar Dashboard"):
+            st.rerun()
+        
+        st.caption(f"🌳 v5.0 | {datetime.now().strftime('%Y-%m-%d')}")
 
     # =============================================================================
     # CONTENIDO PRINCIPAL
@@ -1675,7 +1669,7 @@ def main():
     render_kpi_cards(wiki, telemetry)
     st.divider()
 
-    selected = st.session_state.get("selected_tab", 0)
+    selected = st.session_state.get("selected_view", 0)
 
     if selected == 0:
         col_left, col_right = st.columns([2, 1])
