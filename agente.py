@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import config
 from core.wiki_engine import WikiEngine, guardar_schema, WikiVectorIndex
 from core.background_manager import BackgroundManager, AgentState
+from core.banner import inicio_completo
 from interface import telegram_bot
 
 logging.basicConfig(
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Main entry point."""
-    logger.info("🏛️ Iniciando Asubarnipal V18...")
+    inicio_completo()
     
     guardar_schema()
     
