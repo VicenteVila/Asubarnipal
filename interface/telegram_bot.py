@@ -1,18 +1,34 @@
-"""Telegram bot interface - recovered from logs."""
+"""Telegram Bot - Asubarnipal V2 Imperial Edition."""
 
 import asyncio
+import json
 import logging
 import os
 import sys
+import threading
 from pathlib import Path
 
 import telegram
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Update,
+    InputFile,
+)
+from telegram.ext import (
+    Application,
+    CallbackContext,
+    CallbackQueryHandler,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 
 import config
 from app.service import AsubarnipalService
+from core.background_manager import BackgroundManager, BraveCounter, MemorySkill
 from core.dashboard_logic import DashboardManager
+from core.wiki import Wiki
 
 logging.basicConfig(
     format="%(asctime)s - [%(levelname)s] - %(message)s",
@@ -26,225 +42,164 @@ logger = logging.getLogger(__name__)
 
 service = AsubarnipalService()
 dashboard_manager = DashboardManager()
+wiki = Wiki()
+bg_manager = BackgroundManager()
+memory_skill = MemorySkill()
+brave_counter = BraveCounter()
+
 user_sessions = {}
+current_model = config.DEFAULT_MODEL
 
 
 def get_user_session(user_id: int) -> dict:
     if user_id not in user_sessions:
         user_sessions[user_id] = {
             "chat_history": [],
-            "plan": None,
-            "current_step": 0,
+            "charla_mode": None,
             "last_result": None,
         }
     return user_sessions[user_id]
 
 
-def create_keyboard(step: int = 0) -> InlineKeyboardMarkup:
+def create_main_keyboard() -> InlineKeyboardMarkup:
     buttons = [
-        [
-            InlineKeyboardButton("Continuar", callback_data=f"continue_{step}"),
-            InlineKeyboardButton("Explicar", callback_data=f"explain_{step}"),
-        ],
-        [
-            InlineKeyboardButton("📊 Dashboard", callback_data="show_dashboard"),
-            InlineButton("📚 Wiki", callback_data="show_wiki"),
-        ],
+        [InlineKeyboardButton("📊 Dashboard", callback_data="show_dashboard")],
+        [InlineKeyboardButton("📚 Wiki", callback_data="show_wiki")],
+        [InlineKeyboardButton("🔎 Query", callback_data="do_query")],
     ]
     return InlineKeyboardMarkup(buttons)
 
 
 async def start_cmd(update: Update, context: CallbackContext):
-    await update.message.reply_text(
-        "🤖 *Asubarnipal - Agente de Investigación*\n\n"
-        "Puedo ayudarte con:\n"
-        "• Investigación automática\n"
-        "• Wiki y knowledge graph\n"
-        "• Búsqueda en web\n"
-        "• Análisis de código\n"
-        "• TurboQuant\n\n"
-        "Usa /agente <tu_pregunta> para empezar.",
-        parse_mode="Markdown"
-    )
+    """Start command - welcome message."""
+    text = """🏛️ *Asubarnipal V2 — El Legado de Nínive*
+
+*Bienvenido, viajero del conocimiento.*
+
+Soy un agente de conocimiento con wiki estructurado. Puedo ayudarte a:
+
+📥 *Ingesta* — PDFs, YouTube, webs, Obsidian
+🔎 *Consulta* — Búsqueda semántica y RAG
+🕸️ *Estructura* — Grafos y clusters
+🎭 *Charla* — 5 modos especializados
+🤖 *Agente* — Razonamiento autónomo
+
+*Comandos:*
+/manual — Este documento
+/status — Telemetría
+/reporte — Auto-reflexión
+/investigar <tema> — Investigación profunda
+/charlar <tema> — Modos especializados
+
+*Envía /start para comenzar.*"""
+
+    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=create_main_keyboard())
 
 
-async def agente_cmd(update: Update, context: CallbackContext):
-    text = " ".join(context.args)
-    if not text:
-        await update.message.reply_text("Usa: /agente <tu pregunta>")
-        return
-    
-    await _process_agent_turn(update, context, text)
-
-
-async def handle_message(update: Update, context: CallbackContext):
-    text = update.message.text
-    if text.startswith("/"):
-        return
-    
-    await _process_agent_turn(update, context, text)
-
-
-async def _process_agent_turn(update: Update, context: CallbackContext, user_message: str):
-    user_id = update.effective_user.id
-    session = get_user_session(user_id)
-    
-    chat = update.message or update.callback_query.message
-    
-    if session.get("last_result"):
-        prompt = f"{user_message}\n\nRESULTADO PREVIO:\n{session['last_result']}\n\n¿Cuál es el siguiente paso?"
-    else:
-        prompt = user_message
-    
-    session["chat_history"].append({"role": "user", "content": prompt})
-    
-    await chat.edit_reply_text("🤖 Ejecutando...", reply_markup=None)
-    
+async def manual_cmd(update: Update, context: CallbackContext):
+    """Send the manual to user."""
     try:
-        result = service.agent_chat(
-            prompt,
-            hist_to_pass=session.get("hist_to_pass", []),
-        )
-        
-        response_text = result.get("response", "Sin respuesta")
-        tool_calls = result.get("tool_calls", [])
-        
-        session["last_result"] = response_text
-        session["hist_to_pass"] = session["chat_history"][-5:]
-        
-        if tool_calls:
-            buttons = [
-                [InlineKeyboardButton("Continuar", callback_data="continue_step")],
-                [InlineKeyboardButton("📊 Dashboard", callback_data="show_dashboard")],
-            ]
-            reply_markup = InlineKeyboardMarkup(buttons)
-            await chat.reply_text(response_text[:4000], reply_markup=reply_markup)
+        if config.MANUAL_FILE.exists():
+            await update.message.reply_document(
+                InputFile(str(config.MANUAL_FILE)),
+                caption="📖 *Manual de Asubarnipal V2*",
+                parse_mode="Markdown"
+            )
         else:
-            await chat.reply_text(response_text[:4000], reply_markup=create_keyboard())
-            
-        dashboard_manager.record_query(True, result.get("time", 0))
-            
+            await update.message.reply_text(
+                f"📖 Manual: {config.MANUAL_FILE}\n\nEl archivo no existe."
+            )
     except Exception as e:
-        logger.error(f"Error: {e}", exc_info=True)
-        await chat.reply_text(f"❌ Error: {e}")
-        dashboard_manager.record_query(False, 0, str(e))
+        await update.message.reply_text(f"Error: {e}")
 
 
-async def agent_callback(update: Update, context: CallbackContext):
-    query = update.callback_query
-    await query.answer()
-    
-    user_id = query.from_user.id
-    session = get_user_session(user_id)
-    
-    if query.data == "show_dashboard":
-        await show_dashboard(update, context)
-        return
-    if query.data == "show_wiki":
-        await show_wiki(update, context)
-        return
-    
-    if query.data.startswith("continue"):
-        await _process_agent_turn(
-            update, context,
-            "La herramienta terminó con éxito. ¿Cuál es el siguiente paso?"
-        )
-    elif query.data.startswith("explain"):
-        await _process_agent_turn(
-            update, context,
-            "Explica lo que acabas de hacer."
-        )
-
-
-async def show_dashboard(update: Update, context: CallbackContext):
-    query = update.callback_query
-    await query.answer()
-    
+async def status_cmd(update: Update, context: CallbackContext):
+    """Show system status."""
     try:
-        stats = dashboard_manager.get_stats()
-        text = f"📊 *Dashboard*\n\n"
-        text += f"- Consultas totales: {stats.get('total_queries', 0)}\n"
-        text += f"- Exitosas: {stats.get('successful', 0)}\n"
-        text += f"- Fallidas: {stats.get('failed', 0)}\n"
-        text += f"- Tiempo promedio: {stats.get('avg_time', 0):.2f}s\n"
-        text += f"- Tasa de éxito: {stats.get('success_rate', 0):.1f}%\n"
+        heartbeat = {}
+        if config.HEARTBEAT_FILE.exists():
+            heartbeat = json.loads(config.HEARTBEAT_FILE.read_text())
         
-        await query.edit_message_text(text, parse_mode="Markdown")
+        wiki_stats = wiki.get_all(limit=1000)
+        
+        bg_status = bg_manager.get_status()
+        
+        text = f"""📊 *Estado del Sistema*
+
+💓 *Heartbeat:*
+• CPU: {heartbeat.get('cpu_percent', 'N/A')}%
+• RAM: {heartbeat.get('memory_percent', 'N/A')}%
+• Timestamp: {heartbeat.get('timestamp', 'N/A')}
+
+📚 *Wiki:*
+• Entidades: {len(wiki_stats)}
+
+🔍 *Brave:*
+• Restantes: {brave_counter.get_left()}/mes
+
+🕸️ *Rituales:*
+• Running: {bg_status['running']}
+• Last suture: {bg_status.get('last_suture', {}).get('timestamp', 'N/A')}
+• Last graph: {bg_status.get('last_graph', {}).get('timestamp', 'N/A')}
+
+🤖 *Modelo:* {current_model}"""
+
+        await update.message.reply_text(text, parse_mode="Markdown")
     except Exception as e:
-        await query.edit_message_text(f"Error dashboard: {e}")
+        await update.message.reply_text(f"Error: {e}")
 
 
-async def show_wiki(update: Update, context: CallbackContext):
-    query = update.callback_query
-    await query.answer()
+async def reporte_cmd(update: Update, context: CallbackContext):
+    """Generate agent self-reflection report."""
+    recent_memories = memory_skill.get_recent(limit=10)
     
-    try:
-        from app.service import WikiReader
-        wiki = WikiReader(config)
-        entries = wiki.get_all(limit=20)
-        
-        if not entries:
-            await query.edit_message_text("📚 Wiki vacío")
-            return
-        
-        text = "📚 *Wiki - Últimas entradas*\n\n"
-        for name, etype, content in entries[:10]:
-            text += f"• {name} ({etype})\n"
-        
-        await query.edit_message_text(text, parse_mode="Markdown")
-    except Exception as e:
-        await query.edit_message_text(f"Error wiki: {e}")
+    text = f"""📝 *Informe de Auto-Reflexión*
 
+*Últimas memorias:*
+"""
+    for m in recent_memories[-5:]:
+        text += f"• {m.get('content', '')[:100]}\n"
+    
+    text += f"""
+*Estadísticas:*
+• Memorias: {len(recent_memories)}
+• Wiki: {len(wiki.get_all())}
 
-async def research_cmd(update: Update, context: CallbackContext):
-    """Research a topic automatically."""
-    topic = " ".join(context.args)
-    if not topic:
-        await update.message.reply_text("Usa: /research <tema>")
-        return
-    
-    await update.message.reply_text(f"🔬 Investigando: {topic}...")
-    
-    result = service.research_topic(topic)
-    
-    text = f"✅ *Investigación: {topic}*\n\n"
-    text += f"Fuentes encontradas: {len(result.get('sources', []))}\n"
-    text += f"Entidades guardadas: {result.get('entities_saved', 0)}"
+*El agente medita sobre su propósito...*
+"""
     
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
-async def wiki_search_cmd(update: Update, context: CallbackContext):
-    """Search wiki."""
-    query = " ".join(context.args)
-    if not query:
-        await update.message.reply_text("Usa: /wiki <búsqueda>")
+async def model_cmd(update: Update, context: CallbackContext):
+    """Show or change model."""
+    global current_model
+    
+    args = context.args
+    
+    if not args:
+        await update.message.reply_text(f"🤖 Modelo actual: *{current_model}*", parse_mode="Markdown")
         return
     
-    result = service.query_wiki(query)
-    results = result.get("results", [])
-    
-    if not results:
-        await update.message.reply_text(f"No encontraron resultados para: {query}")
-        return
-    
-    text = f"📚 *Resultados para: {query}*\n\n"
-    for r in results[:5]:
-        text += f"• {r['name']}\n"
-    
-    await update.message.reply_text(text, parse_mode="Markdown")
+    new_model = args[0].lower()
+    if new_model in ["ollama", "gemini", "auto"]:
+        current_model = new_model
+        await update.message.reply_text(f"✅ Modelo cambiado a: *{new_model}*", parse_mode="Markdown")
+    else:
+        await update.message.reply_text("Modelos: ollama, gemini, auto")
 
 
 async def ingest_cmd(update: Update, context: CallbackContext):
     """Ingest URL to wiki."""
     url = " ".join(context.args)
+    
     if not url:
         await update.message.reply_text("Usa: /ingest <URL>")
         return
     
     await update.message.reply_text(f"📥 Ingiriendo: {url}...")
     
-    result = service.ingest_url(url)
+    result = wiki.ingest_url(url)
     
     if result.get("success"):
         await update.message.reply_text(f"✅ Guardado: {result.get('name')}")
@@ -252,24 +207,298 @@ async def ingest_cmd(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ Error: {result.get('error')}")
 
 
-async def status_cmd(update: Update, context: CallbackContext):
-    """Show status - recovers from logs."""
+async def sync_obsidian_cmd(update: Update, context: CallbackContext):
+    """Sync from Obsidian vault."""
+    await update.message.reply_text("🔄 Sincronizando Obsidian...")
+    
+    result = wiki.sync_obsidian()
+    
+    await update.message.reply_text(f"✅ Importadas: {result.get('imported', 0)} notas")
+
+
+async def investigar_cmd(update: Update, context: CallbackContext):
+    """Deep research on a topic."""
+    topic = " ".join(context.args)
+    
+    if not topic:
+        await update.message.reply_text("Usa: /investigar <tema>")
+        return
+    
+    await update.message.reply_text(f"🔬 Investigando: *{topic}*...")
+    
+    if not brave_counter.can_search():
+        await update.message.reply_text("❌ Límite Brave Search alcanzado")
+        return
+    
+    from core.llm_router import BraveRouter
+    brave = BraveRouter()
+    
+    results = brave.search(topic, num_results=5)
+    brave_counter.increment()
+    
+    for r in results:
+        wiki.ingest_url(r.get("url", ""))
+    
+    await update.message.reply_text(
+        f"✅ Investigación completada\n"
+        f"• Fuentes: {len(results)}\n"
+        f"• Ingiridas al wiki: {len(results)}"
+    )
+
+
+async def query_cmd(update: Update, context: CallbackContext):
+    """Query the wiki."""
+    query = " ".join(context.args)
+    
+    if not query:
+        await update.message.reply_text("Usa: /query <pregunta>")
+        return
+    
+    results = wiki.search(query)
+    
+    if not results:
+        await update.message.reply_text(f"No encontré resultados para: {query}")
+        return
+    
+    text = f"🔎 *Resultados para: {query}*\n\n"
+    for r in results[:5]:
+        text += f"• {r['name']}\n"
+    
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+async def hubs_cmd(update: Update, context: CallbackContext):
+    """Show hub concepts."""
+    hubs = wiki.get_hubs(limit=10)
+    
+    text = "🕸️ *Hubs — Conceptos Centrales*\n\n"
+    for h in hubs:
+        text += f"• {h['name']} ({h['connections']} conexiones)\n"
+    
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+async def clusters_cmd(update: Update, context: CallbackContext):
+    """Show thematic clusters."""
+    clusters = wiki.get_clusters()
+    
+    text = "🔮 *Clusters — Comunidades Temáticas*\n\n"
+    for c in clusters:
+        text += f"• {c['tag']}: {c['count']}\n"
+    
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+async def lint_cmd(update: Update, context: CallbackContext):
+    """Health check for wiki."""
+    result = wiki.lint()
+    
+    text = f"""🔍 *Diagnóstico del Wiki*
+
+• Entidades: {result['total_entities']}
+• Health Score: {result['health_score']}%
+
+*Issues:*
+"""
+    for issue in result['issues'][:10]:
+        text += f"• {issue['type']}: {issue.get('name', 'N/A')}\n"
+    
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+async def indexar_wiki_cmd(update: Update, context: CallbackContext):
+    """Rebuild knowledge graph index."""
+    await update.message.reply_text("🔄 Reindexando wiki...")
+    
+    from index.rag import RAGEngine
+    engine = RAGEngine()
+    result = engine.index_directory(config.WIKI_DIR)
+    
+    await update.message.reply_text(f"✅ Indexadas: {result.get('indexed', 0)} notas")
+
+
+async def charlar_cmd(update: Update, context: CallbackContext):
+    """Start specialized chat mode."""
+    topic = " ".join(context.args)
+    
+    if not topic:
+        text = """🎭 *Modos de Charla:*
+
+1️⃣ 💬 Charla Libre — Conversación natural
+2️⃣ 🧠 Consultor — Análisis en 3 fases
+3️⃣ 🔥 Devil's Advocate — Crítica implacable
+4️⃣ ❓ Socrático — Preguntas profundas
+5️⃣ 🌐 Lateral — Perspectivas alternativas
+
+Usa: /charlar <modo> <tema>
+
+Ejemplo: /charlar socrático ¿Qué es la inteligencia?"""
+        await update.message.reply_text(text, parse_mode="Markdown")
+        return
+    
+    modes = {
+        "libre": "Conversación natural y creativa",
+        "consultor": "Análisis en 3 fases: Definición → Ejecución → Evaluación",
+        "devil": "Crítica implacable, encuentra fallos y riesgos",
+        "socratico": "Guía mediante preguntas, no da respuestas",
+        "lateral": "Perspectivas de chef, músico, tribu, algoritmo",
+    }
+    
+    session = get_user_session(update.effective_user.id)
+    session["charla_mode"] = "consultor"
+    session["charla_topic"] = topic
+    
+    await update.message.reply_text(
+        f"🎭 *Modo Consultor Activado*\n\nTema: {topic}\n\nComenzando análisis en 3 fases...",
+        parse_mode="Markdown"
+    )
+
+
+async def query_vectorial_cmd(update: Update, context: CallbackContext):
+    """Vector search in index."""
+    query = " ".join(context.args)
+    
+    if not query:
+        await update.message.reply_text("Usa: /query_vectorial <búsqueda>")
+        return
+    
+    from index.rag import RAGEngine
+    engine = RAGEngine(config.INDEX_DIR / "index.faiss")
+    results = engine.search(query)
+    
+    if not results:
+        await update.message.reply_text(f"No encontré resultados para: {query}")
+        return
+    
+    text = f"🔎 *Resultados vectoriales:*\n\n"
+    for r in results:
+        text += f"• {r['document']} (dist: {r['distance']:.2f})\n"
+    
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+async def agente_cmd(update: Update, context: CallbackContext):
+    """Activate autonomous agent."""
+    task = " ".join(context.args)
+    
+    if not task:
+        await update.message.reply_text("Usa: /agente <tarea>")
+        return
+    
+    session = get_user_session(update.effective_user.id)
+    
+    await update.message.reply_text(f"🤖 *Agente Activado*\n\nTarea: {task}\n\nEjecutando...", parse_mode="Markdown")
+    
+    result = service.agent_chat(task)
+    
+    response = result.get("response", "Sin respuesta")
+    
+    await update.message.reply_text(
+        f"🤖 *Resultado:*\n\n{response[:4000]}",
+        parse_mode="Markdown"
+    )
+    
+    if result.get("tool_calls"):
+        buttons = [
+            [InlineKeyboardButton("Continuar", callback_data="agent_continue")],
+        ]
+        await update.message.reply_text("¿Continuar?", reply_markup=InlineKeyboardMarkup(buttons))
+
+
+async def handle_message(update: Update, context: CallbackContext):
+    """Handle regular messages."""
+    text = update.message.text
+    
+    if text.startswith("/"):
+        return
+    
+    session = get_user_session(update.effective_user.id)
+    
+    bypass_rag = text.lower() in ["hola", "buenas", "qué tal", "hi", "hello", "?"]
+    
+    if bypass_rag:
+        responses = [
+            "¡Hola! ¿En qué puedo ayudarte?",
+            "Buenos días. ¿Investigamos algo?",
+            "¡Adelante! ¿Qué necesitas?"
+        ]
+        import random
+        await update.message.reply_text(random.choice(responses))
+        return
+    
+    if session.get("charla_mode"):
+        topic = session.get("charla_topic", "")
+        prompt = f"[Modo {session['charla_mode']}] {topic}\n\n{text}"
+        result = service.agent_chat(prompt)
+        await update.message.reply_text(result.get("response", ""))
+        return
+    
+    result = service.agent_chat(text)
+    await update.message.reply_text(result.get("response", "Sin respuesta")[:4000])
+
+
+async def agent_callback(update: Update, context: CallbackContext):
+    """Handle agent callbacks."""
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "show_dashboard":
+        await show_dashboard(update, context)
+    elif query.data == "show_wiki":
+        await show_wiki(update, context)
+    elif query.data == "agent_continue":
+        await update.message.reply_text("Continuando...")
+        result = service.agent_chat("Continúa con el siguiente paso")
+        await update.message.reply_text(result.get("response", "")[:4000])
+
+
+async def show_dashboard(update: Update, context: CallbackContext):
+    """Show dashboard stats."""
+    query = update.callback_query
+    
     try:
-        from app.service import WikiReader
-        wiki = WikiReader(config)
-        entries = wiki.get_all()
-        
         stats = dashboard_manager.get_stats()
         
-        text = "📊 *Estado del Sistema*\n\n"
-        text += f"• Entradas Wiki: {len(entries)}\n"
-        text += f"• Consultas: {stats.get('total_queries', 0)}\n"
-        text += f"• Éxito: {stats.get('success_rate', 0):.1f}%\n"
+        heartbeat = {}
+        if config.HEARTBEAT_FILE.exists():
+            heartbeat = json.loads(config.HEARTBEAT_FILE.read_text())
         
-        await update.message.reply_text(text, parse_mode="Markdown")
+        text = f"""📊 *Dashboard*
+
+*Consultas:*
+• Total: {stats.get('total_queries', 0)}
+• Éxito: {stats.get('success_rate', 0):.1f}%
+
+*Sistema:*
+• CPU: {heartbeat.get('cpu_percent', 'N/A')}%
+• RAM: {heartbeat.get('memory_percent', 'N/A')}%
+
+*Brave:*
+• Restantes: {brave_counter.get_left()}"""
+
+        await query.edit_message_text(text, parse_mode="Markdown")
     except Exception as e:
-        logger.error(f"Status error: {e}", exc_info=True)
-        await update.message.reply_text(f"Error: {e}")
+        await query.edit_message_text(f"Error: {e}")
+
+
+async def show_wiki(update: Update, context: CallbackContext):
+    """Show wiki entries."""
+    query = update.callback_query
+    
+    try:
+        entries = wiki.get_all(limit=20)
+        
+        if not entries:
+            await query.edit_message_text("📚 Wiki vacío")
+            return
+        
+        text = "📚 *Wiki — Últimas entradas*\n\n"
+        for e in entries[:10]:
+            text += f"• {e['name']} ({e.get('tipo', 'entity')})\n"
+        
+        await query.edit_message_text(text, parse_mode="Markdown")
+    except Exception as e:
+        await query.edit_message_text(f"Error: {e}")
 
 
 async def error_handler(update: Update, context: CallbackContext):
@@ -277,31 +506,41 @@ async def error_handler(update: Update, context: CallbackContext):
 
 
 def main():
-    global service, dashboard_manager
+    global service, bg_manager
     
-    logger.info("Iniciando Asubarnipal...")
+    logger.info("🏛️ Iniciando Asubarnipal V2...")
     
     try:
         service = AsubarnipalService()
-        dashboard_manager = DashboardManager()
     except Exception as e:
-        logger.warning(f"Service init warning: {e}")
-        service = AsubarnipalService() if hasattr(AsubarnipalService, '__init__') else None
-        dashboard_manager = DashboardManager()
+        logger.warning(f"Service init: {e}")
+    
+    bg_manager.start()
     
     app = Application.builder().token(config.TELEGRAM_TOKEN).build()
     
     app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CommandHandler("agente", agente_cmd))
-    app.add_handler(CommandHandler("research", research_cmd))
-    app.add_handler(CommandHandler("wiki", wiki_search_cmd))
-    app.add_handler(CommandHandler("ingest", ingest_cmd))
+    app.add_handler(CommandHandler("manual", manual_cmd))
     app.add_handler(CommandHandler("status", status_cmd))
+    app.add_handler(CommandHandler("reporte", reporte_cmd))
+    app.add_handler(CommandHandler("model", model_cmd))
+    app.add_handler(CommandHandler("ingest", ingest_cmd))
+    app.add_handler(CommandHandler("sync_obsidian", sync_obsidian_cmd))
+    app.add_handler(CommandHandler("investigar", investigar_cmd))
+    app.add_handler(CommandHandler("query", query_cmd))
+    app.add_handler(CommandHandler("hubs", hubs_cmd))
+    app.add_handler(CommandHandler("clusters", clusters_cmd))
+    app.add_handler(CommandHandler("lint", lint_cmd))
+    app.add_handler(CommandHandler("indexar_wiki", indexar_wiki_cmd))
+    app.add_handler(CommandHandler("query_vectorial", query_vectorial_cmd))
+    app.add_handler(CommandHandler("charlar", charlar_cmd))
+    app.add_handler(CommandHandler("agente", agente_cmd))
+    
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(agent_callback))
     app.add_error_handler(error_handler)
     
-    logger.info("Application started")
+    logger.info("🤖 Application started")
     app.run_polling(poll_interval=2)
 
 
