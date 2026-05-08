@@ -29,7 +29,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from core.banner import cargar_imagen_ascii
+# No banner import - only in agent
 
 # =============================================================================
 # CONFIGURACIÓN
@@ -38,7 +38,7 @@ from core.banner import cargar_imagen_ascii
 @dataclass
 class AppConfig:
     obsidian_path: str = ""
-    refresh_interval: int = 3
+    refresh_interval: int = 0  # 0 = disabled
     max_log_lines: int = 100
     theme_color: str = "#58a6ff"
     agente_script_name: str = "telegram_bot"
@@ -1074,7 +1074,7 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    cargar_imagen_ascii()
+    # No banner - only shows in agent
     
     init_session_state()
     config = st.session_state.config
@@ -1340,12 +1340,7 @@ def main():
     st.divider()
     st.caption(f"🛰️ Última sincronización: {datetime.now().strftime('%H:%M:%S')} | "
                f"Wiki: {stats['total_wiki']} notas | Raw: {stats['total_raw']} fuentes | "
-               f"Agente: {'ONLINE' if agente_status['running'] else 'OFFLINE'} | "
-               f"Next refresh in {config.refresh_interval}s")
-
-    if not st.session_state.paused:
-        time.sleep(config.refresh_interval)
-        st.rerun()
+               f"Agente: {'ONLINE' if agente_status['running'] else 'OFFLINE'}")
 
 if __name__ == "__main__":
     main()
