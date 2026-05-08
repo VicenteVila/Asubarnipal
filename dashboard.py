@@ -48,9 +48,6 @@ class AppConfig:
         self.obsidian_path = r"c:\Obsidian"
         if not os.path.exists(self.obsidian_path):
             self.obsidian_path = r"C:\Obsidian"
-        
-        # Use paths from config (OBSIDIAN_PATH/wiki, OBSIDIAN_PATH/raw)
-        self.log_file = os.path.join(str(config.BASE_DIR), "data", "agente.log")
     
     @property
     def wiki_path(self) -> str:
