@@ -44,7 +44,15 @@ class AppConfig:
     agente_script_name: str = "telegram_bot"
     
     def __post_init__(self):
-        self.obsidian_path = str(config.OBSIDIAN_PATH)
+        # Use Windows path c:\Obsidian
+        self.obsidian_path = r"c:\Obsidian"
+        if not os.path.exists(self.obsidian_path):
+            self.obsidian_path = r"C:\Obsidian"
+        if not os.path.exists(self.obsidian_path):
+            self.obsidian_path = str(config.BASE_DIR)
+        
+        # Use Windows path for logs c:\Asubarnipal\data\agente.log
+        self.log_file = os.path.join(str(config.BASE_DIR), "data", "agente.log")
     
     @property
     def wiki_path(self) -> str:
@@ -69,6 +77,14 @@ class AppConfig:
     @property
     def schema_path(self) -> str:
         return os.path.join(self.obsidian_path, "CLAUDE.md")
+    
+    @property
+    def graph_store_path(self) -> str:
+        return os.path.join(self.obsidian_path, "graph_store")
+    
+    @property
+    def data_path(self) -> str:
+        return os.path.join(str(config.BASE_DIR), "data")
 
 # =============================================================================
 # ESTADO DE SESIÓN
