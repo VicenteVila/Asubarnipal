@@ -69,15 +69,22 @@ Este manual puede consultarse con `/manual` en cualquier momento.
 
 ## 🎭 Modos de Charla
 
-Usa `/charlar <tema>` para iniciar:
+Usa `/charlar <modo> <tema>`:
 
 | Modo | Emoji | Descripción |
 |------|-------|-------------|
-| **Charla Libre** | 💬 | Conversación natural |
-| **Consultor** | 🧠 | Análisis en 3 fases: Definición → Ejecución → Evaluación |
-| **Devil's Advocate** | 🔥 | Crítica implacable |
-| **Modo Socrático** | ❓ | Guía mediante preguntas |
-| **Expansión Lateral** | 🌐 | Perspectivas radicales |
+| **libre** | 💬 | Conversación natural y creativa |
+| **consultor** | 🧠 | Análisis en 3 fases: Definición → Ejecución → Evaluación |
+| **devil** | 🔥 | Crítica implacable, encuentra fallos y riesgos |
+| **socrático** | ❓ | Guía mediante preguntas, no da respuestas |
+| **lateral** | 🌐 | Perspectivas de chef, músico, tribu, algoritmo |
+
+*Ejemplos:*
+• `/charlar libre ¿Qué opinas de la IA?`
+• `/charlar consultor ¿Cómo mejorar este código?`
+• `/charlar devil ¿Es buena idea este producto?`
+• `/charlar socrático ¿Qué es la conciencia?`
+• `/charlar lateral ¿Cómo lo vería un ninja?`
 
 ---
 
