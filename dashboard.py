@@ -1558,6 +1558,10 @@ def main():
     # =============================================================================
     # SIDEBAR
     # =============================================================================
+    wiki = WikiReader(config)
+    stats = wiki.get_stats()
+    telemetry = TelemetryEngine()
+    
     with st.sidebar:
         st.markdown("""
         <div style="text-align:center; margin-bottom:20px;">
@@ -1666,9 +1670,7 @@ def main():
     # =============================================================================
     render_header(agente_status, image_path)
 
-    wiki = WikiReader(config)
     telemetry = TelemetryEngine()
-    stats = wiki.get_stats()
 
     render_kpi_cards(wiki, telemetry)
     st.divider()
