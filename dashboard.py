@@ -437,21 +437,36 @@ def render_agente_avatar(agente_status: Dict[str, Any], image_path: Optional[str
     filter_css = "none" if is_online else "sepia(60%) brightness(0.7) contrast(1.2)"
     glow = "0 0 25px rgba(35,134,54,0.5), 0 0 50px rgba(35,134,54,0.2)" if is_online else "none"
 
-    # CSS para animación de pulso
+    # CSS global - animaciones y estilo profesional
     st.markdown("""
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+        
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(35,134,54,0.4); }
             70% { box-shadow: 0 0 0 15px rgba(35,134,54,0); }
             100% { box-shadow: 0 0 0 0 rgba(35,134,54,0); }
         }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(88,166,255,0.3); }
+            50% { box-shadow: 0 0 20px rgba(88,166,255,0.6); }
+        }
+        
         .avatar-container {
             position: relative;
             display: inline-block;
         }
+        
         .avatar-container img {
             transition: all 0.8s ease;
         }
+        
         .status-ring {
             position: absolute;
             bottom: 3px;
@@ -462,6 +477,56 @@ def render_agente_avatar(agente_status: Dict[str, Any], image_path: Optional[str
             border-radius: 50%;
             border: 3px solid #0d1117;
             z-index: 10;
+        }
+        
+        /* Botones profesionales con relieve */
+        .stButton > button {
+            transition: all 0.3s ease !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 15px rgba(88,166,255,0.4) !important;
+        }
+        
+        .stButton > button:active {
+            transform: translateY(0) !important;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+        }
+        
+        /* Tarjetas con efecto relieve */
+        [data-testid="stMetric"] {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        [data-testid="stMetric"]:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 20px rgba(88,166,255,0.3);
+        }
+        
+        /* Sidebar profesional */
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        }
+        
+        /* Expander estilizado */
+        .streamlit-expanderHeader {
+            border-radius: 8px !important;
+            background: rgba(88,166,255,0.1) !important;
+        }
+        
+        /* Dataframe profesional */
+        .stDataFrame {
+            border-radius: 8px !important;
+        }
+        
+        /* Animación de entrada */
+        .main-content {
+            animation: slideIn 0.5s ease;
         }
         </style>
     """.replace("{status_color}", status_color), unsafe_allow_html=True)
@@ -1563,94 +1628,140 @@ def main():
     telemetry = TelemetryEngine()
     
     with st.sidebar:
+        # Theme toggle
+        if "dark_mode" not in st.session_state:
+            st.session_state.dark_mode = True
+        
+        col_theme, _ = st.columns([1, 1])
+        with col_theme:
+            dark_mode = st.toggle("🌙 Modo Oscuro", value=st.session_state.dark_mode, key="theme_toggle")
+            if dark_mode != st.session_state.dark_mode:
+                st.session_state.dark_mode = dark_mode
+                st.rerun()
+
         st.markdown("""
-        <div style="text-align:center; margin-bottom:24px; padding:16px; background:linear-gradient(135deg,#1a1a2e,#16213e); border-radius:12px;">
-            <div style="font-size:3rem; margin-bottom:4px;">🌳</div>
-            <div style="font-weight:700; color:#58a6ff; font-size:1.4rem;">ASUBARNIPAL</div>
-            <div style="color:#8b949e; font-size:0.8rem;">Karpathy Wiki Command Center</div>
-            <div style="color:#238636; font-size:0.75rem; margin-top:8px;">● ONLINE</div>
+        <div style="text-align:center; margin-bottom:24px; padding:20px; 
+            background:linear-gradient(135deg,#1a1a2e,#16213e); 
+            border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+            <div style="font-size:3.5rem; margin-bottom:8px; animation:glow 2s infinite;">🌳</div>
+            <div style="font-weight:700; color:#58a6ff; font-size:1.5rem; 
+                text-shadow:0 0 10px rgba(88,166,255,0.5);">ASUBARNIPAL</div>
+            <div style="color:#8b949e; font-size:0.85rem; letter-spacing:0.1em;">KARPATHY WIKI</div>
+            <div style="margin-top:12px; padding:6px 16px; background:rgba(35,134,54,0.2); 
+                border-radius:20px; display:inline-block; color:#238636; font-weight:600;">
+                ● EN LÍNEA
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
         if "selected_view" not in st.session_state:
             st.session_state.selected_view = 0
 
-        st.markdown("### 📁 NAVEGACIÓN")
+        # Navigation con iconos grandes
+        nav_options = [
+            ("📊", "Dashboard", "Panel de control"),
+            ("🛠️", "Skills", "Herramientas"),
+            ("🕸️", "Wiki", f"{stats['total_wiki']} notas"),
+            ("📥", "Raw", f"{stats['total_raw']} fuentes"),
+            ("🧠", "Grafo", "Grafo vectorial"),
+            ("📜", "Logs", "Registro de actividad"),
+            ("🏥", "Salud", "Diagnóstico"),
+            ("📋", "Schema", "Configuración"),
+            ("💓", "Latido", "Tareas programadas"),
+            ("📡", "Feeds", "Suscripciones RSS"),
+            ("📈", "Analytics", "Estadísticas"),
+        ]
         
-        st.radio("Selecciona una vista:", 
-            options=list(range(11)),
-            format_func=lambda x: [
-                "📊 Dashboard", "🛠️ Skills", "🕸️ Wiki", "📥 Raw", 
-                "🧠 Grafo", "📜 Logs", "🏥 Salud", "📋 Schema", 
-                "💓 Latido", "📡 Feeds", "📈 Analytics"
-            ][x],
-            key="selected_view",
-            label_visibility="collapsed")
+        st.markdown("### ⌨️ NAVEGACIÓN")
         
-        if st.session_state.get("last_view", 0) != st.session_state.selected_view:
-            st.session_state.last_view = st.session_state.selected_view
-            st.rerun()
+        for i, (emoji, title, desc) in nav_options:
+            btn_key = f"nav_btn_{i}"
+            label = f"{emoji} {title}"
+            if st.button(label, key=btn_key, use_container_width=True):
+                st.session_state.selected_view = i
+                st.rerun()
+        
+        # Resaltar selección actual
+        current = st.session_state.selected_view
+        st.caption(f"Vista actual: {nav_options[current][1]} {nav_options[current][2]}")
 
         st.divider()
 
-        with st.expander("🛠️ Skills", expanded=True):
+        with st.expander("🛠️ 🔧 Skills Activas", expanded=True):
             from core.skill_registry import SkillRegistry
             registry = SkillRegistry()
             skills = registry.list_skills()
-            st.caption(f"**{len(skills)}** funciones disponibles")
-            for skill in skills[:5]:
+            st.metric("Total", len(skills))
+            for skill in skills[:8]:
                 st.code(skill, language="python")
-            if len(skills) > 5:
-                st.caption(f"+ {len(skills)-5} más...")
+            if len(skills) > 8:
+                st.caption(f"+ {len(skills)-8} funciones...")
 
-        with st.expander("📡 Suscripciones RSS"):
+        with st.expander("📡 ⚡ Feeds Activos"):
             from core.feed_tracker import FeedTracker
             tracker = FeedTracker()
             feeds = tracker.get_subscriptions()
-            st.metric("Feeds", len(feeds))
+            st.metric("Suscritos", len(feeds))
             alerts = tracker.get_alerts(unread_only=True)
-            st.metric("🔔 Alertas", len(alerts), delta="sin leer" if alerts else "0")
+            st.metric("🔔 Nuevas", len(alerts), delta_color="inverse" if alerts else "normal")
 
-        with st.expander("💓 Cron Jobs"):
+        with st.expander("💓 ⏰ Cron Jobs"):
             st.markdown("""
-            | Ritual | Intervalo |
-            |--------|----------|
-            | 💓 Heartbeat | 60s |
-            | 💉 Suture | 600s |
-            | 🕸️ Graph | 1800s |
+            | Ritual | ⏱️ Intervalo | Estado |
+            |--------|----------|--------|
+            | 💓 Heartbeat | 60s | ✅ Activo |
+            | 💉 Suture | 600s | ✅ Activo |
+            | 🕸️ Graph | 1800s | ✅ Activo |
             """)
+
+        with st.expander("💾 🧠 Memoria"):
+            from core.memory import EnhancedMemory
+            memory = EnhancedMemory()
+            mem_stats = memory.get_stats()
+            st.metric("Memorias", mem_stats.get("total", 0))
+            by_cat = mem_stats.get("by_category", {})
+            if by_cat:
+                st.caption(f"Categorías: {', '.join(by_cat.keys())}")
 
         st.divider()
 
-        st.markdown("### 🤖 AGENTE")
+        st.markdown("### 🤖 🤖 ESTADO DEL AGENTE")
         
         if agente_status["running"]:
             st.success(f"✅ Activo (PID {agente_status['pid']})")
             col1, col2 = st.columns(2)
             with col1:
-                st.metric("RAM", f"{agente_status['memory_mb']:.0f} MB")
+                st.metric("💾 RAM", f"{agente_status['memory_mb']:.0f} MB")
             with col2:
-                st.metric("CPU", f"{agente_status['cpu']:.0f}%")
-            st.caption(f"⏱️ Uptime: {str(agente_status['uptime']).split('.')[0]}")
+                st.metric("⚡ CPU", f"{agente_status['cpu']:.0f}%")
+            
+            # Token counter simulado (en producción vendría del LLM)
+            col_t1, col_t2, col_t3 = st.columns(3)
+            with col_t1:
+                st.metric("🔢 Tokens", "0", delta="sesión")
+            with col_t2:
+                st.metric("💬 Msgs", session.get("message_count", 0))
+            with col_t3:
+                st.metric("⏱️ uptime", str(agente_status['uptime']).split('.')[0])
         else:
             st.error("❌ Agente Offline")
             st.caption("Ejecuta: `python -m interface.telegram_bot`")
 
         st.divider()
 
-        st.markdown("### 📊 ESTADÍSTICAS")
+        st.markdown("### 📊 📈 MÉTRICAS")
         
-        c1, c2 = st.columns(2)
-        with c1:
-            st.metric("Wiki", stats["total_wiki"])
-        with c2:
-            st.metric("Raw", stats["total_raw"])
+        m1, m2 = st.columns(2)
+        with m1:
+            st.metric("📄 Wiki", stats["total_wiki"])
+        with m2:
+            st.metric("📑 Raw", stats["total_raw"])
         
-        c3, c4 = st.columns(2)
-        with c3:
-            st.metric("Hubs", stats.get("entities", 0))
-        with c4:
-            st.metric("Links", stats["total_links"])
+        m3, m4 = st.columns(2)
+        with m3:
+            st.metric("🔗 Links", stats["total_links"])
+        with m4:
+            st.metric("🏛️ Hubs", stats.get("entities", 0))
 
         st.divider()
         
