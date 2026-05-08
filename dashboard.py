@@ -17,6 +17,7 @@ from dataclasses import dataclass
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import config
+from core.banner import cargar_imagen_ascii
 from core.wiki_engine import WikiEngine, WikiVectorIndex
 from core.background_manager import BackgroundManager, BraveCounter, MemorySkill
 from core.dashboard_logic import DashboardManager
@@ -164,6 +165,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+cargar_imagen_ascii()
 
 
 def load_heartbeat():
