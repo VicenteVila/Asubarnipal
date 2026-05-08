@@ -36,7 +36,6 @@ logging.basicConfig(
     level=logging.INFO,
     handlers=[
         logging.FileHandler(config.LOG_FILE, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
     ],
 )
 logger = logging.getLogger(__name__)
