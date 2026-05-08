@@ -25,6 +25,7 @@ from telegram.ext import (
 )
 
 import config
+from core.banner import inicio_completo
 from app.service import AsubarnipalService
 from core.background_manager import BackgroundManager, BraveCounter, MemorySkill
 from core.dashboard_logic import DashboardManager
@@ -518,7 +519,9 @@ async def error_handler(update: Update, context: CallbackContext):
 def main():
     global service, bg_manager
     
-    logger.info("🏛️ Iniciando Asubarnipal V2...")
+    inicio_completo()
+    
+    logger.info("🏛️ Iniciando Asubarnipal V18...")
     
     try:
         service = AsubarnipalService()
