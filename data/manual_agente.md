@@ -185,3 +185,22 @@ Historial de comandos y estadísticas:
 **Ashurbanipal** (rey asirio, 668-627 a.C.) fue el último gran rey del Imperio Asirio. Su legado: la **Biblioteca de Nínive**, la primera colección sistemática del mundo. Su orden: *"Traedme cada tablilla que encontréis"*.
 
 Este bot es el heredero moderno: no guarda arcilla, guarda conocimiento digital.
+
+---
+
+## ⚡ Skills del Agente (cuando usas /agente)
+
+El agente puede ejecutar estas funciones automáticamente:
+
+| Categoría | Funciones |
+|-----------|-----------|
+| **Archivo** | run_command, read_file, write_file, list_files, search_in_files |
+| **GitHub** | clone_repo |
+| **Traducción** | translate, detect_language |
+| **Research** | search_arxiv, get_audio_summary |
+| **Sistema** | get_system_info, get_env, set_env, check_service |
+| **LLM** | list_ollama_models, pull_ollama_model |
+| **Wiki** | get_wiki_stats, search_wiki, create_wiki_note |
+| **Memoria** | remember, recall, get_memories, memory_stats |
+
+*Usa `/agente clona el repo github.com/username/repo y dime qué contiene`*

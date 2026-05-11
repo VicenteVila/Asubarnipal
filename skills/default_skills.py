@@ -439,5 +439,158 @@ def get_time() -> dict:
     }
 
 
+# =============================================================================
+# SKILLS DE GITHUB
+# =============================================================================
+
+def clone_repo(url: str, destination: str = None) -> dict:
+    """Clone a GitHub repository."""
+    import tempfile
+    import shutil
+    
+    if not url.startswith("http"):
+        url = f"https://github.com/{url}"
+    
+    if not destination:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            destination = tmpdir
+    
+    try:
+        result = subprocess.run(
+            ["git", "clone", "--depth", "1", url, destination],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        
+        if result.returncode == 0:
+            files = list(Path(destination).rglob("*"))
+            return {
+                "success": True,
+                "url": url,
+                "destination": destination,
+                "files_count": len([f for f in files if f.is_file()]),
+            }
+        else:
+            return {"success": False, "error": result.stderr}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+# =============================================================================
+# SKILLS DE TRADUCCIÓN Y LANGUAGE
+# =============================================================================
+
+def detect_language(text: str) -> dict:
+    """Detect language of text."""
+    try:
+        import langdetect
+        from langdetect import detect_langs
+        
+        lang = detect_langs(text)[0]
+        return {
+            "success": True,
+            "language": lang.lang,
+            "confidence": lang.prob,
+        }
+    except ImportError:
+        return {"success": False, "error": "langdetect not installed. Install with: pip install langdetect"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def translate(text: str, target: str = "en", source: str = "auto") -> dict:
+    """Translate text using deep-translator."""
+    try:
+        from deep_translator import GoogleTranslator
+        
+        translator = GoogleTranslator(source=source, target=target)
+        result = translator.translate(text)
+        
+        return {
+            "success": True,
+            "original": text[:500],
+            "translated": result,
+            "source": source,
+            "target": target,
+        }
+    except ImportError:
+        return {"success": False, "error": "deep-translator not installed. Run: pip install deep-translator"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+# =============================================================================
+# SKILLS DE BÚSQUEDA Y AUDIO
+# =============================================================================
+
+def search_arxiv(query: str, max_results: int = 5) -> dict:
+    """Search arXiv for papers."""
+    try:
+        import urllib.parse
+        import urllib.request
+        
+        base_url = "http://export.arxiv.org/api/query"
+        search_query = f"all:{urllib.parse.quote(query)}"
+        url = f"{base_url}?search_query={search_query}&max_results={max_results}&sortBy=relevance"
+        
+        with urllib.request.urlopen(url, timeout=30) as response:
+            data = response.read().decode("utf-8")
+        
+        papers = []
+        import re
+        entries = re.findall(r"<entry>(.*?)</entry>", data, re.DOTALL)
+        
+        for entry in entries:
+            title = re.search(r"<title>(.*?)</title>", entry, re.DOTALL)
+            summary = re.search(r"<summary>(.*?)</summary>", entry, re.DOTALL)
+            link = re.search(r"<id>(.*?)</id>", entry)
+            
+            if title and summary:
+                papers.append({
+                    "title": title.group(1).strip(),
+                    "summary": summary.group(1).strip()[:300],
+                    "link": link.group(1) if link else "",
+                })
+        
+        return {
+            "success": True,
+            "query": query,
+            "count": len(papers),
+            "papers": papers,
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def get_audio_summary(url: str) -> dict:
+    """Get summary of YouTube audio/video."""
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        
+        video_id = None
+        if "youtube.com/watch" in url:
+            import urllib.parse
+            video_id = urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("v", [None])[0]
+        elif "youtu.be" in url:
+            video_id = url.split("/")[-1]
+        
+        if not video_id:
+            return {"success": False, "error": "Could not extract video ID"}
+        
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["es", "en"])
+        
+        full_text = " ".join([t["text"] for t in transcript])
+        
+        return {
+            "success": True,
+            "video_id": video_id,
+            "text": full_text[:5000],
+            "chunks": len(transcript),
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 # Import datetime for create_wiki_note
 from datetime import datetime
