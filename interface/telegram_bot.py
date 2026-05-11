@@ -749,4 +749,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    print("=== INICIANDO ASUBARNIPAL ===", flush=True)
+    print("Llamando a main()...", flush=True)
+    try:
+        main()
+    except Exception as e:
+        print(f"ERROR en main: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+    print("Fin del script", flush=True)
