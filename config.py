@@ -9,8 +9,13 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).parent
 
-# Rutas base
-OBSIDIAN_PATH = Path(os.getenv("OBSIDIAN_PATH", r"C:\Obsidian"))
+# Rutas base - Auto-detectar según SO
+if os.name == 'nt':  # Windows
+    DEFAULT_OBSIDIAN = r"C:\Obsidian"
+else:  # Linux/Mac/WSL
+    DEFAULT_OBSIDIAN = "/mnt/c/Obsidian"
+
+OBSIDIAN_PATH = Path(os.getenv("OBSIDIAN_PATH", DEFAULT_OBSIDIAN))
 WIKI_DIR = OBSIDIAN_PATH / "wiki"
 RAW_DIR = OBSIDIAN_PATH / "raw"
 GRAPH_STORE_PATH = OBSIDIAN_PATH / "graph_store"
