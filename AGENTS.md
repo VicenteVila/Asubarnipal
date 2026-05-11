@@ -4,10 +4,8 @@
 
 ```
 Asubarnipal/
-├── api/
-│   └── main.py              # FastAPI REST server
-├── app/
-│   └── service.py          # Agent service (LLM + skills + RAG)
+├── api/main.py              # FastAPI REST server (port 8000)
+├── app/service.py          # Agent service (LLM + skills + RAG)
 ├── core/
 │   ├── background_manager.py # Heartbeat, Suture, Graph rituals
 │   ├── command_history.py  # Command analytics
@@ -16,37 +14,24 @@ Asubarnipal/
 │   ├── memory.py          # Enhanced persistent memory
 │   ├── skill_registry.py  # Skills/tools registry
 │   └── dashboard_logic.py # Metrics and dashboard
-├── interface/
-│   └── telegram_bot.py   # Telegram bot (16 commands)
-├── skills/
-│   ├── __init__.py       # Skill registry
-│   └── default_skills.py # 40+ operational skills
-├── index/
-│   └── rag.py           # RAG engine (sentence-transformers + FAISS)
-├── data/
-│   ├── wiki/            # Wiki notes (92 notes)
-│   └── raw/             # Raw sources (2 sources)
-├── storage/             # Memory, feeds, state files
-├── dashboard.py          # Streamlit dashboard (11 tabs)
-├── config.py            # Configuration
-└── requirements.txt    # Dependencies
+├── interface/telegram_bot.py # Telegram bot (15 commands)
+├── skills/default_skills.py  # 40+ operational skills
+├── index/rag.py            # RAG (sentence-transformers + FAISS)
+├── ingestion/             # Web content ingestion
+├── processing/           # Data processing
+├── storage/               # Memory, feeds, state files
+├── data/wiki/             # Wiki notes (SQLite)
+├── dashboard.py           # Streamlit dashboard (11 tabs)
+├── config.py              # Configuration
+└── .env                   # Environment variables
 ```
 
 ## Running the Agent
 
-### Prerequisites
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Create .env file
-cp .env.example .env  # Edit with your keys
-```
-
-### Start the Telegram Bot (Windows/Linux)
+### Start the Telegram Bot
 ```bash
 # Windows
-venv\Scripts\activate
+.venv\Scripts\activate
 python -m interface.telegram_bot
 
 # Linux
@@ -54,18 +39,19 @@ source venv_linux/bin/activate
 python -m interface.telegram_bot
 ```
 
-### Start Dashboard (11 tabs)
+### Start Dashboard
 ```bash
 streamlit run dashboard.py
 ```
 
-### Start API REST (optional)
+### Start API (optional)
 ```bash
 python -m api.main
 # API at http://localhost:8000
 ```
 
 ### Environment Variables (.env)
+
 ```bash
 TELEGRAM_TOKEN=your_bot_token
 OLLAMA_BASE_URL=http://127.0.0.1:11434
@@ -74,25 +60,47 @@ GEMINI_KEYS=key1,key2
 BRAVE_API_KEY=your_key
 HF_TOKEN=your_token
 RAG_MODEL=sentence-transformers/all-MiniLM-L6-v2
+OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 ```
 
-## Dashboard Tabs (11)
+## Telegram Bot Commands (15 total)
 
-1. **Dashboard** - System telemetry, activity heatmap
-2. **Skills** - 40+ available functions
-3. **Wiki** - Note inventory, timeline
-4. **Raw** - Raw sources
-5. **Grafo** - Vector graph, communities, hubs
-6. **Logs** - Agent logs
-7. **Salud** - Wiki health diagnostics
-8. **Schema** - CLAUDE.md viewer
-9. **Latido** - Cron jobs (editable)
-10. **Feeds** - RSS subscriptions with alerts
-11. **Analytics** - Command history + Memory
+| Command | Description |
+|---------|-------------|
+| `/start` | Welcome message with project history |
+| `/manual` | Send operations manual |
+| `/status` | System telemetry (CPU, RAM, heartbeat, Brave limit) |
+| `/reporte` | Agent self-reflection report |
+| `/model [ollama\|gemini\|auto]` | Show or switch LLM model |
+| `/ingest <url>` | Add URL to wiki |
+| `/sync_obsidian` | Import notes from external Obsidian vault |
+| `/investigar <topic>` | Deep research via Brave Search |
+| `/query <question>` | Search wiki |
+| `/hubs` | Show central concept nodes |
+| `/clusters` | Show thematic communities |
+| `/lint` | Wiki health diagnostics |
+| `/indexar_wiki` | Rebuild vector FAISS index |
+| `/query_vectorial <search>` | Semantic vector search |
+| `/charlar <modo> <topic>` | 5 chat modes |
+| `/agente <task>` | Autonomous reasoning with tool execution |
+
+Also handles plain text messages (passes to agent with RAG context).
+
+## Chat Modes (/charlar)
+
+- **libre** - Conversación natural y creativa
+- **consultor** - Análisis en 3 fases: Definición → Ejecución → Evaluación
+- **devil** - Crítica implacable, encuentra fallos y riesgos
+- **socrático** - Guía mediante preguntas, no da respuestas directas
+- **lateral** - Perspectivas alternativas de chef, músico, tribu, algoritmo
+
+## Background Rituals
+
+- **Heartbeat**: Every 60s - logs CPU/RAM to `data/heartbeat.json`
+- **Suture**: Every 10min - cleans and repairs wiki
+- **Graph**: Every 30min - rebuilds vector relationships
 
 ## Memory System
-
-Enhanced memory with categories, priority, importance:
 
 ```python
 from core.memory import EnhancedMemory
@@ -118,20 +126,41 @@ recent = memory.get_recent(10, category="fact")
 - **LLM**: list_ollama_models, pull_ollama_model
 - **Herramientas**: execute_python, install_package
 
-## Key Commands
+## Dashboard Tabs (11)
 
-- `/start` - Start the bot
-- `/manual` - Send manual
-- `/status` - Show telemetry
-- `/investigar <topic>` - Deep research
-- `/query <question>` - Query wiki
-- `/indexar_wiki` - Rebuild vector index
-- `/query_vectorial <search>` - Semantic search
-- `/hubs` - Show central concepts
-- `/clusters` - Show communities
-- `/lint` - Diagnostics
-- `/agente <task>` - Autonomous reasoning
-- And 5 more commands...
+1. **Dashboard** - System telemetry, activity heatmap
+2. **Skills** - 40+ available functions
+3. **Wiki** - Note inventory, timeline
+4. **Raw** - Raw sources
+5. **Grafo** - Vector graph, communities, hubs
+6. **Logs** - Agent logs
+7. **Salud** - Wiki health diagnostics
+8. **Schema** - CLAUDE.md viewer
+9. **Latido** - Cron jobs (editable)
+10. **Feeds** - RSS subscriptions with alerts
+11. **Analytics** - Command history + Memory
+
+## Key Dependencies
+
+- **Ollama**: Must be running locally for LLM
+- **Obsidian Vault**: External folder referenced by `OBSIDIAN_PATH` env var
+- **FAISS index**: Built from wiki notes at `data/vector.index`
+- **SQLite**: Wiki stored at `data/wiki.db`
+
+## Dual Virtual Environments
+
+- `.venv/` - Windows virtual environment
+- `venv_linux/` - Linux virtual environment
+
+Always activate the appropriate venv for your platform before running.
+
+## Notable Code Locations
+
+- `config.py:10` - Base directory and path configuration
+- `interface/telegram_bot.py:69-74` - Service initialization
+- `core/llm_router.py` - Multi-model LLM routing (Ollama/Gemini/Brave)
+- `skills/default_skills.py` - 40+ skill definitions
+- `index/rag.py` - Vector search engine
 
 ## Notes
 
@@ -140,3 +169,4 @@ recent = memory.get_recent(10, category="fact")
 - Dashboard tracks metrics
 - Memory persists across sessions
 - Feed tracker alerts on RSS updates
+- Brave Search limit: 1500/month
