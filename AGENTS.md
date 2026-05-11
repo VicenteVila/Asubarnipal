@@ -117,7 +117,7 @@ results = memory.search("query", limit=10)
 recent = memory.get_recent(10, category="fact")
 ```
 
-## Operational Skills (40+)
+## Operational Skills (45+)
 
 - **Archivo**: run_command, read_file, write_file, list_files, search_in_files
 - **Memoria**: remember, recall, get_memories, memory_stats
@@ -125,6 +125,9 @@ recent = memory.get_recent(10, category="fact")
 - **Sistema**: get_system_info, get_env, set_env, check_service
 - **LLM**: list_ollama_models, pull_ollama_model
 - **Herramientas**: execute_python, install_package
+- **GitHub**: clone_repo
+- **Traducción**: translate, detect_language
+- **Research**: search_arxiv, get_audio_summary
 
 ## Dashboard Tabs (11)
 
