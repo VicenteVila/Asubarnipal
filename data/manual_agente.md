@@ -11,7 +11,7 @@ Este manual puede consultarse con `/manual` en cualquier momento.
 
 ---
 
-## 📋 Comandos de Telegram (16 comandos)
+## 📋 Comandos de Telegram (15 comandos)
 
 ### 🏛️ Comandos Principales (4)
 
