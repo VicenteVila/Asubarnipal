@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from typing import Any
+from typing import Any, Optional
 
 import requests
 
@@ -132,15 +132,69 @@ class LLMRouter:
     def _gemini_chat(self, prompt: str, key: str) -> dict:
         """Chat using Gemini API."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}"
-        
+
         payload = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
-        
+
         resp = requests.post(url, json=payload, timeout=60)
         resp.raise_for_status()
         data = resp.json()
-        
+
         text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
         return {"response": text, "model": "gemini-2.0-flash"}
+
+    # =============================================================================
+    # TurboQuant Integration
+    # =============================================================================
+
+    def call_with_turbo(self, messages: list[dict], mode: str = "consultor",
+                        tools: list = None, **kwargs) -> dict:
+        """
+        Call LLM with TurboQuant optimizations for a chat mode.
+        Auto-detects model and applies optimal settings.
+        """
+        try:
+            from core.turboquant_engine import apply_chat_mode, get_engine
+
+            engine = get_engine()
+            apply_result = engine.apply_mode(mode)
+
+            params = engine.get_optimized_params()
+
+            options = params.get("options", {})
+            options.update(kwargs)
+
+            result = self.chat(messages, tools=tools, **options)
+            result["turbo"] = {
+                "mode": mode,
+                "context": params["context"],
+                "cache_k": params["turbo"]["cache_k"],
+                "cache_v": params["turbo"]["cache_v"],
+            }
+
+            return result
+
+        except ImportError:
+            logger.warning("TurboQuant not available, using standard call")
+            return self.chat(messages, tools=tools, **kwargs)
+        except Exception as e:
+            logger.warning(f"TurboQuant call failed: {e}, falling back to standard")
+            return self.chat(messages, tools=tools, **kwargs)
+
+    def get_turbo_status(self) -> dict:
+        """Get current TurboQuant status."""
+        try:
+            from core.turboquant_engine import get_turbo_status as tq_status
+            return tq_status()
+        except ImportError:
+            return {"success": False, "error": "TurboQuant not available"}
+
+    def apply_turbo_mode(self, mode: str) -> dict:
+        """Apply a specific TurboQuant mode."""
+        try:
+            from core.turboquant_engine import apply_chat_mode
+            return apply_chat_mode(mode)
+        except ImportError:
+            return {"success": False, "error": "TurboQuant not available"}
 
 
 class GeminiRouter:

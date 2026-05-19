@@ -91,7 +91,7 @@ class BackgroundManager:
             "timestamp": datetime.now().isoformat(),
             "cpu_percent": psutil.cpu_percent(interval=1),
             "memory_percent": psutil.virtual_memory().percent,
-            "disk_percent": psutil.disk_usage('/').percent,
+            "disk_percent": psutil.disk_usage('.').percent,
             "uptime": time.time(),
         }
         
@@ -131,8 +131,8 @@ class BackgroundManager:
         return {
             "running": self.running,
             "last_heartbeat": self.last_heartbeat,
-            "last_suture": self.last_suture,
-            "last_graph": self.last_graph,
+            "last_suture": self.last_suture or {},
+            "last_graph": self.last_graph or {},
         }
 
 

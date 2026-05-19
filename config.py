@@ -58,3 +58,32 @@ SUTURE_INTERVAL = 600
 GRAPH_INTERVAL = 1800
 
 BRAVE_MONTHLY_LIMIT = 1500
+
+# TurboQuant Settings
+TURBOQUANT_ENABLED = os.getenv("TURBOQUANT_ENABLED", "true").lower() == "true"
+TURBOQUANT_DEFAULT_MODE = os.getenv("TURBOQUANT_DEFAULT_MODE", "consultor")
+TURBOQUANT_AUTO_DETECT = os.getenv("TURBOQUANT_AUTO_DETECT", "true").lower() == "true"
+
+# Top 3 models to optimize (from user's ollama list)
+TURBOQUANT_TOP_MODELS = [
+    "qwen3.5:4b",
+    "qwen3:8b",
+    "gemma4:e4b",
+]
+
+def ensure_directories():
+    """Crea directorios necesarios si no existen."""
+    dirs = [DATA_DIR, INDEX_DIR, STORAGE_DIR, SKILLS_DIR]
+    for d in dirs:
+        d.mkdir(exist_ok=True)
+    
+    if not DATA_DIR.exists():
+        DATA_DIR.mkdir(exist_ok=True)
+    
+    if not WIKI_DIR.exists() and OBSIDIAN_PATH.exists():
+        try:
+            WIKI_DIR.mkdir(exist_ok=True, parents=True)
+        except Exception:
+            pass
+
+ensure_directories()

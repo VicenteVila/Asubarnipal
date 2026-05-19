@@ -1,5 +1,6 @@
 """Agent service with all recovered features."""
 
+import json
 import logging
 import time
 from pathlib import Path
@@ -292,45 +293,3 @@ class AsubarnipalService:
             }
 
 
-import json
-
-
-class WikiReader:
-    """Read from wiki database."""
-    
-    def __init__(self, config):
-        self.wiki_path = Path(config.WIKI_PATH)
-        self.conn = None
-        self._connect()
-    
-    def _connect(self):
-        try:
-            import sqlite3
-            self.conn = sqlite3.connect(str(self.wiki_path))
-        except Exception as e:
-            logger.warning(f"Cannot connect to wiki: {e}")
-    
-    def search(self, query: str) -> list:
-        """Search wiki."""
-        if not self.conn:
-            return []
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                "SELECT name, content FROM entities WHERE content LIKE ?",
-                (f"%{query}%",)
-            )
-            return cursor.fetchall()
-        except Exception:
-            return []
-    
-    def get_all(self, limit: int = 100) -> list:
-        """Get all wiki entries."""
-        if not self.conn:
-            return []
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(f"SELECT name, type, content FROM entities LIMIT {limit}")
-            return cursor.fetchall()
-        except Exception:
-            return []
