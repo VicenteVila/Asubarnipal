@@ -44,10 +44,7 @@ class AppConfig:
     agente_script_name: str = "telegram_bot"
     
     def __post_init__(self):
-        # Use Windows path c:\Obsidian
-        self.obsidian_path = r"c:\Obsidian"
-        if not os.path.exists(self.obsidian_path):
-            self.obsidian_path = r"C:\Obsidian"
+        self.obsidian_path = str(config.OBSIDIAN_PATH)
     
     @property
     def wiki_path(self) -> str:
@@ -143,12 +140,12 @@ def get_agente_status(config: AppConfig) -> Dict[str, Any]:
                 "memory_mb": 0.0, "threads": 0, "status": "OFFLINE"}
 
 def find_avatar_image() -> Optional[str]:
-    script_dir = Path(__file__).parent if "__file__" in dir() else Path.cwd()
     candidates = [
-        script_dir / "Asubarnipal.jpg", script_dir / "asubarnipal.jpg",
-        Path("Asubarnipal.jpg"), Path("asubarnipal.jpg"),
-        Path(r"C:\\AGENTE TELEGRAM\\Asubarnipal.jpg"),
-        Path(r"C:\\Obsidian\\Asubarnipal.jpg"),
+        Path(__file__).parent / "Asubarnipal.jpg",
+        Path(__file__).parent / "asubarnipal.jpg",
+        config.BASE_DIR / "Asubarnipal.jpg",
+        config.BASE_DIR / "asubarnipal.jpg",
+        config.OBSIDIAN_PATH / "Asubarnipal.jpg",
     ]
     for candidate in candidates:
         if candidate.exists():
@@ -159,22 +156,25 @@ def find_avatar_image() -> Optional[str]:
 # MOTOR DE WIKI - LECTOR DE ESTRUCTURA KARPATHY
 # =============================================================================
 
-class WikiReader:
-    """Lee y analiza la estructura Karpathy del wiki."""
+from core.wiki import WikiReader as CoreWikiReader
 
-    def __init__(self, config: AppConfig):
-        self.config = config
-        self.wiki_path = Path(config.wiki_path)
-        self.raw_path = Path(config.raw_path)
-        self.index_path = Path(config.index_path)
-        self.log_md_path = Path(config.log_md_path)
-        self.schema_path = Path(config.schema_path)
+class KarpathyWikiReader(CoreWikiReader):
+    """Extends core WikiReader with Karpathy pattern analysis."""
+    
+    def __init__(self, app_config: AppConfig):
+        super().__init__()
+        self.config = app_config
+        self.wiki_path = Path(app_config.wiki_path)
+        self.raw_path = Path(app_config.raw_path)
+        self.index_path = Path(app_config.index_path)
+        self.log_md_path = Path(app_config.log_md_path)
+        self.schema_path = Path(app_config.schema_path)
         self.notes: List[Dict] = []
         self.raw_sources: List[Dict] = []
         self.log_entries: List[Dict] = []
         self.schema_content = ""
         self._scan()
-
+    
     def _extraer_frontmatter(self, contenido: str) -> Tuple[Dict, str]:
         if contenido.startswith("---"):
             parts = contenido.split("---", 2)
@@ -184,7 +184,7 @@ class WikiReader:
                 except yaml.YAMLError:
                     return {}, contenido
         return {}, contenido
-
+    
     def _scan(self):
         """Escanea wiki/, raw/, index.md, log.md, CLAUDE.md"""
         # Escanear wiki/
@@ -627,7 +627,7 @@ def render_header(agente_status: Dict[str, Any], image_path: Optional[str]):
             delta_color="off" if st.session_state.paused else "normal"
         )
 
-def render_kpi_cards(wiki: WikiReader, telemetry: TelemetryEngine):
+def render_kpi_cards(wiki: KarpathyWikiReader, telemetry: TelemetryEngine):
     stats = wiki.get_stats()
     snap = telemetry.snapshot()
 
@@ -695,7 +695,7 @@ def render_system_charts():
     )
     st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
-def render_wiki_composition(wiki: WikiReader):
+def render_wiki_composition(wiki: KarpathyWikiReader):
     """Gráfico de composición del wiki por tipo."""
     df = wiki.get_tipo_distribution()
     if df.empty:
@@ -724,7 +724,7 @@ def render_wiki_composition(wiki: WikiReader):
     )
     st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
-def render_wiki_timeline(wiki: WikiReader):
+def render_wiki_timeline(wiki: KarpathyWikiReader):
     """Timeline de ingesta del wiki."""
     col1, col2 = st.columns(2)
 
@@ -760,7 +760,7 @@ def render_wiki_timeline(wiki: WikiReader):
         else:
             st.info("Sin fuentes crudas.")
 
-def render_activity_heatmap(wiki: WikiReader):
+def render_activity_heatmap(wiki: KarpathyWikiReader):
     """Heatmap de actividad del agente (ingests/queries/lints)."""
     activity = wiki.get_log_activity()
     if activity.empty:
@@ -784,7 +784,7 @@ def render_activity_heatmap(wiki: WikiReader):
     )
     st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
-def render_wiki_table(wiki: WikiReader):
+def render_wiki_table(wiki: KarpathyWikiReader):
     """Tabla interactiva del wiki."""
     if not wiki.notes:
         st.info("No hay notas en el wiki.")
@@ -808,7 +808,7 @@ def render_wiki_table(wiki: WikiReader):
                      "Palabras": st.column_config.NumberColumn(width="small"),
                  })
 
-def render_raw_table(wiki: WikiReader):
+def render_raw_table(wiki: KarpathyWikiReader):
     """Tabla de fuentes crudas."""
     if not wiki.raw_sources:
         st.info("No hay fuentes crudas.")
@@ -822,7 +822,7 @@ def render_raw_table(wiki: WikiReader):
     })
     st.dataframe(df, width='stretch', hide_index=True)
 
-def render_schema_viewer(wiki: WikiReader):
+def render_schema_viewer(wiki: KarpathyWikiReader):
     """Muestra el schema CLAUDE.md."""
     if wiki.schema_content:
         st.markdown("""
@@ -974,7 +974,7 @@ def render_communities_and_hubs(config: AppConfig):
     except Exception as e:
         st.error(f"Error cargando metadatos: {e}")
 
-def render_command_stats(wiki: WikiReader):
+def render_command_stats(wiki: KarpathyWikiReader):
     """Muestra estadísticas de uso de comandos desde log.md."""
     if not wiki.log_entries:
         st.info("No hay entradas de log para analizar.")
@@ -1033,7 +1033,7 @@ def render_embeddings_status(config: AppConfig):
     except Exception:
         pass
 
-def render_health_dashboard(wiki: WikiReader):
+def render_health_dashboard(wiki: KarpathyWikiReader):
     """Panel de salud del wiki Karpathy."""
     stats = wiki.get_stats()
 
@@ -1625,7 +1625,7 @@ def main():
     # =============================================================================
     # SIDEBAR
     # =============================================================================
-    wiki = WikiReader(config)
+    wiki = KarpathyWikiReader(config)
     stats = wiki.get_stats()
     telemetry = TelemetryEngine()
     
@@ -1676,7 +1676,7 @@ def main():
         
         st.markdown("### ⌨️ NAVEGACIÓN")
         
-        for i, (emoji, title, desc) in nav_options:
+        for i, (emoji, title, desc) in enumerate(nav_options):
             btn_key = f"nav_btn_{i}"
             label = f"{emoji} {title}"
             if st.button(label, key=btn_key, use_container_width=True):
@@ -1742,7 +1742,7 @@ def main():
             with col_t1:
                 st.metric("🔢 Tokens", "0", delta="sesión")
             with col_t2:
-                st.metric("💬 Msgs", session.get("message_count", 0))
+                st.metric("💬 Msgs", st.session_state.get("message_count", 0))
             with col_t3:
                 st.metric("⏱️ uptime", str(agente_status['uptime']).split('.')[0])
         else:

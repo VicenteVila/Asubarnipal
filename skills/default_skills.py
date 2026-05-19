@@ -319,12 +319,22 @@ def set_env(key: str, value: str) -> dict:
 def check_service(name: str) -> dict:
     """Check if a service is running."""
     try:
-        result = subprocess.run(
-            ["pgrep", "-f", name],
-            capture_output=True,
-            text=True,
-        )
-        running = result.returncode == 0
+        import platform
+        if platform.system() == "Windows":
+            result = subprocess.run(
+                ["tasklist", "/FI", f"IMAGENAME eq {name}*"],
+                capture_output=True,
+                text=True,
+                shell=True,
+            )
+            running = name.lower() in result.stdout.lower()
+        else:
+            result = subprocess.run(
+                ["pgrep", "-f", name],
+                capture_output=True,
+                text=True,
+            )
+            running = result.returncode == 0
         return {"success": True, "service": name, "running": running}
     except Exception as e:
         return {"success": False, "error": str(e)}

@@ -23,7 +23,8 @@ Asubarnipal/
 ├── data/wiki/             # Wiki notes (SQLite)
 ├── dashboard.py           # Streamlit dashboard (11 tabs)
 ├── config.py              # Configuration
-└── .env                   # Environment variables
+├── .env                   # Environment variables
+└── scripts/               # Scripts de prueba y debugging
 ```
 
 ## Running the Agent
@@ -63,7 +64,7 @@ RAG_MODEL=sentence-transformers/all-MiniLM-L6-v2
 OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 ```
 
-## Telegram Bot Commands (15 total)
+## Telegram Bot Commands (21 total)
 
 | Command | Description |
 |---------|-------------|
@@ -83,6 +84,13 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/query_vectorial <search>` | Semantic vector search |
 | `/charlar <modo> <topic>` | 5 chat modes |
 | `/agente <task>` | Autonomous reasoning with tool execution |
+| `/vaults` | List all vaults and active one |
+| `/vault_create <nombre>` | Create a new vault |
+| `/vault_use <nombre>` | Switch to a different vault |
+| `/vault_info` | Show active vault details |
+| `/vault_delete <nombre>` | Delete a vault (with backup) |
+| `/vault_export [nombre]` | Export vault to JSON |
+| `/vault_import <nombre> <file>` | Import vault from JSON |
 
 Also handles plain text messages (passes to agent with RAG context).
 
@@ -93,6 +101,34 @@ Also handles plain text messages (passes to agent with RAG context).
 - **devil** - Crítica implacable, encuentra fallos y riesgos
 - **socrático** - Guía mediante preguntas, no da respuestas directas
 - **lateral** - Perspectivas alternativas de chef, músico, tribu, algoritmo
+
+## Vault Management
+
+Multiple vaults with separate databases and RAG indices.
+
+```python
+from core.vault_manager import get_vault_manager
+
+vm = get_vault_manager()
+
+# List all vaults
+vm.list_vaults()
+
+# Switch vault
+vm.switch("investigacion_ia")
+
+# Create new vault
+vm.create("nuevo_vault", "/path/to/vault")
+
+# Export/Import
+vm.export_vault("vault_name", "export.json")
+vm.import_vault("vault_name", "export.json")
+```
+
+Each vault has:
+- **Own SQLite DB**: `data/wiki_{vaultname}.db`
+- **Own RAG index**: `data/index_{vaultname}.faiss`
+- **Own folder**: Configured path per vault
 
 ## Background Rituals
 
@@ -117,7 +153,7 @@ results = memory.search("query", limit=10)
 recent = memory.get_recent(10, category="fact")
 ```
 
-## Operational Skills (45+)
+## Operational Skills (51+)
 
 - **Archivo**: run_command, read_file, write_file, list_files, search_in_files
 - **Memoria**: remember, recall, get_memories, memory_stats
@@ -128,6 +164,8 @@ recent = memory.get_recent(10, category="fact")
 - **GitHub**: clone_repo
 - **Traducción**: translate, detect_language
 - **Research**: search_arxiv, get_audio_summary
+- **Vault**: list_vaults, create_vault, switch_vault, delete_vault, export_vault, import_vault
+- **TurboQuant**: optimize_llm, show_turbo_status, benchmark_llm, get_recommended_context
 
 ## Dashboard Tabs (11)
 
@@ -162,8 +200,12 @@ Always activate the appropriate venv for your platform before running.
 - `config.py:10` - Base directory and path configuration
 - `interface/telegram_bot.py:69-74` - Service initialization
 - `core/llm_router.py` - Multi-model LLM routing (Ollama/Gemini/Brave)
+- `core/vault_manager.py` - Multiple vault management
+- `core/turboquant_engine.py` - TurboQuant LLM optimization
 - `skills/default_skills.py` - 40+ skill definitions
-- `index/rag.py` - Vector search engine
+- `skills/vault_skills.py` - Vault management skills
+- `skills/optimize_llm.py` - TurboQuant optimization skills
+- `index/rag.py` - Vector search engine (vault-aware)
 
 ## Notes
 
@@ -173,3 +215,5 @@ Always activate the appropriate venv for your platform before running.
 - Memory persists across sessions
 - Feed tracker alerts on RSS updates
 - Brave Search limit: 1500/month
+- Multiple vaults with separate DB and RAG indices
+- TurboQuant auto-detection for chat modes
