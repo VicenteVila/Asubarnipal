@@ -60,7 +60,7 @@ class LiveActivityTracker:
                 self._entries = deque([
                     ActivityEntry(**e) for e in data.get("entries", [])
                 ], maxlen=self.max_entries)
-            except:
+            except Exception:
                 self._entries = deque(maxlen=self.max_entries)
     
     def _save_to_file(self):

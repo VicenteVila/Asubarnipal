@@ -24,7 +24,7 @@ def get_status_text() -> str:
         if agent_file.exists():
             try:
                 stats = json.loads(agent_file.read_text())
-            except:
+            except Exception:
                 pass
 
     brave_left = 1500
@@ -34,7 +34,7 @@ def get_status_text() -> str:
             try:
                 data = json.loads(counter_file.read_text())
                 brave_left = max(0, 1500 - data.get("count", 0))
-            except:
+            except Exception:
                 pass
 
     return f"""🟢 *Estado del Sistema*
@@ -145,14 +145,14 @@ async def reporte_cmd(update: Update, context: CallbackContext):
     if agent_file.exists():
         try:
             agent_state = json.loads(agent_file.read_text())
-        except:
+        except Exception:
             pass
 
     heartbeat = {}
     if heartbeat_file.exists():
         try:
             heartbeat = json.loads(heartbeat_file.read_text())
-        except:
+        except Exception:
             pass
 
     brave_left = 1500
@@ -160,7 +160,7 @@ async def reporte_cmd(update: Update, context: CallbackContext):
         try:
             data = json.loads(counter_file.read_text())
             brave_left = max(0, 1500 - data.get("count", 0))
-        except:
+        except Exception:
             pass
 
     text = f"""📊 *Autodiagnóstico del Agente*

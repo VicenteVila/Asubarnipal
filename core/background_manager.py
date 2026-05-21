@@ -241,7 +241,7 @@ class BraveCounter:
                 data = json.loads(config.BRAVE_COUNTER_FILE.read_text())
                 self.count = data.get("count", 0)
                 self.month = data.get("month", datetime.now().month)
-            except:
+            except Exception:
                 self.count = 0
                 self.month = datetime.now().month
         else:
@@ -288,7 +288,7 @@ class MemorySkill:
         if self.memory_file.exists():
             try:
                 self.memories = json.loads(self.memory_file.read_text())
-            except:
+            except Exception:
                 self.memories = []
     
     def _save(self):
@@ -332,7 +332,7 @@ class WikiHealer:
                 
                 if "estado: draft" in content or "estado: final" in content:
                     healed += 1
-            except:
+            except Exception:
                 pass
         
         return healed
@@ -349,7 +349,7 @@ class AgentState:
         if config.AGENT_STATE_FILE.exists():
             try:
                 self.state = json.loads(config.AGENT_STATE_FILE.read_text())
-            except:
+            except Exception:
                 self.state = self._default()
         else:
             self.state = self._default()
@@ -439,7 +439,7 @@ class GraphBuilder:
                         for link in links:
                             edges.append((md_file.stem, link))
                             nodes.add(link)
-            except:
+            except Exception:
                 pass
         
         return {"nodes": len(nodes), "edges": len(edges)}

@@ -83,7 +83,7 @@ class BotLogger:
             try:
                 from core.live_activity import get_tracker
                 self._activity_tracker = get_tracker()
-            except:
+            except Exception:
                 pass
         return self._activity_tracker
     

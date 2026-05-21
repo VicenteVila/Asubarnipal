@@ -56,7 +56,7 @@ class CPUConfig:
             try:
                 import shutil
                 return shutil.disk_usage('/').total / (1024**3)
-            except:
+            except Exception:
                 return 8.0  # fallback
 
 

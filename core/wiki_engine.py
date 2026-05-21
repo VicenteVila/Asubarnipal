@@ -287,7 +287,7 @@ Requisitos:
 """
             try:
                 nuevo_contenido = llm.generate(prompt_entity)
-            except:
+            except Exception:
                 nuevo_contenido = f"Entidad: {entidad}\n\nContenido extraído de {fuente_nombre}."
             
             header = "---\n" + "\n".join(f"{k}: {json.dumps(v) if isinstance(v, list) else v}" for k, v in nuevo_fm.items()) + "\n---\n\n"
@@ -311,7 +311,7 @@ Conceptos: {', '.join(conceptos)}
 """
         try:
             source_content = llm.generate(prompt_source)
-        except:
+        except Exception:
             source_content = f"Resumen de {fuente_nombre}"
         
         source_fm = {
@@ -452,7 +452,7 @@ class WikiVectorIndex:
                     if len(parts) >= 3:
                         try:
                             fm = yaml.safe_load(parts[1]) or {}
-                        except:
+                        except Exception:
                             fm = {}
                         body = parts[2]
                     else:

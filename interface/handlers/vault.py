@@ -142,7 +142,7 @@ async def vault_info_cmd(update: Update, context: CallbackContext):
             cursor = conn.execute("SELECT COUNT(*) FROM entities WHERE entity_type = 'entity'")
             concepts = cursor.fetchone()[0]
             conn.close()
-        except:
+        except Exception:
             pass
 
     await update.message.reply_text(

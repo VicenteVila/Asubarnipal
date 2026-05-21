@@ -55,7 +55,7 @@ class MemoryTree:
             active = get_vault_manager().get_active()
             if active:
                 return active.get("name")
-        except:
+        except Exception:
             pass
         return None
     
@@ -198,7 +198,7 @@ RESUMEN:"""
             if "+" in last_cons:
                 last_cons = last_cons.split("+")[0]
             r_m = datetime.fromisoformat(last_cons)
-        except:
+        except Exception:
             r_m = datetime.now()
         
         n_m = node.get("consolidation_count", 0)

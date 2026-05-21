@@ -24,7 +24,7 @@ class LLMRouter:
         """Check if Ollama is running."""
         try:
             return requests.get(f"{self.base_url}/api/tags", timeout=3).status_code == 200
-        except:
+        except Exception:
             return False
     
     def rotate_gemini(self):

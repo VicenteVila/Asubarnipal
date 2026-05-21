@@ -80,7 +80,7 @@ class HMemService:
                 tree = self.hmem.retriever.memory_tree
                 if tree:
                     return tree.get_recent(limit=limit)
-            except:
+            except Exception:
                 pass
         return []
     
@@ -94,7 +94,7 @@ class HMemService:
                         "stats": graph.get_stats(),
                         "hubs": graph.get_hubs(limit=10),
                     }
-            except:
+            except Exception:
                 pass
         return {"error": "Entity graph not available"}
 

@@ -36,7 +36,7 @@ class Librarian:
         try:
             self.client.generate(model=self.model, prompt="test", options={"timeout": 5})
             return True
-        except:
+        except Exception:
             return False
 
     def search_and_summarize(self, pregunta: str, limit: int = 8) -> Dict:

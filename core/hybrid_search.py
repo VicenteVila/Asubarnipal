@@ -26,7 +26,7 @@ class HybridSearch:
             vm = get_vault_manager()
             active = vm.get_active()
             return active.get("name") if active else None
-        except:
+        except Exception:
             return None
 
     def _get_vault_path(self, name: str) -> Optional[Path]:
@@ -38,7 +38,7 @@ class HybridSearch:
             for v in vaults.get("vaults", []):
                 if v["name"] == name:
                     return Path(v["path"])
-        except:
+        except Exception:
             pass
         return None
 
@@ -327,7 +327,7 @@ class HybridSearch:
                     dt = datetime.fromisoformat(fecha)
                     days_ago = (datetime.now() - dt).days
                     score += max(0, (30 - days_ago) / 30.0)
-                except:
+                except Exception:
                     pass
 
             scored.append((score, c))
@@ -370,7 +370,7 @@ class HybridSearch:
                     dt = datetime.fromisoformat(fecha)
                     days_ago = (datetime.now() - dt).days
                     score += max(0, (30 - days_ago) / 30.0) * 10
-                except:
+                except Exception:
                     pass
 
             scored.append((score, c))

@@ -278,7 +278,7 @@ async def _ingest_telegram_document(update: Update, context: CallbackContext):
 
         try:
             temp_path.unlink()
-        except:
+        except Exception:
             pass
 
         if result.get("success"):
@@ -335,7 +335,7 @@ async def _ingest_telegram_photo(update: Update, context: CallbackContext):
 
         try:
             temp_path.unlink()
-        except:
+        except Exception:
             pass
 
         if result.get("success"):

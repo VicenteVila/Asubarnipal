@@ -458,7 +458,7 @@ async def agent_callback(update: Update, context: CallbackContext):
             if agent_file.exists():
                 try:
                     stats = json.loads(agent_file.read_text())
-                except:
+                except Exception:
                     pass
 
         heartbeat = {}
