@@ -24,7 +24,7 @@ class CommandHistory:
         if self.history_file.exists():
             try:
                 self.history = json.loads(self.history_file.read_text())
-            except:
+            except Exception:
                 self.history = []
         else:
             self.history = []

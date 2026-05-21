@@ -89,7 +89,7 @@ class VaultManager:
                     cursor = conn.execute("SELECT COUNT(*) FROM entities")
                     count = cursor.fetchone()[0]
                     conn.close()
-                except:
+                except Exception:
                     pass
 
             result.append({

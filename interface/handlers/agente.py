@@ -92,7 +92,7 @@ Ejemplo: `/model llama3:8b` o `/model gemini-2.0-flash`"""
             models = [m.get("name", "").lower() for m in resp.json().get("models", [])]
             if new_model in models or any(new_model in m for m in models):
                 ollama_valid = True
-    except:
+    except Exception:
         pass
 
     gemini_models = ["gemini", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]

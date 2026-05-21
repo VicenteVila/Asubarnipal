@@ -54,7 +54,7 @@ class TurboQuantEngine:
             import requests
             resp = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=3)
             return resp.status_code == 200
-        except:
+        except Exception:
             return False
 
     def _detect_gguf_models(self) -> List[str]:
@@ -70,7 +70,7 @@ class TurboQuantEngine:
 
             models = resp.json().get("models", [])
             return [m.get("name", "") for m in models if m.get("name")]
-        except:
+        except Exception:
             return []
 
     def get_active_model(self) -> Optional[str]:

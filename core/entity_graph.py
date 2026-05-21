@@ -45,7 +45,7 @@ class EntityGraph:
             active = get_vault_manager().get_active()
             if active:
                 return active.get("name")
-        except:
+        except Exception:
             pass
         return None
     

@@ -31,7 +31,7 @@ class FeedTracker:
                 data = json.loads(self.subscriptions_file.read_text())
                 self.subscriptions = data.get("subscriptions", [])
                 self.last_entries = data.get("last_entries", {})
-            except:
+            except Exception:
                 self.subscriptions = []
                 self.last_entries = {}
     
@@ -132,7 +132,7 @@ class FeedTracker:
         if self.alerts_file.exists():
             try:
                 alerts = json.loads(self.alerts_file.read_text())
-            except:
+            except Exception:
                 alerts = []
         
         alerts.extend([{
@@ -158,7 +158,7 @@ class FeedTracker:
             if unread_only:
                 return [a for a in alerts if not a.get("read", True)]
             return alerts
-        except:
+        except Exception:
             return []
     
     def mark_alert_read(self, index: int = -1):
@@ -171,7 +171,7 @@ class FeedTracker:
             if 0 <= index < len(alerts):
                 alerts[index]["read"] = True
                 self.alerts_file.write_text(json.dumps(alerts, indent=2), encoding="utf-8")
-        except:
+        except Exception:
             pass
     
     def get_unread_count(self) -> int:
