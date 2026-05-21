@@ -35,7 +35,7 @@ class BotLogger:
 
     RESET = "\033[0m"
 
-    def __new__(cls):
+    def __new__(cls) -> Self:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
@@ -109,7 +109,7 @@ class BotLogger:
         msg = f"{timestamp}{color}{emoji} {indent}{message}{self.RESET if self._use_color else ''}"
         return msg
     
-    def _log(self, category: str, message: str, level: str = "INFO", depth_boost: int = 0):
+    def _log(self, category: str, message: str, level: str = "INFO", depth_boost: int = 0) -> None:
         """Log a terminal y archivo."""
         formatted = self._format(category, message, depth_boost)
 
@@ -157,38 +157,38 @@ class BotLogger:
     # MÉTODOS PÚBLICOS POR CATEGORÍA
     # =========================================================================
     
-    def incoming(self, message: str):
+    def incoming(self, message: str) -> None:
         """📥 Mensaje entrante (comando o texto)."""
         self._log("INCOMING", message)
     
-    def outgoing(self, message: str):
+    def outgoing(self, message: str) -> None:
         """📤 Respuesta saliente."""
         self._log("OUT", message)
     
-    def llm(self, message: str):
+    def llm(self, message: str) -> None:
         """🟡 Llamada o respuesta del LLM."""
         self._log("LLM", message)
     
-    def llm_start(self, model: str, prompt_preview: str = ""):
+    def llm_start(self, model: str, prompt_preview: str = "") -> None:
         """🟡 Inicio de llamada LLM."""
         preview = f": {prompt_preview[:50]}..." if prompt_preview else ""
         self._log("LLM", f"→ {model}{preview}")
     
-    def llm_end(self, response_preview: str = "", duration: float = 0):
+    def llm_end(self, response_preview: str = "", duration: float = 0) -> None:
         """🟡 Fin de llamada LLM."""
         duration_str = f" ({duration:.2f}s)" if duration else ""
         preview = f": {response_preview[:50]}..." if response_preview else ""
         self._log("LLM", f"← {preview}{duration_str}")
     
-    def rag(self, message: str):
+    def rag(self, message: str) -> None:
         """🔍 Búsqueda RAG."""
         self._log("RAG", message)
     
-    def rag_search(self, query: str, results_count: int):
+    def rag_search(self, query: str, results_count: int) -> None:
         """🔍 Búsqueda RAG con resultados."""
         self._log("RAG", f'Buscar: "{query[:30]}..." → {results_count} docs')
     
-    def tool(self, name: str, args: str = "", result: str = ""):
+    def tool(self, name: str, args: str = "", result: str = "") -> None:
         """🟢 Ejecución de tool/skill."""
         args_str = f"({args})" if args else ""
         msg = f"🔧 {name}{args_str}"
@@ -197,12 +197,12 @@ class BotLogger:
             result_preview = result[:80] if len(result) > 80 else result
             self._log("TOOL", f"   └→ {result_preview}", depth_boost=1)
     
-    def tool_start(self, name: str, args: str = ""):
+    def tool_start(self, name: str, args: str = "") -> None:
         """🟢 Inicio de ejecución de tool."""
         args_str = f"({args})" if args else ""
         self._log("TOOL", f"🔧 {name}{args_str}...")
     
-    def tool_end(self, name: str, success: bool = True, result: str = ""):
+    def tool_end(self, name: str, success: bool = True, result: str = "") -> None:
         """🟢 Fin de ejecución de tool."""
         status = "✅" if success else "❌"
         msg = f"   └→ {status} {name}"
@@ -211,47 +211,47 @@ class BotLogger:
             result_preview = result[:60] + "..." if len(result) > 60 else result
             self._log("TOOL", f"      {result_preview}", depth_boost=2)
     
-    def thought(self, message: str):
+    def thought(self, message: str) -> None:
         """💭 Pensamiento del agente."""
         self._log("THOUGHT", message)
     
-    def agent(self, task: str):
+    def agent(self, task: str) -> None:
         """🤖 Inicio de tarea autónoma."""
         self._log("AGENT", f"🎯 Tarea: {task}")
     
-    def agent_step(self, step: str):
+    def agent_step(self, step: str) -> None:
         """🤖 Paso del agente."""
         self._log("AGENT", f"   └→ {step}", depth_boost=1)
     
-    def agent_end(self, result_preview: str = ""):
+    def agent_end(self, result_preview: str = "") -> None:
         """🤖 Fin de tarea autónoma."""
         preview = f": {result_preview[:50]}..." if result_preview else ""
         self._log("AGENT", f"✓ Completado{preview}")
     
-    def error(self, message: str, exc: Exception = None):
+    def error(self, message: str, exc: Optional[Exception] = None) -> None:
         """🔴 Error."""
         msg = f"❌ {message}"
         if exc:
             msg += f" | {str(exc)[:100]}"
         self._log("ERROR", msg, level="ERROR")
     
-    def warn(self, message: str):
+    def warn(self, message: str) -> None:
         """⚠️ Warning."""
         self._log("WARN", f"⚠️ {message}", level="WARNING")
     
-    def warning(self, message: str):
+    def warning(self, message: str) -> None:
         """⚠️ Warning (alias for warn)."""
         self.warn(message)
     
-    def debug(self, message: str):
+    def debug(self, message: str) -> None:
         """⚪ Debug."""
         self._log("DEBUG", f"   {message}", level="DEBUG")
     
-    def info(self, message: str):
+    def info(self, message: str) -> None:
         """ℹ️ Info general."""
         self._log("INFO", message)
     
-    def success(self, message: str):
+    def success(self, message: str) -> None:
         """✅ Éxito."""
         self._log("SUCCESS", f"✅ {message}")
     
@@ -260,7 +260,7 @@ class BotLogger:
     # =========================================================================
     
     @contextmanager
-    def group(self, title: str, category: str = "INFO"):
+    def group(self, title: str, category: str = "INFO") -> None:
         """Grupo indentado de mensajes. Usage: with logger.group("Título"):"""
         emoji, color = self.CATEGORIES.get(category, ("📝", "\033[97m"))
         self._log(category, f"┌─ {title}")
@@ -272,7 +272,7 @@ class BotLogger:
             self._log(category, f"└─ {title} [fin]")
     
     @contextmanager
-    def step(self, label: str):
+    def step(self, label: str) -> None:
         """Paso indentado simple. Usage: with logger.step("Procesando..."):"""
         self._log("SPAN", f"├→ {label}")
         self._depth += 1
@@ -285,7 +285,7 @@ class BotLogger:
     # PROGRESS BAR SIMULADO
     # =========================================================================
     
-    def progress(self, label: str, current: int, total: int, width: int = 30):
+    def progress(self, label: str, current: int, total: int, width: int = 30) -> None:
         """Muestra barra de progreso."""
         filled = int(width * current / total) if total > 0 else width
         bar = "█" * filled + "░" * (width - filled)
@@ -296,19 +296,19 @@ class BotLogger:
     # CONFIGURACIÓN
     # =========================================================================
     
-    def set_color(self, enabled: bool):
+    def set_color(self, enabled: bool) -> None:
         """Activa/desactiva colores ANSI."""
         self._use_color = enabled
     
-    def set_timestamps(self, enabled: bool):
+    def set_timestamps(self, enabled: bool) -> None:
         """Activa/desactiva timestamps."""
         self._show_timestamps = enabled
     
-    def set_indent(self, enabled: bool):
+    def set_indent(self, enabled: bool) -> None:
         """Activa/desactiva indentación."""
         self._show_indent = enabled
     
-    def reset_depth(self):
+    def reset_depth(self) -> None:
         """Resetea la profundidad de indentación."""
         self._depth = 0
 

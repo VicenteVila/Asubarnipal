@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from typing import Any, Optional
+from typing import Any, Self, Optional
 
 import requests
 
@@ -146,8 +146,8 @@ class LLMRouter:
     # TurboQuant Integration
     # =============================================================================
 
-    def call_with_turbo(self, messages: list[dict], mode: str = "consultor",
-                         model: str = None, tools: list = None, **kwargs) -> dict:
+    def call_with_turbo(self, messages: list[dict[str, Any]], mode: str = "consultor",
+                         model: Optional[str] = None, tools: Optional[list[dict[str, Any]]] = None, **kwargs) -> dict[str, Any]:
         """
         Call LLM with TurboQuant optimizations for a chat mode.
         Auto-detects model and applies optimal settings.

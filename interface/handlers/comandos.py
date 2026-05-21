@@ -52,7 +52,7 @@ def get_status_text() -> str:
 • Restantes: {brave_left}/1500"""
 
 
-async def start_cmd(update: Update, context: CallbackContext):
+async def start_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /start command."""
     user = update.effective_user
     logger.incoming(f"/start from {user.first_name}")

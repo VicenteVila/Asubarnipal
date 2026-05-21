@@ -34,7 +34,7 @@ class CommandHistory:
         config.DATA_DIR.mkdir(exist_ok=True)
         self.history_file.write_text(json.dumps(self.history[-500:], indent=2), encoding="utf-8")
     
-    def add(self, command: str, user_id: Optional[str] = None):
+    def add(self, command: str, user_id: Optional[str] = None) -> None:
         """Añadir comando al historial."""
         entry = {
             "command": command,
@@ -83,7 +83,7 @@ class CommandHistory:
             "last_command": self.history[-1].get("timestamp", "") if self.history else None,
         }
     
-    def clear(self, before: Optional[str] = None):
+    def clear(self, before: Optional[str] = None) -> None:
         """Limpiar historial."""
         if before:
             self.history = [

@@ -5,7 +5,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Self, Optional
 
 import config
 import feedparser
@@ -161,7 +161,7 @@ class FeedTracker:
         except Exception:
             return []
     
-    def mark_alert_read(self, index: int = -1):
+    def mark_alert_read(self, index: int = -1) -> None:
         """Marcar alerta como leída."""
         if not self.alerts_file.exists():
             return

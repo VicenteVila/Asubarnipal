@@ -64,7 +64,7 @@ class ProposalMemory:
             logger.error(f"Could not save preferences: {e}")
 
     def save(self, pregunta: str, respuesta: str, propuesta: str,
-             modo: str, refs: List[Dict], tags: List[str] = None) -> dict:
+             modo: str, refs: list[dict[str, Any]], tags: Optional[list[str]] = None) -> dict[str, Any]:
         """
         Save a new research proposal.
 
@@ -100,7 +100,7 @@ class ProposalMemory:
         return proposal
 
     def save_to_standby(self, pregunta: str, respuesta: str, propuesta: str,
-                       modo: str, refs: List[Dict]) -> dict:
+                       modo: str, refs: list[dict[str, Any]]) -> dict[str, Any]:
         """Save proposal to standby (not active, for later review)."""
         proposal_id = str(uuid.uuid4())[:8]
 
@@ -244,7 +244,7 @@ class EnhancedMemory:
             logger.error(f"Could not save memories: {e}")
 
     def add(self, content: str, category: str = "fact", priority: int = 5,
-            importance: str = "normal", tags: list = None) -> dict:
+            importance: str = "normal", tags: Optional[list[str]] = None) -> dict[str, Any]:
         """Add a memory entry."""
         mem_id = self._next_id
         self._next_id += 1

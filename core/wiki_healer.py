@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class WikiHealer:
     """Repara y limpia entradas huerfanas en la wiki."""
     
-    def __init__(self, wiki_path: Optional[Path] = None):
+    def __init__(self, wiki_path: Optional[Path] = None) -> None:
         self.wiki_path = wiki_path or config.WIKI_DIR
         self.db_path = config.WIKI_PATH
         self._init_connection()

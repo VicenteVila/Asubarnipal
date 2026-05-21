@@ -11,12 +11,12 @@ logger = logging.getLogger(__name__)
 class Librarian:
     """Small model expert: searches library and generates structured summaries."""
 
-    def __init__(self, model: str = None):
+    def __init__(self, model: Optional[str] = None) -> None:
         self.model = model or "qwen2.5:1.5b"
         self.client = None
         self._init_client()
 
-    def _init_client(self):
+    def _init_client(self) -> None:
         """Initialize Ollama client."""
         try:
             from ollama import Client

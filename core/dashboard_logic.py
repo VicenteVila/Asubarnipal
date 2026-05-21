@@ -17,7 +17,7 @@ class DashboardManager:
             "errors": [],
         }
     
-    def record_query(self, success: bool, time_taken: float, error: str = None):
+    def record_query(self, success: bool, time_taken: float, error: Optional[str] = None) -> None:
         self.stats["total_queries"] += 1
         if success:
             self.stats["successful"] += 1
@@ -71,7 +71,7 @@ class MetricsCollector:
     def __init__(self) -> None:
         self.metrics = defaultdict(list)
     
-    def record(self, metric_name: str, value: float):
+    def record(self, metric_name: str, value: float) -> None:
         self.metrics[metric_name].append({
             "value": value,
             "time": time.time(),

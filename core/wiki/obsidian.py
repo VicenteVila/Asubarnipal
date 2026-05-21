@@ -50,7 +50,7 @@ class WikiObsidianMixin:
         return {"imported": imported}
 
     def save_to_obsidian(self, name: str, content: str, tipo: str = "source",
-                         fuente: str = "", tags: list = None, relacionados: list = None) -> dict:
+                         fuente: str = "", tags: Optional[list[str]] = None, relacionados: Optional[list[str]] = None) -> dict[str, Any]:
         """Save an entity as a .md file in the Obsidian wiki folder."""
         import re
         try:
@@ -97,7 +97,7 @@ relacionados: {relacionados_formatted}
             return {"error": str(e)}
 
     def _update_graph_add_node(self, node_id: str, tipo: str = "source",
-                               tags: list = None, relacionados: list = None):
+                               tags: Optional[list[str]] = None, relacionados: Optional[list[str]] = None) -> None:
         """Add a node to graph.json and update metadata."""
         try:
             graph_store = Path(config.OBSIDIAN_PATH) / "graph_store"
