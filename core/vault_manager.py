@@ -5,7 +5,7 @@ import os
 import shutil
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Self
 from datetime import datetime
 
 import config

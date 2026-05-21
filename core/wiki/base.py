@@ -5,7 +5,7 @@ import logging
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Self, Any
 
 import config
 
@@ -285,21 +285,20 @@ class Wiki(WikiSearchMixin, WikiIngestMixin, WikiObsidianMixin):
         tipo: str = "entity",
         fuente: str = "N/A",
         estado: str = "draft",
-        tags: list = None,
-        relacionados: list = None
-    ) -> dict:
+        tags: Optional[list[str]] = None,
+        relacionados: Optional[list[str]] = None
+    ) -> dict[str, Any]:
         """Add or update an entity."""
         now = datetime.now().isoformat()
         tags_json = json.dumps(tags or [])
         relacionados_json = json.dumps(relacionados or [])
-        entity_id = _slugify(name)
 
         try:
             self.cursor.execute("""
                 INSERT OR REPLACE INTO entities
-                (id, name, content, tipo, fuente, fecha_ingesta, fecha_actualizacion, estado, tags, relacionados)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (entity_id, name, content, tipo, fuente, now, now, estado, tags_json, relacionados_json))
+                (name, content, tipo, fuente, fecha_ingesta, fecha_actualizacion, estado, tags, relacionados)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (name, content, tipo, fuente, now, now, estado, tags_json, relacionados_json))
             self.conn.commit()
 
             if relacionados:
