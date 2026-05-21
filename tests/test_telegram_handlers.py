@@ -27,11 +27,13 @@ class MockMessage:
     def __init__(self):
         self.text = "test"
         self._reply = None
+        self._reply_markup = None
         self.document = None
         self.photo = None
 
-    async def reply_text(self, text, parse_mode=None):
+    async def reply_text(self, text, parse_mode=None, reply_markup=None, **kwargs):
         self._reply = text
+        self._reply_markup = reply_markup
         return Mock()
 
 
@@ -223,8 +225,8 @@ class TestChatHandlers(unittest.TestCase):
         run_async(charlar_cmd(update, context))
 
         self.assertIn("Modos de Charla", update.message._reply)
-        self.assertIn("libre", update.message._reply)
-        self.assertIn("consultor", update.message._reply)
+        self.assertIn("Libre", update.message._reply)
+        self.assertIn("Consultor", update.message._reply)
 
     @patch('interface.handlers.chat.logger')
     def test_charlar_cmd_invalid_mode(self, mock_logger):

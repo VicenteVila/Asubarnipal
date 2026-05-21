@@ -37,13 +37,15 @@ from interface.handlers import (
     lint_cmd,
     sync_obsidian_cmd,
     quality_cmd,
-    queryhybrid_cmd,
-    query_callback_handler,
-    ingest_cmd,
-    investigar_cmd,
-    charlar_cmd,
-    agente_cmd,
-    model_cmd,
+     queryhybrid_cmd,
+     query_callback_handler,
+     ingest_cmd,
+     investigar_cmd,
+     charlar_cmd,
+     charlar_callback,
+     agente_cmd,
+     model_cmd,
+     model_callback,
     query_vectorial_cmd,
     rate_cmd,
     calidad_cmd,
@@ -623,6 +625,7 @@ def main() -> None:
     app.add_handler(CommandHandler("status", status_cmd))
     app.add_handler(CommandHandler("reporte", reporte_cmd))
     app.add_handler(CommandHandler("model", model_cmd))
+    app.add_handler(CallbackQueryHandler(model_callback, pattern="^model:"))
     app.add_handler(CommandHandler("ingest", ingest_cmd))
     app.add_handler(MessageHandler(filters.Document.ALL, ingest_cmd))
     app.add_handler(MessageHandler(filters.PHOTO, ingest_cmd))
@@ -638,6 +641,7 @@ def main() -> None:
     app.add_handler(CommandHandler("indexar_wiki", indexar_wiki_cmd))
     app.add_handler(CommandHandler("query_vectorial", query_vectorial_cmd))
     app.add_handler(CommandHandler("charlar", charlar_cmd))
+    app.add_handler(CallbackQueryHandler(charlar_callback, pattern="^charlar:"))
     app.add_handler(CommandHandler("agente", agente_cmd))
     app.add_handler(CommandHandler("rate", rate_cmd))
     app.add_handler(CommandHandler("calidad", calidad_cmd))
