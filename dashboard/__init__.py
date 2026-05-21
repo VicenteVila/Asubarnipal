@@ -14,7 +14,7 @@ import config
 import psutil
 import streamlit as st
 
-from dashboard.config import AppConfig
+from dashboard.app_config import AppConfig
 from dashboard.components.avatar import find_avatar_image, render_agente_avatar, render_header
 from dashboard.tabs import (
     render_tab_analytics,
@@ -115,7 +115,7 @@ def main() -> None:
     cfg = st.session_state.config
 
     # Wiki reader
-    from dashboard.config import AppConfig as DAC
+    from dashboard.app_config import AppConfig as DAC
     from core.wiki import WikiReader as CoreWikiReader
 
     class KarpathyWikiReader(CoreWikiReader):

@@ -7,7 +7,7 @@ import plotly.express as px
 import streamlit as st
 
 import config
-from dashboard.config import AppConfig
+from dashboard.app_config import AppConfig
 
 
 def render_tab_analytics(config_app: AppConfig) -> None:

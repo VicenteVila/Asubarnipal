@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from dashboard.config import AppConfig
+from dashboard.app_config import AppConfig
 
 
 class TelemetryEngine:

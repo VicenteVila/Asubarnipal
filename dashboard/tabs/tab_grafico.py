@@ -6,7 +6,7 @@ from typing import Any
 import streamlit as st
 
 import config
-from dashboard.config import AppConfig
+from dashboard.app_config import AppConfig
 
 
 def render_tab_grafico(config_app: AppConfig) -> None:
