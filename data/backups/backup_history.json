@@ -1,0 +1,10 @@
+[
+  {
+    "name": "backup_full_20260521_172533",
+    "path": "/tmp/tmpt5o8yt2b/backups/backup_full_20260521_172533",
+    "timestamp": "2026-05-21T17:25:33.253490",
+    "vault": "full",
+    "size_bytes": 0,
+    "status": "completed"
+  }
+]
