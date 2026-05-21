@@ -115,6 +115,8 @@ desktop.ini
 *.docs.json
 
 # Application directories (runtime)
+data/cache/
+data/backups/
 data/*.db
 data/*.sqlite
 data/*.faiss
