@@ -1,37 +1,45 @@
-# 📖 Manual de Asubarnipal — Guía Completa
+# Manual de Asubarnipal — Guia Completa
 
-*El Legado de Nínive adaptado al siglo XXI*
+*El Legado de Ninive adaptado al siglo XXI*
 
 ---
 
-## Índice
+## Indice
 
-1. [Introducción](#1-introducción)
+1. [Introduccion](#1-introduccion)
 2. [Comandos de Sistema](#2-comandos-de-sistema)
 3. [Comandos Wiki](#3-comandos-wiki)
 4. [Ingesta de Contenido](#4-ingesta-de-contenido)
 5. [Chat (/charlar)](#5-chat-charlar)
-6. [Agente Autónomo](#6-agente-autónomo)
-7. [H-Mem: Memoria Híbrida](#7-h-mem-memoria-híbrida)
-8. [Vaults (Multi-Vault)](#8-vaults-multi-vault)
-9. [Sesión y Chat](#9-sesión-y-chat)
-10. [Configuración y Background Jobs](#10-configuración-y-background-jobs)
-11. [Dashboard](#11-dashboard)
-12. [Ejecución del Sistema](#12-ejecución-del-sistema)
-13. [Skills del Agente](#13-skills-del-agente)
+6. [Agente Autonomo](#6-agente-autonomo)
+7. [Vision y OCR](#7-vision-y-ocr)
+8. [Voz y STT](#8-voz-y-stt)
+9. [Investigacion Programada](#9-investigacion-programada)
+10. [H-Mem: Memoria Hibrida](#10-h-mem-memoria-hibrida)
+11. [Grafo de Conocimiento (Graphify)](#11-grafo-de-conocimiento-graphify)
+12. [Vaults (Multi-Vault)](#12-vaults-multi-vault)
+13. [Backup y Recuperacion](#13-backup-y-recuperacion)
+14. [Sesion y Chat](#14-sesion-y-chat)
+15. [Configuracion y Background Jobs](#15-configuracion-y-background-jobs)
+16. [Dashboard](#16-dashboard)
+17. [REST API](#17-rest-api)
+18. [Ejecucion del Sistema](#18-ejecucion-del-sistema)
+19. [Skills del Agente](#19-skills-del-agente)
 
 ---
 
-## 1. Introducción
+## 1. Introduccion
 
 Asubarnipal es un agente de conocimiento con arquitectura de dos modelos de IA:
 
 ```
-PEQUEÑO (qwen2.5:1.5b) → Experto Bibliotecario → Busca y resume
-GRANDE (qwen3.5:4b) → Analista → Responde con propuesta de investigación
+PEQUENO (qwen2.5:1.5b) → Experto Bibliotecario → Busca y resume
+GRANDE (qwen3.5:4b) → Analista → Responde con propuesta de investigacion
 ```
 
-**Sistema de memoria híbrido (H-Mem):** Combina un árbol temporal-semántico (como la memoria humana) con un grafo de entidades para dar al agente contexto de conversaciones anteriores.
+**Sistema de memoria hibrido (H-Mem):** Combina un arbol temporal-semantico (como la memoria humana) con un grafo de entidades para dar al agente contexto de conversaciones anteriores.
+
+**RAG Engine:** Busqueda hibrida (FAISS + BM25) con re-ranking por cross-encoder y chunking inteligente.
 
 Este manual puede consultarse con `/manual` en cualquier momento.
 
@@ -39,28 +47,17 @@ Este manual puede consultarse con `/manual` en cualquier momento.
 
 ## 2. Comandos de Sistema
 
-### 2.1 Comandos básicos
+### 2.1 Comandos basicos
 
-| Comando | Descripción | Ejemplo |
+| Comando | Descripcion | Ejemplo |
 |---------|-------------|---------|
 | `/start` | Mensaje de bienvenida con historia del bot | `/start` |
-| `/manual` | Envía este manual al chat | `/manual` |
-| `/status` | Telemetría: CPU, RAM, uptime, queries, tasa éxito, Brave restantes | `/status` |
-| `/reporte` | Autodiagnóstico: uptime, queries, fallos, recursos, Brave, modelo, memoria | `/reporte` |
-| `/model` | Muestra modelo actual. Con argumento, cambia de modelo | `/model` → muestra actual<br>`/model llama3:8b` → cambia |
-| `/session` | Estado de sesión: mensajes, tokens, modo, modelo, límites | `/session` |
+| `/manual` | Envia este manual al chat | `/manual` |
+| `/status` | Telemetria: CPU, RAM, uptime, queries, tasa exito, Brave restantes | `/status` |
+| `/reporte` | Autodiagnostico: uptime, queries, fallos, recursos, Brave, modelo, memoria | `/reporte` |
+| `/model` | Muestra modelo actual. Selecciona con teclado inline | `/model` |
+| `/session` | Estado de sesion: mensajes, tokens, modo, modelo, limites | `/session` |
 | `/clear_session` | Limpia historial de chat del usuario | `/clear_session` |
-
-### 2.2 Salida esperada
-
-**`/status`** devuelve:
-```
-🖥️ CPU: 12% | 💾 RAM: 4.2 GB
-📊 Queries: 142 | ✅ Tasa éxito: 89%
-🔍 Brave: 1,247 restantes
-🤖 Agente: ONLINE (PID 1234, uptime 3h 22m)
-📦 Vault activo: principal
-```
 
 ---
 
@@ -68,108 +65,51 @@ Este manual puede consultarse con `/manual` en cualquier momento.
 
 ### 3.1 Consulta de conocimiento (/query)
 
-**El comando más potente del bot.** Usa arquitectura de dos modelos:
+**El comando mas potente del bot.** Usa arquitectura de dos modelos:
 
 ```
 /query <pregunta>
        ↓
-📚 PEQUEÑO (qwen2.5:1.5b) → Busca en FTS5 → Resume con referencias
+📚 PEQUENO → Busca en FTS5 → Resume con referencias
        ↓
-🧠 GRANDE (qwen3.5:4b) → Genera respuesta + propuesta de investigación
+🧠 GRANDE → Genera respuesta + propuesta de investigacion
        ↓
 📋 Botones inline → Guardar / Crear nota / Standby
 ```
 
+**Modos de busqueda (selecciona con teclado inline):**
+
+| Modo | Descripcion |
+|------|-------------|
+| **Wiki** | Busqueda clasica con dos modelos |
+| **Vectorial** | Busqueda semantica en indice FAISS |
+| **Hibrido** | FAISS + BM25 + re-ranking cross-encoder |
+| **H-Mem** | Consulta al sistema de memoria hibrida |
+
 **Sintaxis:**
 ```
-/query Qué es LoRA y cómo funciona?
+/query Que es LoRA y como funciona?
 /query En que consiste el entrenamiento con adapters?
 /query Diferencias entre fine-tuning completo y LoRA
 ```
 
-**Botones que aparecen después de cada respuesta:**
+### 3.2 Exploracion del wiki
 
-| Botón | Acción |
-|-------|--------|
-| 📊 Estructurada | Establece modo estructurado como preferido |
-| 🧭 Exploratoria | Establece modo exploratorio como preferido |
-| 💾 Guardar | Guarda la propuesta en memoria de investigaciones |
-| 📝 Crear nota wiki | Crea una nota en el wiki con la propuesta |
-| ⏸️ Standby | Guarda la propuesta para revisión posterior |
-
-**两种 modos de propuesta:**
-
-*Modo Estructurado:*
-```
-- Hallazgo: [qué se descubrió]
-- Gap: [qué falta investigar]
-- Impacto: [cómo mejora el bot]
-- Prioridad: Alta/Media/Baja
-- Acciones: 1. 2. 3.
-- Métricas: [cómo medir éxito]
-```
-
-*Modo Exploratorio:*
-```
-- Temas relacionados encontrados
-- Nuevas preguntas sugeridas
-- Conexiones conceptuales
-```
-
----
-
-### 3.2 Exploración del wiki
-
-| Comando | Descripción | Ejemplo |
+| Comando | Descripcion | Ejemplo |
 |---------|-------------|---------|
-| `/hubs` | Muestra los 10 conceptos más conectados del wiki | `/hubs` |
-| `/clusters` | Muestra comunidades temáticas | `/clusters` |
-| `/lint` | Diagnóstico de salud: score, entidades huérfanas, enlaces rotos | `/lint` |
-| `/quality` | Calidad de ingestas recientes. Por defecto últimas 20 | `/quality 30` |
+| `/hubs` | Muestra los 10 conceptos mas conectados del wiki | `/hubs` |
+| `/clusters` | Muestra comunidades tematicas | `/clusters` |
+| `/lint` | Diagnostico de salud: score, entidades huerfanas, enlaces rotos | `/lint` |
+| `/quality` | Calidad de ingestas recientes. Por defecto ultimas 20 | `/quality 30` |
 
-**`/hubs` salida:**
-```
-🕸️ Hubs — Conceptos Centrales
+### 3.3 Busquedas especializadas
 
-• Transformer (42 conexiones)
-• LLM (38 conexiones)
-• Attention (31 conexiones)
-• RAG (27 conexiones)
-• Agent (24 conexiones)
-```
-
-**`/quality` salida:**
-```
-📊 Calidad de Ingestas (últimas 20)
-
-• Total ingesado: 20
-• Score promedio: 78/100
-• ⚠️ Baja calidad: 2
-
-Por tipo:
-📄 pdf: 8 ing., avg 82/100
-🎬 youtube: 10 ing., avg 75/100
-🌐 url: 2 ing., avg 70/100
-```
-
----
-
-### 3.3 Búsquedas especializadas
-
-| Comando | Descripción | Ejemplo |
+| Comando | Descripcion | Ejemplo |
 |---------|-------------|---------|
-| `/queryhybrid <pregunta>` | Búsqueda híbrida SQLite + Obsidian vault. Alias: `/hybrid` | `/queryhybrid transformers attention` |
-| `/query_vectorial <búsqueda>` | Búsqueda semántica en índice FAISS (embeddings) | `/query_vectorial redes neuronales recurrentes` |
+| `/queryhybrid <pregunta>` | Busqueda hibrida SQLite + Obsidian vault. Alias: `/hybrid` | `/queryhybrid transformers attention` |
+| `/query_vectorial <busqueda>` | Busqueda semantica en indice FAISS (embeddings) | `/query_vectorial redes neuronales recurrentes` |
 | `/sync_obsidian` | Importa notas desde vault Obsidian externo | `/sync_obsidian` |
-| `/indexar_wiki` | Reconstruye índice vectorial FAISS de todo el wiki | `/indexar_wiki` |
-
-**¿Cuándo usar cada uno?**
-
-| Comando | Cuándo usarlo |
-|---------|---------------|
-| `/query` | Preguntas sobre conceptos, necesita propuesta de investigación |
-| `/queryhybrid` | Búsqueda rápida híbrida (SQLite + Obsidian) sin propuesta |
-| `/query_vectorial` | Buscar por significado, no por palabras exactas |
+| `/indexar_wiki` | Reconstruye indice vectorial FAISS de todo el wiki | `/indexar_wiki` |
 
 ---
 
@@ -177,7 +117,7 @@ Por tipo:
 
 ### 4.1 /ingest — Variantes
 
-El bot ingiere contenido de múltiples fuentes y lo guarda automáticamente en wiki + SQLite + grafo:
+El bot ingiere contenido de multiples fuentes y lo guarda automaticamente en wiki + SQLite + grafo:
 
 ```
 /ingest <fuente> → descarga → limpia → resume → extrae conceptos → guarda
@@ -190,128 +130,62 @@ El bot ingiere contenido de múltiples fuentes y lo guarda automáticamente en w
 | Archivo local | `/ingest <ruta>` | `/ingest C:\docs\paper.pdf` |
 | PDF de Telegram | Adjunta archivo + `/ingest` | Adjuntar PDF → `/ingest` |
 | Imagen OCR | Adjunta imagen + `/ingest` | Adjuntar imagen escaneada → `/ingest` |
-| OCR con caption | Caption "ocr" + adjuntar imagen | Caption "ocr" + imagen |
 
 **Pipeline de ingesta:**
 ```
 1. Descarga y limpia HTML / extrae PDF / transcript de video
 2. Detecta idioma
-3. Traduce al español (si es necesario)
+3. Traduce al espanol (si es necesario)
 4. Genera resumen via LLM
 5. Extrae conceptos clave y entidades
 6. Busca notas relacionadas en wiki
 7. Guarda en:
    ├─→ SQLite (data/wiki.db)      → /query encuentra inmediatamente
    ├─→ Obsidian wiki/*.md          → Dashboard Wiki muestra inmediatamente
-   └─→ Propuesta de investigación → Sugiere próxima investigación
+   └─→ Propuesta de investigacion → Sugiere proxima investigacion
 ```
 
-### 4.2 /investigar — Investigación profunda
+### 4.2 /investigar — Investigacion profunda
 
-Usa Brave Search para investigar un tema y ingiere automáticamente los mejores resultados:
+Usa Brave Search para investigar un tema y ingiere automaticamente los mejores resultados:
 
 | Sintaxis | Ejemplo |
 |----------|---------|
 | `/investigar <tema>` | `/investigar transformers attention mechanism 2024` |
 
-**Salida:**
-```
-🔍 Investigando: transformers attention mechanism 2024
-
-Encontrados 8 artículos relevantes:
-1. [Paper] "Attention Is All You Need" → guardado
-2. [Web] Tutorial sobre transformers → guardado
-3. [Paper] "FlashAttention" → guardado
-...
-✅ Investigación completada. 8 fuentes ingestadas.
-```
-
 ---
 
 ## 5. Chat (/charlar)
 
-Usa `/charlar <modo> <tema>` para chatear en diferentes estilos especializados.
+Usa `/charlar <modo> <tema>` para chatear en diferentes estilos especializados. Selecciona modo con teclado inline.
 
 ### 5.1 Los 5 modos
 
-| Modo | Emoji | Descripción | Ejemplo |
-|------|-------|-------------|---------|
-| **libre** | 💬 | Conversación natural y creativa | `/charlar libre qué opinas de la IA generativa?` |
-| **consultor** | 🧠 | Análisis en 3 fases: Definición → Ejecución → Evaluación | `/charlar consultor cómo optimizar este código?` |
-| **devil** | 🔥 | Crítica implacable: encuentra fallos, riesgos, contradicciones | `/charlar devil es buena idea este producto?` |
-| **socrático** | ❓ | Guía mediante preguntas, no da respuestas directas | `/charlar socrático qué es la consciencia?` |
-| **lateral** | 🌐 | 5 perspectivas: Chef, Músico, Tribu, Algoritmo, Niño de 5 años | `/charlar lateral cómo lo vería un ninja?` |
-
-### 5.2 Cómo elegir el modo
-
-| Situación | Modo recomendado |
-|---------|-------------------|
-| Conversación casual, brainstorm | `libre` |
-| Resolver un problema técnico, revisar código | `consultor` |
-| Evaluar riesgos de una decisión, producto, plan | `devil` |
-| Aprender un concepto nuevo, explorar ideas | `socrático` |
-| Salir del pensamiento lineal, ver problema desde otro ángulo | `lateral` |
-
-### 5.3 Ejemplos de cada modo
-
-```
-/charlar libre ¿Qué tendencias de IA son más relevantes para 2025?
-  → Respuesta creativa, abierta, opinionada
-
-/charlar consultor Optimiza esta función Python para reducir memoria
-  → Fase 1: Definir el problema
-  → Fase 2: Proponer soluciones
-  → Fase 3: Evaluar pros/contras
-
-/charlar devil Analiza los riesgos de usar LLMs para decisiones médicas
-  → Crítica implacable: riesgos legales, técnicos, éticos
-
-/charlar socrático Qué es el aprendizaje por refuerzo?
-  → Te guía con preguntas: "¿Qué significa aprender?", "¿Cómo definirías refuerzo?"
-
-/charlar lateral Cómo percibe un músico este problema de arquitectura?
-  → Perspectivas: Chef 💭, Músico 🎵, Tribu 🏛️, Algoritmo ⚙️, Niño 👦
-```
+| Modo | Descripcion | Ejemplo |
+|------|-------------|---------|
+| **libre** | Conversacion natural y creativa | `/charlar libre que opinas de la IA generativa?` |
+| **consultor** | Analisis en 3 fases: Definicion → Ejecucion → Evaluacion | `/charlar consultor como optimizar este codigo?` |
+| **devil** | Critica implacable: encuentra fallos, riesgos, contradicciones | `/charlar devil es buena idea este producto?` |
+| **socratico** | Guia mediante preguntas, no da respuestas directas | `/charlar socratico que es la consciencia?` |
+| **lateral** | 5 perspectivas: Chef, Musico, Tribu, Algoritmo, Nino de 5 anos | `/charlar lateral como lo veria un ninja?` |
 
 ---
 
-## 6. Agente Autónomo
+## 6. Agente Autonomo
 
 ### 6.1 Comandos de agente
 
-| Comando | Descripción | Ejemplo |
+| Comando | Descripcion | Ejemplo |
 |---------|-------------|---------|
-| `/agente <tarea>` | Agente autónomo con ejecución de skills/herramientas | `/agente revisa el código y propon mejoras` |
-| `/rate <1-5>` | Califica la última respuesta (1=Muy malo, 5=Excelente) | `/rate 4` |
-| `/calidad` | Estadísticas: accuracy, promedio, conteos sí/no/ms, alertas | `/calidad` |
+| `/agente <tarea>` | Agente autonomo con ejecucion de skills/herramientas | `/agente revisa el codigo y propon mejoras` |
+| `/rate <1-5>` | Califica la ultima respuesta (1=Muy malo, 5=Excelente) | `/rate 4` |
+| `/calidad` | Estadisticas: accuracy, promedio, conteos si/no/ms, alertas | `/calidad` |
 
-### 6.2 Cómo funciona /agente
+### 6.2 Calificar respuestas
 
-El agente puede razonar de forma autónoma y ejecutar skills (funciones del sistema):
+Despues de cada respuesta, el bot pregunta: *La respuesta fue precisa? (si/no/ms)*
 
-```
-/agente revisa los últimos cambios en el proyecto y haz un resumen
-       ↓
-1. Lee archivos del proyecto
-2. Analiza patrones
-3. Ejecuta skills: run_command, read_file, write_file
-4. Genera resumen con findings y propuestas
-```
-
-**¿Qué puede hacer el agente?**
-- Leer y escribir archivos
-- Ejecutar comandos del sistema
-- Buscar en archivos
-- Gestionar el wiki
-- Clonar repositorios GitHub
-- Traducir textos
-- Ejecutar código Python
-
-### 6.3 Calificar respuestas
-
-Después de cada respuesta, el bot pregunta: *¿La respuesta fue precisa? (sí/no/ms)*
-
-También puedes calificar manualmente:
+Tambien puedes calificar manualmente:
 ```
 /rate 5   → Excelente
 /rate 3   → Aceptable
@@ -320,308 +194,285 @@ También puedes calificar manualmente:
 
 ---
 
-## 7. H-Mem: Memoria Híbrida
+## 7. Vision y OCR
 
-### 7.1 ¿Qué es?
+Analiza imagenes con modelos de vision de Ollama (llava).
 
-H-Mem es un **sistema de memoria conversacional** que da al agente contexto de lo que hablaste antes. Funciona en segundo plano — automáticamente.
+| Comando | Descripcion | Ejemplo |
+|---------|-------------|---------|
+| `/vision [prompt]` | Analiza la ultima foto con prompt personalizado | `/vision Que texto hay en esta imagen?` |
+| `/ocr` | Extrae texto de la ultima foto | `/ocr` |
+
+**Uso:**
+1. Envia una foto al bot
+2. Usa `/vision` o `/ocr` para analizarla
+
+**Requisito:** Modelo llava instalado en Ollama:
+```
+ollama pull llava:7b
+```
+
+---
+
+## 8. Voz y STT
+
+Transcripcion automatica de mensajes de voz.
+
+**Uso:**
+1. Envia un mensaje de voz al bot
+2. El bot transcribe automaticamente con Whisper
+3. La transcripcion se procesa como un mensaje de texto normal
+
+**Requisito (opcional):**
+```
+pip install openai-whisper
+```
+
+Sin Whisper instalado, el bot indica que STT no esta disponible.
+
+---
+
+## 9. Investigacion Programada
+
+Programa investigaciones recurrentes que se ejecutan automaticamente.
+
+| Comando | Descripcion | Ejemplo |
+|---------|-------------|---------|
+| `/schedule <tema> [min]` | Programa investigacion recurrente | `/schedule noticias IA 60` |
+| `/schedules` | Lista todas las investigaciones programadas | `/schedules` |
+| `/cancel_schedule <id>` | Cancela una investigacion programada | `/cancel_schedule 1` |
+| `/toggle_schedule <id>` | Activa/desactiva una investigacion | `/toggle_schedule 1` |
+
+**Ejemplos:**
+```
+/schedule noticias IA 60        → Cada hora
+/schedule avances LLM 1440      → Diario
+/schedule papers arxiv 4320     → Cada 3 dias
+```
+
+---
+
+## 10. H-Mem: Memoria Hibrida
+
+### 10.1 Que es?
+
+H-Mem es un **sistema de memoria conversacional** que da al agente contexto de lo que hablaste antes. Funciona en segundo plano — automaticamente.
 
 Combina dos estructuras:
 
-**Árbol Temporal-Semántico** (como la memoria humana):
+**Arbol Temporal-Semantico** (como la memoria humana):
 ```
-L0 → events (1 día)
-L1 → daily (7 días)
-L2 → weekly (30 días)
-L3 → monthly (90 días)
+L0 → events (1 dia)
+L1 → daily (7 dias)
+L2 → weekly (30 dias)
+L3 → monthly (90 dias)
 ```
-Las memorias nuevas entran en L0 y suben automáticamente si se consolidan.
+Las memorias nuevas entran en L0 y suben automaticamente si se consolidan.
 
 **Grafo de Entidades** (red de conceptos):
 ```
-Entidades: persona, organización, concepto, evento, tema, proyecto
+Entidades: persona, organizacion, concepto, evento, tema, proyecto
 Relaciones: related_to, works_on, part_of, depends_on...
 ```
 
-### 7.2 Comandos H-Mem
+### 10.2 Comandos H-Mem
 
-| Comando | Descripción | Ejemplo |
+| Comando | Descripcion | Ejemplo |
 |---------|-------------|---------|
 | `/memoria` | Estado del sistema H-Mem | `/memoria` |
-| `/recordar <texto>` | Guarda un recuerdo. Extrae entidades automáticamente | `/recordar El usuario trabaja en el proyecto Alpha` |
-| `/pensar <pregunta>` | Consulta H-Mem con respuesta del LLM | `/pensar Sobre qué hablamos ayer?` |
+| `/recordar <texto>` | Guarda un recuerdo. Extrae entidades automaticamente | `/recordar El usuario trabaja en el proyecto Alpha` |
+| `/pensar <pregunta>` | Consulta H-Mem con respuesta del LLM | `/pensar Sobre que hablamos ayer?` |
 | `/contexto <query>` | Obtiene contexto para usar en prompts | `/contexto proyectos de IA` |
 | `/entidades` | Muestra hubs del grafo de entidades (top 8) | `/entidades` |
 | `/recientes [n]` | Lista memorias recientes (default 10, max 30) | `/recientes 20` |
 
-### 7.3 ¿Qué ganas con H-Mem?
-
-| Capacidad | Sin H-Mem | Con H-Mem |
-|-----------|-----------|-----------|
-| Contexto de chats anteriores | ❌ Ninguno | ✅ Relevante |
-| Seguimiento de entidades | ❌ Ninguno | ✅ Nombres, relaciones |
-| Relevancia temporal | ❌ Ninguna | ✅ Reciente vs antiguo |
-| Robustez de memoria | ❌ Ninguna | ✅ Memorias importantes pesan más |
-| Razonamiento multi-hop | ❌ Ninguno | ✅ Conecta conceptos distantes |
-
-**Ejemplo concret:**
-
-```
-Sin H-Mem:
-  Usuario: "¿Qué discutimos sobre Python?"
-  Bot: "No tengo información sobre esa conversación." ❌
-
-Con H-Mem:
-  Usuario: "¿Qué discutimos sobre Python?"
-  Bot: "Según nuestra conversación del [fecha], hablamos sobre
-        Python como lenguaje para IA. Mencionaste que trabajas
-        en un proyecto con vectores de 512 dimensiones..." ✅
-```
-
-### 7.4 Integración automática
-
-H-Mem funciona **automáticamente** en cada mensaje:
-
-```
-1. Antes de responder → busca contexto relevante en memoria
-2. Después de responder → guarda la conversación
-3. Siempre → extrae entidades y las conecta en el grafo
-```
-
-**No necesitas invocarlo manualmente** — cada vez que chateas, el bot aprende.
-
-### 7.5 Ejemplos
-
-```
-/memoria
-  → Muestra: nodos por nivel, entidades por tipo, pesos de ranking
-
-/recordar El usuario prefiere respuestas técnicas con ejemplos de código
-  → Guarda el recuerdo + extrae entidad "usuario" tipo "preference"
-
-/pensar Qué sabes sobre proyectos de machine learning?
-  → Busca en árbol + grafo → genera respuesta con contexto histórico
-
-/contexto vector embeddings
-  → Devuelve contexto relevante para usar en prompts (preview 1000 chars)
-
-/entidades
-  → Muestra: Python (12 menciones), ProyectoAlpha (8), IA (15)...
-```
-
-### 7.6 Diferencia con otros sistemas
-
-| Sistema | Qué almacena | Cuándo lo usas |
-|---------|-------------|----------------|
-| **H-Mem** | Conversaciones y entidades | `/recordar`, `/pensar`, chats automáticos |
-| **Wiki (/query)** | Notas estructuradas, papers, conceptos | `/query` para buscar conocimiento |
-| **RAG (/query_vectorial)** | Documentos indexados por embeddings | Búsqueda semántica |
-| **ProposalMemory** | Propuestas de investigación | `/query` + botón "Guardar" |
-
-H-Mem no reemplaza a ninguno — complementa el sistema con **memoria conversacional**.
-
 ---
 
-## 8. Grafo de Conocimiento (Graphify)
+## 11. Grafo de Conocimiento (Graphify)
 
-### 8.1 ¿Qué es?
+### 11.1 Comandos de Telegram
 
-Graphify construye un **grafo de conocimiento queryable** a partir de tus notas wiki, fuentes raw y contenido del vault Obsidian. Genera:
-
-```
-graphify-out/
-├── graph.html          ← Visualización interactiva en navegador (nodos clicables, filtros, búsqueda)
-├── GRAPH_REPORT.md     ← Resumen: nodos clave, conexiones sorprendentes, preguntas sugeridas
-└── graph.json          ← Grafo completo para consulta directa
-```
-
-### 8.2 Comandos de Telegram
-
-| Comando | Descripción | Ejemplo |
+| Comando | Descripcion | Ejemplo |
 |---------|-------------|---------|
 | `/graphify` | Construye el grafo de conocimiento completo | `/graphify` |
-| `/graphify deep` | Modo profundo (extracción agresiva de relaciones) | `/graphify deep` |
-| `/graphify force` | Fuerza reconstrucción aunque haya menos nodos | `/graphify force` |
-| `/graph_update` | Actualiza solo archivos cambiados (rápido) | `/graph_update` |
-| `/graph_query <pregunta>` | Consulta el grafo con lenguaje natural | `/graph_query qué conecta transformers con attention` |
-| `/graph_stats` | Muestra estadísticas del grafo | `/graph_stats` |
+| `/graphify deep` | Modo profundo (extraccion agresiva de relaciones) | `/graphify deep` |
+| `/graph_update` | Actualiza solo archivos cambiados (rapido) | `/graph_update` |
+| `/graph_query <pregunta>` | Consulta el grafo con lenguaje natural | `/graph_query que conecta transformers con attention` |
+| `/graph_stats` | Muestra estadisticas del grafo | `/graph_stats` |
 | `/graph_report` | Muestra el reporte del grafo | `/graph_report` |
-| `/graph_add <url>` | Añade una URL al grafo | `/graph_add https://arxiv.org/abs/1706.03762` |
+| `/graph_add <url>` | Anade una URL al grafo | `/graph_add https://arxiv.org/abs/1706.03762` |
 | `/graph_export <formato>` | Exporta el grafo (html, svg, graphml, wiki, callflow) | `/graph_export svg` |
-
-### 8.3 Dashboard
-
-En el **Dashboard → Tab "Grafo"**, selecciona **"Graphify (Interactivo)"** para ver:
-
-- **Visualización HTML interactiva** (850px de alto) — nodos clicables, filtros por comunidad, búsqueda
-- **Estadísticas en tiempo real** — nodos, conexiones, comunidades, hubs
-- **Top Hubs** — los conceptos más conectados del grafo
-- **Reporte del grafo** — conexiones sorprendentes, preguntas sugeridas
-
-### 8.4 Backend
-
-Graphify usa **Ollama** como backend por defecto (ya configurado). Soporta también:
-- Gemini (`--backend gemini`)
-- OpenAI (`--backend openai`)
-- Claude (`--backend claude`)
-
-### 8.5 Ejemplos de uso
-
-```
-/graphify
-  → Construye grafo desde wiki/ → graph.html + graph.json + GRAPH_REPORT.md
-
-/graph_query "qué relación tiene attention con transformers"
-  → Consulta el grafo y responde con las conexiones encontradas
-
-/graph_stats
-  → Nodos: 245, Conexiones: 1,892, Comunidades: 12, Hubs: 10
-
-/graph_add https://arxiv.org/abs/1810.04805
-  → Descarga el paper de BERT, lo extrae y lo añade al grafo
-
-/graph_export svg
-  → Exporta grafo como imagen vectorial para presentaciones
-```
-
-### 8.6 Diferencia con otros sistemas
-
-| Sistema | Qué genera | Cuándo usarlo |
-|---------|-----------|---------------|
-| **Graphify** | Grafo de conocimiento visual + queryable | Explorar conexiones, visualizar relaciones |
-| **Wiki (/query)** | Notas estructuradas con frontmatter | Buscar conocimiento específico |
-| **RAG (/query_vectorial)** | Búsqueda semántica por embeddings | Buscar por significado, no palabras |
-| **H-Mem** | Memoria conversacional temporal | Recordar conversaciones pasadas |
-
-Graphify **complementa** todos los sistemas — es la capa de visualización y exploración del conocimiento.
 
 ---
 
-## 9. Vaults (Multi-Vault)
+## 12. Vaults (Multi-Vault)
 
-### 9.1 Comandos de gestión
+### 12.1 Comandos de gestion
 
-| Comando | Descripción | Ejemplo |
+| Comando | Descripcion | Ejemplo |
 |---------|-------------|---------|
 | `/vaults` | Lista todos los vaults con stats | `/vaults` |
-| `/vault_create <nombre>` | Crea nuevo vault (con confirmación) | `/vault_create investigacion_ia` |
-| `/vault_use <nombre>` | Cambia vault activo. Todos los comandos wiki usan este | `/vault_use investigacion_ia` |
-| `/vault_info` | Detalles del vault activo: nombre, path, DB, estadísticas | `/vault_info` |
-| `/vault_delete <nombre>` | Elimina vault (con backup automático) | `/vault_delete antiguo` |
-| `/vault_export [nombre]` | Exporta vault a JSON (sin args = activo) | `/vault_export ia` |
+| `/vault_create <nombre>` | Crea nuevo vault (con confirmacion) | `/vault_create investigacion_ia` |
+| `/vault_use <nombre>` | Cambia vault activo | `/vault_use investigacion_ia` |
+| `/vault_info` | Detalles del vault activo | `/vault_info` |
+| `/vault_delete <nombre>` | Elimina vault (con backup automatico) | `/vault_delete antiguo` |
+| `/vault_export [nombre]` | Exporta vault a JSON | `/vault_export ia` |
 | `/vault_import <nombre> <ruta>` | Importa desde JSON | `/vault_import ia backup.json` |
 | `/vault_connect <ruta> [nombre]` | Conecta vault Obsidian externo | `/vault_connect /mnt/Obsidian/proyecto` |
 | `/vault_disconnect [nombre]` | Desconecta vault | `/vault_disconnect proyecto` |
 
-### 9.2 Ejemplo de flujo
+### 12.2 Caracteristicas
 
-```
-/vaults                              → Ver todos los vaults
-/vault_create proyectos              → Crear nuevo vault
-/vault_use proyectos                 → Cambiar al vault proyectos
-/ingest https://arxiv.org/...        → Ingestar al vault activo
-/query En que consiste RAG?          → Buscar en el vault activo
-/vault_export proyectos              → Exportar a JSON
-/vault_import proyectos backup.json → Importar desde JSON
-```
-
-### 9.3 Características
-
-- **Vaults únicos**: Cada vault tiene su propia DB (`data/wiki_{nombre}.db`)
-- **RAG separado**: Cada vault tiene su propio índice FAISS
-- **Switch dinámico**: Cambia entre vaults sin reiniciar
-- **Backup automático**: Al eliminar se crea backup en `data/backups/`
-- **Vault principal**: Se crea automáticamente. No se puede eliminar
+- **Vaults unicos**: Cada vault tiene su propia DB (`data/wiki_{nombre}.db`)
+- **RAG separado**: Cada vault tiene su propio indice FAISS
+- **Switch dinamico**: Cambia entre vaults sin reiniciar
+- **Backup automatico**: Al eliminar se crea backup en `data/backups/`
+- **Vault principal**: Se crea automaticamente. No se puede eliminar
 
 ---
 
-## 10. Sesión y Chat
+## 13. Backup y Recuperacion
 
-### 10.1 Estado de sesión
+Sistema de backup automatico con rotacion y restauracion.
 
-| Comando | Descripción |
-|---------|-------------|
-| `/session` | Muestra: mensajes, tokens, modo, modelo, límites |
-| `/clear_session` | Limpia el historial de chat del usuario |
+| Comando | Descripcion | Ejemplo |
+|---------|-------------|---------|
+| `/backup [vault]` | Crea backup del vault activo o todos los datos | `/backup` |
+| `/backups` | Lista todos los backups disponibles | `/backups` |
+| `/restore <nombre>` | Restaura desde un backup | `/restore backup_full_20260521_172302` |
+| `/backup_stats` | Muestra estadisticas de backup | `/backup_stats` |
+| `/backup_clear` | Elimina todos los backups | `/backup_clear` |
 
-### 10.2 Auto-detección
+**Caracteristicas:**
+- Rotacion automatica (max 10 backups por defecto)
+- Backup automatico cada 24h
+- Restore de vaults y base de datos
 
-El bot detecta automáticamente estos patrones:
+---
 
-| Input | Acción |
+## 14. Sesion y Chat
+
+### 14.1 Auto-deteccion
+
+El bot detecta automaticamente estos patrones:
+
+| Input | Accion |
 |-------|---------|
 | `http://...` (URL) | Auto-ingest de la URL |
-| `sí/si/yes/y` | Registra evaluación positiva |
-| `no/n` | Registra evaluación negativa |
-| `ms/más o menos` | Registra evaluación neutral |
+| `si/si/yes/y` | Registra evaluacion positiva |
+| `no/n` | Registra evaluacion negativa |
+| `ms/mas o menos` | Registra evaluacion neutral |
 | `hola/buenas/hi` | Respuesta breve sin RAG (bypass) |
-| Sesión pendiente + `sí` | Restaura historial de chat |
-| Sesión pendiente + `no` | Limpia sesión guardada |
+| Sesion pendiente + `si` | Restaura historial de chat |
+| Sesion pendiente + `no` | Limpia sesion guardada |
 
 ---
 
-## 11. Configuración y Background Jobs
+## 15. Configuracion y Background Jobs
 
-### 11.1 Endpoints LLM
+### 15.1 Background Rituals
 
-- **Ollama:** `qwen3.5:4b` (local, configurable con `/model`)
-- **Gemini:** Rotación automática entre claves configuradas
-
-### 10.2 Background Rituals
-
-| Ritual | Frecuencia | Función |
+| Ritual | Frecuencia | Funcion |
 |--------|-------------|---------|
-| 💓 **Heartbeat** | 60s | Registra CPU%, RAM% → `data/heartbeat.json` |
-| 💉 **Sutura** | 10min | Limpia huérfanas, repara enlaces del wiki |
-| 🕸️ **Grafo** | 30min | Reconstruye relaciones vectoriales |
+| Heartbeat | 60s | Registra CPU%, RAM% → `data/heartbeat.json` |
+| Sutura | 10min | Limpia huerfanas, repara enlaces del wiki |
+| Grafo | 30min | Reconstruye relaciones vectoriales |
+| H-Mem | 30min | Consolida arbol temporal-semantico + grafo de entidades |
+| Graphify | 30min | Reconstruye grafo de conocimiento interactivo |
 
-### 10.3 TurboQuant
+### 15.2 TurboQuant
 
-Optimiza automáticamente los parámetros de inferencia según el modo de chat:
+Optimiza automaticamente los parametros de inferencia segun el modo de chat:
 
 | Modo | Primary | Fallback 1 | Fallback 2 |
 |------|---------|------------|-------------|
 | **libre** | qwen3.5:4b | qwen3:8b | gemma4:e4b |
 | **consultor** | qwen3:8b | qwen3.5:9b | gemma4:e4b |
 | **devil** | gemma4:e4b | qwen3:8b | qwen3.5:9b |
-| **socrático** | qwen3.5:4b | qwen3:8b | qwen3.5:9b |
+| **socratico** | qwen3.5:4b | qwen3:8b | qwen3.5:9b |
 | **lateral** | qwen3.5:9b | qwen3:8b | qwen3.5:4b |
 
 Si el modelo primario falla, prueba los fallbacks secuencialmente.
 
 ---
 
-## 11. Dashboard
+## 16. Dashboard
 
 El dashboard de Streamlit proporciona interfaz visual para monitorizar y gestionar el sistema. Accede desde navegador en `http://localhost:8501`.
 
-### 11.1 Pestañas disponibles
+### 16.1 Pestanas disponibles
 
-| # | Pestaña | Descripción |
+| # | Pestana | Descripcion |
 |---|---------|-------------|
-| 1 | **Dashboard** | Telemetría, KPI cards, gráficos CPU/RAM |
-| 2 | **Wiki** | Inventario, timeline, propuestas de investigación, fuentes RAW |
-| 3 | **Grafo** | Visualización del grafo, comunidades, hubs |
-| 4 | **Logs** | Logs en tiempo real, filtrables |
-| 5 | **Salud** | Diagnóstico: notas sin tags, stale, huérfanas |
-| 6 | **Schema** | Viewer del CLAUDE.md |
-| 7 | **Latido** | Configuración de background rituals |
-| 8 | **Feeds** | Suscripciones RSS, alertas |
-| 9 | **Analytics** | Historial de comandos, top comandos |
-| 10 | **H-Mem** | Estado de memoria híbrida, árboles, grafos de entidades |
-
-### 11.2 Propuestas de Investigación (Wiki tab)
-
-Desde la pestaña Wiki del dashboard:
-
-- **Stats**: propuestas activas, standby, archivadas
-- **Modo preferido**: elige 📊 Estructurada o 🧭 Exploratoria
-- **Lista de propuestas**: tabs para filtrar por estado
-- **Acciones**: archivar, guardar en wiki, restaurar, eliminar
+| 1 | **Dashboard** | Telemetria, KPI cards, graficos CPU/RAM |
+| 2 | **Skills** | 50+ funciones disponibles |
+| 3 | **Wiki** | Inventario, timeline, propuestas de investigacion |
+| 4 | **Raw** | Tabla de fuentes raw |
+| 5 | **Grafo** | Visualizacion del grafo, comunidades, hubs |
+| 6 | **Logs** | Logs en tiempo real, filtrables |
+| 7 | **Salud** | Diagnostico: notas sin tags, stale, huerfanas |
+| 8 | **Schema** | Viewer del CLAUDE.md |
+| 9 | **Latido** | Configuracion de background rituals |
+| 10 | **Feeds** | Suscripciones RSS, alertas |
+| 11 | **Analytics** | Historial de comandos, top comandos |
+| 12 | **H-Mem** | Estado de memoria hibrida, arboles, grafos de entidades |
 
 ---
 
-## 12. Ejecución del Sistema
+## 17. REST API
+
+Accede en `http://localhost:8000/docs` para Swagger UI.
+
+### 17.1 Endpoints
+
+| Endpoint | Metodo | Descripcion |
+|----------|--------|-------------|
+| `/` | GET | Info de la API |
+| `/health` | GET | Health check con uptime |
+| `/metrics` | GET | Metricas de peticiones (error rate, tiempos) |
+| `/command` | POST | Ejecutar comando via SkillRegistry |
+| `/query` | POST | Consulta de conocimiento (wiki, vectorial, hybrid, hmem) |
+| `/status` | GET | Estado del agente |
+| `/stats` | GET | Estadisticas del wiki |
+| `/feeds` | GET | Listar suscripciones RSS |
+| `/feeds/subscribe` | POST | Suscribirse a feed RSS |
+| `/feeds/unsubscribe` | POST | Cancelar suscripcion |
+| `/feeds/check` | GET | Verificar actualizaciones de feeds |
+| `/history` | GET | Historial de comandos |
+| `/history/add` | POST | Anadir al historial |
+| `/logs` | GET | Obtener logs del agente (con filtro por nivel) |
+| `/schedules` | GET | Listar investigaciones programadas |
+| `/vaults` | GET | Listar todos los vaults |
+
+### 17.2 Caracteristicas
+
+- Rate limiting: 60 req/min por IP
+- CORS habilitado
+- Autenticacion por API key (variable `API_KEYS`)
+- Handlers de error con respuestas estructuradas
+- Metricas: p95 response time, error rate
+
+### 17.3 Ejemplo de uso
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Query de conocimiento
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "que es LoRA?", "mode": "hybrid", "top_k": 5}'
+
+# Con API key
+curl http://localhost:8000/status \
+  -H "X-API-Key: tu_api_key"
+```
+
+---
+
+## 18. Ejecucion del Sistema
+
+### 18.1 Modo local
 
 ```bash
 # Agente Telegram (requiere TELEGRAM_TOKEN)
@@ -634,14 +485,35 @@ streamlit run dashboard.py
 python -m api.main
 ```
 
+### 18.2 Docker
+
+```bash
+# Construir y iniciar todos los servicios
+docker compose up -d
+
+# Ver logs
+docker compose logs -f bot
+
+# Detener servicios
+docker compose down
+
+# Reconstruir tras cambios de codigo
+docker compose up -d --build
+```
+
+Servicios disponibles:
+- **Dashboard**: http://localhost:8501
+- **API**: http://localhost:8001/docs
+- **Bot**: Conecta a Ollama en `host.docker.internal:11434`
+
 ---
 
-## 13. Skills del Agente
+## 19. Skills del Agente
 
-El agente puede ejecutar funciones automáticamente cuando usas `/agente`. Disponibles:
+El agente puede ejecutar funciones automaticamente cuando usas `/agente`. Disponibles:
 
 ### Archivo
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
 | `run_command` | Ejecuta comandos del sistema |
 | `read_file` | Lee archivos |
@@ -650,61 +522,61 @@ El agente puede ejecutar funciones automáticamente cuando usas `/agente`. Dispo
 | `search_in_files` | Busca texto en archivos |
 
 ### LLM
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
 | `list_ollama_models` | Lista modelos Ollama disponibles |
 | `pull_ollama_model` | Descarga un modelo Ollama |
 
 ### Sistema
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
-| `get_system_info` | Información del sistema |
+| `get_system_info` | Informacion del sistema |
 | `get_env` | Obtiene variable de entorno |
 | `set_env` | Establece variable de entorno |
-| `check_service` | Verifica si un servicio está corriendo |
+| `check_service` | Verifica si un servicio esta corriendo |
 
 ### Wiki
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
-| `get_wiki_stats` | Estadísticas del wiki |
+| `get_wiki_stats` | Estadisticas del wiki |
 | `search_wiki` | Busca en el wiki |
 | `create_wiki_note` | Crea nota en el wiki |
 
 ### H-Mem
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
-| `hmem_remember` | Guarda en memoria híbrida |
+| `hmem_remember` | Guarda en memoria hibrida |
 | `hmem_recall` | Recupera de memoria |
 | `hmem_think` | Query + respuesta del LLM |
 | `hmem_get_context` | Contexto para prompts |
-| `hmem_get_stats` | Estadísticas del sistema |
+| `hmem_get_stats` | Estadisticas del sistema |
 | `hmem_get_recent` | Memorias recientes |
 
 ### Research
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
 | `search_arxiv` | Busca en arXiv |
 | `get_audio_summary` | Resume audio/video |
 
 ### GitHub
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
 | `clone_repo` | Clona repositorio Git |
 
-### Traducción
-| Función | Descripción |
+### Traduccion
+| Funcion | Descripcion |
 |---------|-------------|
 | `translate` | Traduce texto |
 | `detect_language` | Detecta idioma |
 
 ### Python
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
-| `execute_python` | Ejecuta código Python |
+| `execute_python` | Ejecuta codigo Python |
 | `install_package` | Instala paquete pip |
 
 ### Vault
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
 | `list_vaults` | Lista todos los vaults |
 | `create_vault` | Crea nuevo vault |
@@ -714,17 +586,17 @@ El agente puede ejecutar funciones automáticamente cuando usas `/agente`. Dispo
 | `import_vault` | Importa desde JSON |
 
 ### TurboQuant
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
-| `optimize_llm` | Aplica settings según modo |
+| `optimize_llm` | Aplica settings segun modo |
 | `show_turbo_status` | Muestra estado actual |
 | `benchmark_llm` | Benchmark de latencia |
-| `get_recommended_context` | Calcula óptimo por modelo |
+| `get_recommended_context` | Calcula optimo por modelo |
 
 ---
 
-## 📜 Historia
+## Historia
 
-**Ashurbanipal** (rey asirio, 668-627 a.C.) fue el último gran rey del Imperio Asirio. Su legado: la **Biblioteca de Nínive**, la primera colección sistemática del mundo. Su orden: *"Traedme cada tablilla que encontréis"*.
+**Ashurbanipal** (rey asirio, 668-627 a.C.) fue el ultimo gran rey del Imperio Asirio. Su legado: la **Biblioteca de Ninive**, la primera coleccion sistematica del mundo. Su orden: *"Traedme cada tablilla que encontreis"*.
 
 Este bot es el heredero moderno: no guarda arcilla, guarda conocimiento digital.
