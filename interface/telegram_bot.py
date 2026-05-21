@@ -87,6 +87,11 @@ from interface.handlers.graphify_handler import (
     graph_export_cmd,
 )
 
+from interface.handlers.vision import (
+    vision_cmd,
+    ocr_cmd,
+)
+
 STATUS = {
     "start": "🟢",
     "ingest": "📥",
@@ -493,6 +498,50 @@ async def handle_voice(update: Update, context: CallbackContext):
             os.remove(ogg_path)
 
 
+async def handle_photo(update: Update, context: CallbackContext):
+    """Handle photo messages with vision analysis."""
+    photo = update.message.photo[-1]
+    user_id = update.effective_user.id
+
+    file = await context.bot.get_file(photo.file_id)
+
+    import tempfile
+    from pathlib import Path
+
+    photo_path = Path(tempfile.gettempdir()) / f"photo_{user_id}_{file.file_id}.jpg"
+
+    try:
+        await file.download_to_drive(str(photo_path))
+        logger.info(f"Photo downloaded: {photo_path}")
+
+        context.user_data["last_photo"] = str(photo_path)
+
+        from core.vision import is_vision_available, analyze_photo_telegram
+
+        if not is_vision_available():
+            await update.message.reply_text(
+                "Vision no disponible. Instala un modelo llava en Ollama:\n"
+                "`ollama pull llava:7b`"
+            )
+            return
+
+        await update.message.reply_text("Analizando imagen...")
+
+        success, result = analyze_photo_telegram(str(photo_path))
+
+        if success:
+            await update.message.reply_text(result[:4000])
+        else:
+            await update.message.reply_text(f"Error analisis: {result}")
+
+    except Exception as e:
+        logger.error(f"Photo handling error: {e}")
+        await update.message.reply_text("Error procesando imagen")
+    finally:
+        if photo_path.exists():
+            os.remove(photo_path)
+
+
 async def agent_callback(update: Update, context: CallbackContext):
     """Handle agent callbacks."""
     query = update.callback_query
@@ -727,8 +776,12 @@ def main() -> None:
     app.add_handler(CommandHandler("cancel_schedule", cancel_schedule_cmd))
     app.add_handler(CommandHandler("toggle_schedule", toggle_schedule_cmd))
 
+    app.add_handler(CommandHandler("vision", vision_cmd))
+    app.add_handler(CommandHandler("ocr", ocr_cmd))
+
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, handle_voice))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(CallbackQueryHandler(agent_callback))
     app.add_handler(CallbackQueryHandler(vault_callback))
     app.add_handler(CallbackQueryHandler(query_callback_handler))

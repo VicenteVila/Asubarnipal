@@ -9,6 +9,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?style=flat&logo=docker)](docker-compose.yml)
+[![Contributing](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **Autonomous AI Agent** with Telegram interface, RAG-powered knowledge base, hybrid memory system (H-Mem), and real-time analytics dashboard.
 
@@ -16,14 +17,18 @@
 
 ## Features
 
-- **Telegram Bot** - 28+ commands for interaction, research, and knowledge management
-- **RAG Engine** - FAISS vector search with multilingual sentence transformers
+- **Telegram Bot** - 35+ commands with inline keyboards for interaction, research, and knowledge management
+- **RAG Engine** - Hybrid search (FAISS + BM25) with cross-encoder re-ranking and smart chunking
 - **H-Mem** - Hybrid temporal-semantic tree + entity knowledge graph memory
 - **Graphify** - Interactive knowledge graph visualization + natural language queries
+- **Vision** - Image analysis and OCR via Ollama vision models (llava)
+- **Voice STT** - Speech-to-text transcription via Whisper for voice messages
+- **Scheduled Research** - Recurring research tasks with configurable intervals
 - **Multi-LLM** - Ollama (local), Google Gemini, Brave Search routing
 - **Streamlit Dashboard** - 12 tabs with interactive graph visualization (850px window)
 - **REST API** - FastAPI server with 12+ endpoints
 - **Multi-Vault** - Isolated knowledge bases with separate databases and indices
+- **Docker** - Full docker-compose setup (bot, dashboard, api)
 - **Background Rituals** - Heartbeat, wiki repair, graph rebuilding, Graphify auto-update
 - **50+ Skills** - File operations, memory, wiki, system, research, translation
 
@@ -204,6 +209,23 @@ Services available at:
 | Command | Description |
 |---------|-------------|
 | `/agente <task>` | Autonomous reasoning with tool execution |
+
+### Vision & Voice
+
+| Command | Description |
+|---------|-------------|
+| `/vision [prompt]` | Analyze last photo with custom prompt |
+| `/ocr` | Extract text from last photo |
+| Voice messages | Auto-transcribed via Whisper |
+
+### Scheduled Research
+
+| Command | Description |
+|---------|-------------|
+| `/schedule <topic> [min]` | Schedule recurring research |
+| `/schedules` | List all scheduled tasks |
+| `/cancel_schedule <id>` | Cancel a scheduled task |
+| `/toggle_schedule <id>` | Toggle task on/off |
 
 ### H-Mem Memory System
 
