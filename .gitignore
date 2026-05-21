@@ -28,7 +28,41 @@ MANIFEST
 
 # Virtual environments
 .venv/
+venv_linux/
 venv/
+
+# Environment files
+.env
+.env.local
+.env.backup
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (SQLite, FAISS, logs)
+data/*.db
+data/*.db-journal
+data/*.faiss
+data/*.json
+!data/turboquant/README.md
+
+# TurboQuant benchmark results (large files)
+data/turboquant/benchmark-results-raw/
+
+# Logs
+*.log
+logs/
+
+# Streamlit
+.streamlit/
 venv_*/
 ENV/
 env/
