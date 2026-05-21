@@ -64,23 +64,15 @@ async def model_cmd(update: Update, context: CallbackContext) -> None:
     args = context.args
 
     if not args:
-        text = f"""🤖 *Modelo Actual:* `{config.OLLAMA_MODEL}`
+        text = f"""*Modelo Actual:* `{config.OLLAMA_MODEL}`
 
-*Ollama:*
-`qwen3.5:4b` - Qwen 3.5 4B
-`qwen3.5:8b` - Qwen 3.5 8B
-`llama3:8b` - Llama 3 8B
+*Ollama:* qwen3.5:4b, qwen3.5:8b, llama3:8b
+*Gemini:* gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro
 
-*Gemini:*
-`gemini-2.0-flash`
-`gemini-1.5-flash`
-`gemini-1.5-pro`
+*Selecciona un modelo o usa: /model <nombre>*"""
 
-*Usa: /model <nombre> para cambiar*
-
-Ejemplo: `/model llama3:8b` o `/model gemini-2.0-flash`"""
-
-        await update.message.reply_text(text, parse_mode="Markdown")
+        from .keyboards import build_model_keyboard
+        await update.message.reply_text(text, parse_mode="Markdown", reply_markup=build_model_keyboard())
         return
 
     new_model = args[0].lower()
@@ -270,3 +262,16 @@ async def calidad_cmd(update: Update, context: CallbackContext) -> None:
 
     await update.message.reply_text(text, parse_mode="Markdown")
     logger.success(f"Calidad: {accuracy:.0f}% accuracy, {total} evaluadas")
+
+
+async def model_callback(update: Update, context: CallbackContext) -> None:
+    """Handle inline keyboard callback for /model."""
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+    if data.startswith("model:"):
+        model = data.split(":")[1]
+        config.OLLAMA_MODEL = model
+        context.user_data["preferred_model"] = model
+        await query.edit_message_text(f"✅ Modelo cambiado a: *{model}*", parse_mode="Markdown")

@@ -105,23 +105,17 @@ async def charlar_cmd(update: Update, context: CallbackContext) -> None:
     args = context.args
 
     if not args:
-        text = """🎭 *Modos de Charla:*
+        text = """*Modos de Charla:*
 
-1️⃣ 💬 *Libre* — Conversación natural y creativa
-2️⃣ 🧠 *Consultor* — Análisis en 3 fases: Definición → Ejecución → Evaluación
-3️⃣ 🔥 *Devil's Advocate* — Crítica implacable, encuentra fallos y riesgos
-4️⃣ ❓ *Socrático* — Guía mediante preguntas, no da respuestas directas
-5️⃣ 🌐 *Lateral* — Perspectivas alternativas de chef, músico, tribu, algoritmo
+*Libre* — Conversacion natural y creativa
+*Consultor* — Analisis en 3 fases: Definicion → Ejecucion → Evaluacion
+*Devil* — Critica implacable, encuentra fallos y riesgos
+*Socratico* — Guia mediante preguntas, no da respuestas directas
+*Lateral* — Perspectivas alternativas de chef, musico, tribu, algoritmo
 
-*Usa: /charlar <modo> <tema>*
-
-*Ejemplos:*
-• `/charlar libre ¿Qué opinas de la IA?`
-• `/charlar consultor ¿Cómo mejorar este código?`
-• `/charlar devil ¿Es buena idea este producto?`
-• `/charlar socrático ¿Qué es la conciencia?`
-• `/charlar lateral ¿Cómo percibirá un ninja este problema?`"""
-        await update.message.reply_text(text, parse_mode="Markdown")
+*Selecciona un modo o usa: /charlar <modo> <tema>*"""
+        from .keyboards import build_charlar_keyboard
+        await update.message.reply_text(text, parse_mode="Markdown", reply_markup=build_charlar_keyboard())
         return
 
     mode = args[0].lower()
@@ -206,4 +200,21 @@ Responde ahora según este modo."""
             await update.message.reply_text("❌ No hubo respuesta del modelo.")
     except Exception as e:
         logger.error(f"Charla exception: {e}")
-        await update.message.reply_text(f"❌ Error inesperado en modo {mode}")
+        await update.message.reply_text(f"Error inesperado en modo {mode}")
+
+
+async def charlar_callback(update: Update, context: CallbackContext) -> None:
+    """Handle inline keyboard callback for /charlar."""
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+    if data.startswith("charlar:"):
+        mode = data.split(":")[1]
+        if mode in MODES:
+            mode_info = MODES[mode]
+            text = f"*{mode_info['name']} seleccionado* {mode_info['emoji']}\n\n{mode_info['welcome']}\n\nAhora envia un mensaje con el tema que quieres tratar."
+            context.user_data["charla_mode"] = mode
+            await query.edit_message_text(text, parse_mode="Markdown")
+        else:
+            await query.edit_message_text(f"Modo '{mode}' no reconocido.")
