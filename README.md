@@ -13,14 +13,15 @@
 
 ## Features
 
-- **Telegram Bot** - 21+ commands for interaction, research, and knowledge management
+- **Telegram Bot** - 28+ commands for interaction, research, and knowledge management
 - **RAG Engine** - FAISS vector search with multilingual sentence transformers
 - **H-Mem** - Hybrid temporal-semantic tree + entity knowledge graph memory
+- **Graphify** - Interactive knowledge graph visualization + natural language queries
 - **Multi-LLM** - Ollama (local), Google Gemini, Brave Search routing
-- **Streamlit Dashboard** - 12 tabs for monitoring, analytics, and administration
+- **Streamlit Dashboard** - 12 tabs with interactive graph visualization (850px window)
 - **REST API** - FastAPI server with 12+ endpoints
 - **Multi-Vault** - Isolated knowledge bases with separate databases and indices
-- **Background Rituals** - Heartbeat monitoring, wiki repair, graph rebuilding
+- **Background Rituals** - Heartbeat, wiki repair, graph rebuilding, Graphify auto-update
 - **50+ Skills** - File operations, memory, wiki, system, research, translation
 
 ---
@@ -222,6 +223,39 @@ Weights: Semantic (0.4) + Temporal (0.3) + Robustness (0.3)
 
 ---
 
+## Graphify: Knowledge Graph
+
+Interactive knowledge graph built with [graphifyy](https://github.com/safishamsi/graphify). Scans wiki notes, raw sources, and Obsidian vault to produce a queryable graph.
+
+```
+graphify-out/
+├── graph.html          ← Interactive visualization (clickable nodes, filters, search)
+├── GRAPH_REPORT.md     ← Summary: key concepts, surprising connections
+└── graph.json          ← Full queryable graph
+```
+
+### Telegram Commands
+
+| Command | Description |
+|---------|-------------|
+| `/graphify` | Build knowledge graph |
+| `/graphify deep` | Deep mode (aggressive relationship extraction) |
+| `/graph_update` | Update changed files only (fast) |
+| `/graph_query <question>` | Query graph with natural language |
+| `/graph_stats` | Show graph statistics |
+| `/graph_report` | Show graph report |
+| `/graph_add <url>` | Add URL to graph |
+| `/graph_export <format>` | Export (html, svg, graphml, wiki, callflow) |
+
+### Dashboard Integration
+
+Tab **"Grafo"** → Select **"Graphify (Interactivo)"** for:
+- **850px interactive visualization** — clickable nodes, community filters, search
+- **Real-time stats** — nodes, edges, communities, hubs
+- **Graph report** — surprising connections, suggested questions
+
+---
+
 ## Dashboard
 
 Access at `http://localhost:8501` after running `streamlit run dashboard.py`.
@@ -271,6 +305,8 @@ Access at `http://localhost:8000/docs` for Swagger UI.
 | **Heartbeat** | 60s | Logs CPU/RAM to `data/heartbeat.json` |
 | **Suture** | 10min | Cleans and repairs wiki, fixes orphans |
 | **Graph** | 30min | Rebuilds vector relationships |
+| **Graphify** | 30min | Rebuilds interactive knowledge graph with Ollama |
+| **H-Mem** | 30min | Consolidates temporal-semantic tree + entity graph |
 
 ---
 

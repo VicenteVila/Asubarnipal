@@ -422,9 +422,84 @@ H-Mem no reemplaza a ninguno — complementa el sistema con **memoria conversaci
 
 ---
 
-## 8. Vaults (Multi-Vault)
+## 8. Grafo de Conocimiento (Graphify)
 
-### 8.1 Comandos de gestión
+### 8.1 ¿Qué es?
+
+Graphify construye un **grafo de conocimiento queryable** a partir de tus notas wiki, fuentes raw y contenido del vault Obsidian. Genera:
+
+```
+graphify-out/
+├── graph.html          ← Visualización interactiva en navegador (nodos clicables, filtros, búsqueda)
+├── GRAPH_REPORT.md     ← Resumen: nodos clave, conexiones sorprendentes, preguntas sugeridas
+└── graph.json          ← Grafo completo para consulta directa
+```
+
+### 8.2 Comandos de Telegram
+
+| Comando | Descripción | Ejemplo |
+|---------|-------------|---------|
+| `/graphify` | Construye el grafo de conocimiento completo | `/graphify` |
+| `/graphify deep` | Modo profundo (extracción agresiva de relaciones) | `/graphify deep` |
+| `/graphify force` | Fuerza reconstrucción aunque haya menos nodos | `/graphify force` |
+| `/graph_update` | Actualiza solo archivos cambiados (rápido) | `/graph_update` |
+| `/graph_query <pregunta>` | Consulta el grafo con lenguaje natural | `/graph_query qué conecta transformers con attention` |
+| `/graph_stats` | Muestra estadísticas del grafo | `/graph_stats` |
+| `/graph_report` | Muestra el reporte del grafo | `/graph_report` |
+| `/graph_add <url>` | Añade una URL al grafo | `/graph_add https://arxiv.org/abs/1706.03762` |
+| `/graph_export <formato>` | Exporta el grafo (html, svg, graphml, wiki, callflow) | `/graph_export svg` |
+
+### 8.3 Dashboard
+
+En el **Dashboard → Tab "Grafo"**, selecciona **"Graphify (Interactivo)"** para ver:
+
+- **Visualización HTML interactiva** (850px de alto) — nodos clicables, filtros por comunidad, búsqueda
+- **Estadísticas en tiempo real** — nodos, conexiones, comunidades, hubs
+- **Top Hubs** — los conceptos más conectados del grafo
+- **Reporte del grafo** — conexiones sorprendentes, preguntas sugeridas
+
+### 8.4 Backend
+
+Graphify usa **Ollama** como backend por defecto (ya configurado). Soporta también:
+- Gemini (`--backend gemini`)
+- OpenAI (`--backend openai`)
+- Claude (`--backend claude`)
+
+### 8.5 Ejemplos de uso
+
+```
+/graphify
+  → Construye grafo desde wiki/ → graph.html + graph.json + GRAPH_REPORT.md
+
+/graph_query "qué relación tiene attention con transformers"
+  → Consulta el grafo y responde con las conexiones encontradas
+
+/graph_stats
+  → Nodos: 245, Conexiones: 1,892, Comunidades: 12, Hubs: 10
+
+/graph_add https://arxiv.org/abs/1810.04805
+  → Descarga el paper de BERT, lo extrae y lo añade al grafo
+
+/graph_export svg
+  → Exporta grafo como imagen vectorial para presentaciones
+```
+
+### 8.6 Diferencia con otros sistemas
+
+| Sistema | Qué genera | Cuándo usarlo |
+|---------|-----------|---------------|
+| **Graphify** | Grafo de conocimiento visual + queryable | Explorar conexiones, visualizar relaciones |
+| **Wiki (/query)** | Notas estructuradas con frontmatter | Buscar conocimiento específico |
+| **RAG (/query_vectorial)** | Búsqueda semántica por embeddings | Buscar por significado, no palabras |
+| **H-Mem** | Memoria conversacional temporal | Recordar conversaciones pasadas |
+
+Graphify **complementa** todos los sistemas — es la capa de visualización y exploración del conocimiento.
+
+---
+
+## 9. Vaults (Multi-Vault)
+
+### 9.1 Comandos de gestión
 
 | Comando | Descripción | Ejemplo |
 |---------|-------------|---------|
@@ -438,7 +513,7 @@ H-Mem no reemplaza a ninguno — complementa el sistema con **memoria conversaci
 | `/vault_connect <ruta> [nombre]` | Conecta vault Obsidian externo | `/vault_connect /mnt/Obsidian/proyecto` |
 | `/vault_disconnect [nombre]` | Desconecta vault | `/vault_disconnect proyecto` |
 
-### 8.2 Ejemplo de flujo
+### 9.2 Ejemplo de flujo
 
 ```
 /vaults                              → Ver todos los vaults
@@ -450,7 +525,7 @@ H-Mem no reemplaza a ninguno — complementa el sistema con **memoria conversaci
 /vault_import proyectos backup.json → Importar desde JSON
 ```
 
-### 8.3 Características
+### 9.3 Características
 
 - **Vaults únicos**: Cada vault tiene su propia DB (`data/wiki_{nombre}.db`)
 - **RAG separado**: Cada vault tiene su propio índice FAISS
@@ -460,16 +535,16 @@ H-Mem no reemplaza a ninguno — complementa el sistema con **memoria conversaci
 
 ---
 
-## 9. Sesión y Chat
+## 10. Sesión y Chat
 
-### 9.1 Estado de sesión
+### 10.1 Estado de sesión
 
 | Comando | Descripción |
 |---------|-------------|
 | `/session` | Muestra: mensajes, tokens, modo, modelo, límites |
 | `/clear_session` | Limpia el historial de chat del usuario |
 
-### 9.2 Auto-detección
+### 10.2 Auto-detección
 
 El bot detecta automáticamente estos patrones:
 
@@ -485,9 +560,9 @@ El bot detecta automáticamente estos patrones:
 
 ---
 
-## 10. Configuración y Background Jobs
+## 11. Configuración y Background Jobs
 
-### 10.1 Endpoints LLM
+### 11.1 Endpoints LLM
 
 - **Ollama:** `qwen3.5:4b` (local, configurable con `/model`)
 - **Gemini:** Rotación automática entre claves configuradas
