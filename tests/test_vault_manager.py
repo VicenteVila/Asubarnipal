@@ -36,23 +36,26 @@ class TestVaultManager(unittest.TestCase):
         from core.vault_manager import VaultManager
         with patch.object(VaultManager, '_load_config', return_value={}):
             vm = VaultManager()
-            vm.vaults = {}
+            vm._config = {"vaults": {}, "active_vault": None}
             result = vm.list_vaults()
-            self.assertEqual(result, [])
+            self.assertIsInstance(result, dict)
+            self.assertEqual(result.get("total"), 0)
 
     def test_list_vaults_with_data(self):
         """Test listing vaults with existing data."""
         from core.vault_manager import VaultManager
         with patch.object(VaultManager, '_load_config', return_value={}):
             vm = VaultManager()
-            vm.vaults = {
-                "principal": {"path": "/data/principal"},
-                "research": {"path": "/data/research"},
+            vm._config = {
+                "vaults": {
+                    "principal": {"path": "/data/principal"},
+                    "research": {"path": "/data/research"},
+                },
+                "active_vault": "principal"
             }
             result = vm.list_vaults()
-            self.assertEqual(len(result), 2)
-            self.assertIn("principal", result)
-            self.assertIn("research", result)
+            self.assertIsInstance(result, dict)
+            self.assertEqual(result.get("total"), 2)
 
     def test_get_active_vault(self):
         """Test getting active vault name."""

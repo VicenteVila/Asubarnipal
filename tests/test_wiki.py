@@ -24,10 +24,13 @@ class TestWikiEntityOperations(unittest.TestCase):
         self.db_patcher = patch('config.WIKI_PATH', Path(self.temp_db))
         self.wiki_patcher.start()
         self.db_patcher.start()
+        self.vault_patcher = patch("core.vault_manager.get_vault_manager", return_value=Mock(get_active=Mock(return_value=None)))
+        self.vault_patcher.start()
 
     def tearDown(self):
         self.wiki_patcher.stop()
         self.db_patcher.stop()
+        self.vault_patcher.stop()
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_add_entity_success(self):
@@ -76,10 +79,13 @@ class TestWikiRelations(unittest.TestCase):
         self.db_patcher = patch('config.WIKI_PATH', Path(self.temp_db))
         self.wiki_patcher.start()
         self.db_patcher.start()
+        self.vault_patcher = patch("core.vault_manager.get_vault_manager", return_value=Mock(get_active=Mock(return_value=None)))
+        self.vault_patcher.start()
 
     def tearDown(self):
         self.wiki_patcher.stop()
         self.db_patcher.stop()
+        self.vault_patcher.stop()
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_add_entity_with_relations(self):
@@ -111,10 +117,13 @@ class TestWikiHubs(unittest.TestCase):
         self.db_patcher = patch('config.WIKI_PATH', Path(self.temp_db))
         self.wiki_patcher.start()
         self.db_patcher.start()
+        self.vault_patcher = patch("core.vault_manager.get_vault_manager", return_value=Mock(get_active=Mock(return_value=None)))
+        self.vault_patcher.start()
 
     def tearDown(self):
         self.wiki_patcher.stop()
         self.db_patcher.stop()
+        self.vault_patcher.stop()
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_get_hubs_returns_list(self):
@@ -137,10 +146,13 @@ class TestWikiClusters(unittest.TestCase):
         self.db_patcher = patch('config.WIKI_PATH', Path(self.temp_db))
         self.wiki_patcher.start()
         self.db_patcher.start()
+        self.vault_patcher = patch("core.vault_manager.get_vault_manager", return_value=Mock(get_active=Mock(return_value=None)))
+        self.vault_patcher.start()
 
     def tearDown(self):
         self.wiki_patcher.stop()
         self.db_patcher.stop()
+        self.vault_patcher.stop()
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_get_clusters_with_tags(self):
@@ -165,10 +177,13 @@ class TestWikiLint(unittest.TestCase):
         self.db_patcher = patch('config.WIKI_PATH', Path(self.temp_db))
         self.wiki_patcher.start()
         self.db_patcher.start()
+        self.vault_patcher = patch("core.vault_manager.get_vault_manager", return_value=Mock(get_active=Mock(return_value=None)))
+        self.vault_patcher.start()
 
     def tearDown(self):
         self.wiki_patcher.stop()
         self.db_patcher.stop()
+        self.vault_patcher.stop()
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_lint_returns_health_score(self):
@@ -200,10 +215,13 @@ class TestWikiIngest(unittest.TestCase):
         self.db_patcher = patch('config.WIKI_PATH', Path(self.temp_db))
         self.wiki_patcher.start()
         self.db_patcher.start()
+        self.vault_patcher = patch("core.vault_manager.get_vault_manager", return_value=Mock(get_active=Mock(return_value=None)))
+        self.vault_patcher.start()
 
     def tearDown(self):
         self.wiki_patcher.stop()
         self.db_patcher.stop()
+        self.vault_patcher.stop()
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     @patch('requests.get')
@@ -230,10 +248,13 @@ class TestWikiLanguageDetection(unittest.TestCase):
         self.db_patcher = patch('config.WIKI_PATH', Path(self.temp_db))
         self.wiki_patcher.start()
         self.db_patcher.start()
+        self.vault_patcher = patch("core.vault_manager.get_vault_manager", return_value=Mock(get_active=Mock(return_value=None)))
+        self.vault_patcher.start()
 
     def tearDown(self):
         self.wiki_patcher.stop()
         self.db_patcher.stop()
+        self.vault_patcher.stop()
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_detect_english(self):

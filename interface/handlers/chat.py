@@ -134,10 +134,17 @@ async def charlar_cmd(update: Update, context: CallbackContext) -> None:
         )
         return
 
+    if mode not in MODES:
+        valid_modes = ", ".join(MODES.keys())
+        await update.message.reply_text(
+            f"Modo '{mode}' no reconocido. Modos validos: {valid_modes}"
+        )
+        return
+
     valid, error = validate_topic(topic)
     if not valid:
-        logger.warn(f"Charla topic inválido: {error}")
-        await update.message.reply_text(f"❌ Tema inválido: {error}")
+        logger.warn(f"Charla topic invalido: {error}")
+        await update.message.reply_text(f"Error: Tema invalido: {error}")
         return
 
     topic = topic.strip()
@@ -198,5 +205,5 @@ Responde ahora según este modo."""
         else:
             await update.message.reply_text("❌ No hubo respuesta del modelo.")
     except Exception as e:
-        logger.error(f"Charla exception", exc=e)
+        logger.error(f"Charla exception: {e}")
         await update.message.reply_text(f"❌ Error inesperado en modo {mode}")

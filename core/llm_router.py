@@ -68,7 +68,7 @@ class LLMRouter:
                 return self._http_chat(target_model, standard_messages, tools or [], start)
                 
         except Exception as e:
-            logger.error(f"Chat error: {e}", exc=e)
+            logger.error(f"Chat error: {e}: {e}")
             raise
     
     def _http_chat(self, model: str, messages: list[dict], tools: list, start: float) -> dict:

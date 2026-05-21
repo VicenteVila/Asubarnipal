@@ -186,7 +186,7 @@ class AgentService:
             logger.info(f"Agent chat completed in {result['time']:.2f}s")
             return result
         except Exception as e:
-            logger.error(f"Agent chat error: {e}", exc=e)
+            logger.error(f"Agent chat error: {e}: {e}")
             agent_state.record_failure(str(e))
             return {
                 "response": f"Error: {e}",
@@ -408,7 +408,7 @@ class AsubarnipalService:
             logger.info(f"Agent chat completed in {result['time']:.2f}s")
             return result
         except Exception as e:
-            logger.error(f"Agent chat error: {e}", exc=e)
+            logger.error(f"Agent chat error: {e}: {e}")
             agent_state.record_failure(str(e))
             return {
                 "response": f"Error: {e}",
