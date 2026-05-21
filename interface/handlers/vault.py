@@ -1,11 +1,12 @@
 """Vault management command handlers for Telegram."""
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import CallbackContext
 
 import config
 from core.bot_logger import logger
 from core.vault_manager import get_vault_manager
+from .keyboards import build_vault_keyboard
 
 PENDING_ACTIONS = {}
 
@@ -18,29 +19,28 @@ async def vaults_cmd(update: Update, context: CallbackContext):
     result = vm.list_vaults()
 
     if not result.get("success"):
-        await update.message.reply_text(f"❌ Error: {result.get('error')}")
+        await update.message.reply_text(f"Error: {result.get('error')}")
         return
 
     active = result.get("active_vault")
     vaults = result.get("vaults", [])
 
-    text = f"📚 *Vaults de Conocimiento*\n\n"
-    text += f"🟢 Activo: *{active}*\n\n"
-    text += "_" * 30 + "\n\n"
+    text = f"*Vaults de Conocimiento*\n\n"
+    text += f"Activo: *{active}*\n\n"
 
     for v in vaults:
-        status = "✅" if v["active"] else "⬜"
+        status = "✅" if v["active"] else ""
         count = v.get("notes_count", 0)
         text += f"{status} *{v['name']}*\n"
-        text += f"   📂 {v['path']}\n"
-        text += f"   📊 Notas: {count}\n"
+        text += f"   {v['path']}\n"
+        text += f"   Notas: {count}\n"
         if v.get("description"):
-            text += f"   📝 {v['description']}\n"
+            text += f"   {v['description']}\n"
         text += "\n"
 
-    text += f"_Total: {result.get('total', 0)} vaults_"
+    text += f"Total: {result.get('total', 0)} vaults"
 
-    await update.message.reply_text(text, parse_mode="Markdown")
+    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=build_vault_keyboard())
 
 
 async def vault_create_cmd(update: Update, context: CallbackContext):
@@ -49,7 +49,7 @@ async def vault_create_cmd(update: Update, context: CallbackContext):
 
     if not args:
         await update.message.reply_text(
-            "📦 *Crear nuevo vault*\n\n"
+            "*Crear nuevo vault*\n\n"
             "Usa: /vault_create <nombre>\n\n"
             "Ejemplo: `/vault_create investigacion_ia`"
         )
@@ -61,7 +61,7 @@ async def vault_create_cmd(update: Update, context: CallbackContext):
     vm = get_vault_manager()
 
     if name.lower().replace(" ", "_") in vm._config.get("vaults", {}):
-        await update.message.reply_text(f"❌ El vault '{name}' ya existe")
+        await update.message.reply_text(f"El vault '{name}' ya existe")
         return
 
     user_id = update.effective_user.id
@@ -70,15 +70,16 @@ async def vault_create_cmd(update: Update, context: CallbackContext):
         "name": name,
     }
 
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     keyboard = [
-        [InlineKeyboardButton("✅ Confirmar", callback_data="vault_confirm"),
-         InlineKeyboardButton("❌ Cancelar", callback_data="vault_cancel")],
+        [InlineKeyboardButton("Confirmar", callback_data="vault_confirm"),
+         InlineKeyboardButton("Cancelar", callback_data="vault_cancel")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        f"📦 *Confirmar creación de vault*\n\n"
-        f"📛 Nombre: *{name}*\n\n"
+        f"*Confirmar creacion de vault*\n\n"
+        f"Nombre: *{name}*\n\n"
         f"Indica la ruta del vault:",
         reply_markup=reply_markup,
         parse_mode="Markdown"
@@ -91,7 +92,7 @@ async def vault_use_cmd(update: Update, context: CallbackContext):
 
     if not args:
         await update.message.reply_text(
-            "🔄 *Cambiar vault activo*\n\n"
+            "*Cambiar vault activo*\n\n"
             "Usa: /vault_use <nombre>\n\n"
             "Para ver los vaults disponibles: `/vaults`"
         )
@@ -105,14 +106,14 @@ async def vault_use_cmd(update: Update, context: CallbackContext):
 
     if result.get("success"):
         await update.message.reply_text(
-            f"✅ *Vault cambiado*\n\n"
-            f"📛 Nombre: *{result['name']}*\n"
-            f"📂 Path: `{result['path']}`\n\n"
-            f"Todos los comandos de wiki usarán este vault.",
+            f"*Vault cambiado*\n\n"
+            f"Nombre: *{result['name']}*\n"
+            f"Path: `{result['path']}`\n\n"
+            f"Todos los comandos de wiki usaran este vault.",
             parse_mode="Markdown"
         )
     else:
-        await update.message.reply_text(f"❌ Error: {result.get('error')}")
+        await update.message.reply_text(f"Error: {result.get('error')}")
 
 
 async def vault_info_cmd(update: Update, context: CallbackContext):
@@ -123,7 +124,7 @@ async def vault_info_cmd(update: Update, context: CallbackContext):
     vault = vm.get_active()
 
     if not vault:
-        await update.message.reply_text("❌ No hay vault activo")
+        await update.message.reply_text("No hay vault activo")
         return
 
     import sqlite3
@@ -146,15 +147,15 @@ async def vault_info_cmd(update: Update, context: CallbackContext):
             pass
 
     await update.message.reply_text(
-        f"📂 *Vault Activo*\n\n"
-        f"📛 Nombre: *{vault['name']}*\n"
-        f"📝 Descripción: {vault.get('description', 'N/A')}\n"
-        f"📂 Path: `{vault['path']}`\n"
-        f"🗄️ DB: `{vault['db_path']}`\n\n"
-        f"📊 *Estadísticas:*\n"
-        f"   • Notas: {notes}\n"
-        f"   • Conceptos: {concepts}\n"
-        f"   • Creado: {vault.get('created', 'N/A')}",
+        f"*Vault Activo*\n\n"
+        f"Nombre: *{vault['name']}*\n"
+        f"Descripcion: {vault.get('description', 'N/A')}\n"
+        f"Path: `{vault['path']}`\n"
+        f"DB: `{vault['db_path']}`\n\n"
+        f"*Estadisticas:*\n"
+        f"   - Notas: {notes}\n"
+        f"   - Conceptos: {concepts}\n"
+        f"   - Creado: {vault.get('created', 'N/A')}",
         parse_mode="Markdown"
     )
 
@@ -165,10 +166,10 @@ async def vault_delete_cmd(update: Update, context: CallbackContext):
 
     if not args:
         await update.message.reply_text(
-            "🗑️ *Eliminar vault*\n\n"
+            "*Eliminar vault*\n\n"
             "Usa: /vault_delete <nombre>\n\n"
-            "⚠️ Se creará backup automático antes de eliminar.\n"
-            "⚠️ No se puede eliminar el vault principal."
+            "Se creara backup automatico antes de eliminar.\n"
+            "No se puede eliminar el vault principal."
         )
         return
 
@@ -176,13 +177,13 @@ async def vault_delete_cmd(update: Update, context: CallbackContext):
     logger.incoming(f"/vault_delete {name}")
 
     if name == "principal":
-        await update.message.reply_text("❌ No se puede eliminar el vault 'principal'")
+        await update.message.reply_text("No se puede eliminar el vault 'principal'")
         return
 
     vm = get_vault_manager()
 
     if name not in vm._config.get("vaults", {}):
-        await update.message.reply_text(f"❌ El vault '{name}' no existe")
+        await update.message.reply_text(f"El vault '{name}' no existe")
         return
 
     user_id = update.effective_user.id
@@ -191,17 +192,18 @@ async def vault_delete_cmd(update: Update, context: CallbackContext):
         "name": name,
     }
 
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     keyboard = [
-        [InlineKeyboardButton("🗑️ Eliminar", callback_data="vault_confirm"),
-         InlineKeyboardButton("❌ Cancelar", callback_data="vault_cancel")],
+        [InlineKeyboardButton("Eliminar", callback_data="vault_confirm"),
+         InlineKeyboardButton("Cancelar", callback_data="vault_cancel")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        f"⚠️ *Confirmar eliminación*\n\n"
-        f"📛 Vault: *{name}*\n\n"
-        f"Se creará backup en `data/backups/` antes de eliminar.\n"
-        f"Esta acción no se puede deshacer.",
+        f"*Confirmar eliminacion*\n\n"
+        f"Vault: *{name}*\n\n"
+        f"Se creara backup en `data/backups/` antes de eliminar.\n"
+        f"Esta accion no se puede deshacer.",
         reply_markup=reply_markup,
         parse_mode="Markdown"
     )

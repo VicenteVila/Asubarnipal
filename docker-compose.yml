@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    container_name: asubarnipal-bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - DATA_DIR=/app/data
+    volumes:
+      - bot_data:/app/data
+      - bot_logs:/app/logs
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: python -m interface.telegram_bot
+
+  dashboard:
+    build: .
+    container_name: asubarnipal-dashboard
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - DATA_DIR=/app/data
+    volumes:
+      - bot_data:/app/data
+    ports:
+      - "8501:8501"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: streamlit run dashboard.py --server.port 8501 --server.address 0.0.0.0
+
+  api:
+    build: .
+    container_name: asubarnipal-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - DATA_DIR=/app/data
+    volumes:
+      - bot_data:/app/data
+    ports:
+      - "8001:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: python -m api.main --host 0.0.0.0 --port 8000
+
+volumes:
+  bot_data:
+  bot_logs:
