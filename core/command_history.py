@@ -126,9 +126,9 @@ if __name__ == "__main__":
     history = CommandHistory()
     stats = history.get_stats()
     
-    print("📊 Command Analytics")
-    print(f"  Total comandos: {stats['total']}")
-    print(f"  Comandos únicos: {stats['unique_commands']}")
-    print("\n🔝 Top 5 comandos:")
+    print("Command Analytics")
+    print(f"  Total commands: {stats['total']}")
+    print(f"  Unique commands: {stats['unique_commands']}")
+    print("\nTop 5 commands:")
     for cmd in stats["top_commands"][:5]:
         print(f"  - {cmd['cmd'][:40]}: {cmd['count']}")

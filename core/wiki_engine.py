@@ -243,7 +243,7 @@ SINTESIS_TITULO: Título sugerido
         try:
             analisis = llm.generate(prompt)
         except Exception as e:
-            logger.warning(f"Error en análisis LLM: {e}")
+            logger.warning(f"LLM analysis error: {e}")
             analisis = "ENTIDADES:\nCONCEPTOS:\nSINTESIS_TITULO:"
         
         entidades = []

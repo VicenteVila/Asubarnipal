@@ -51,7 +51,7 @@ class FeedTracker:
         try:
             feed = feedparser.parse(url)
             if feed.bozo and not feed.entries:
-                logger.warning(f"Feed no válido: {url}")
+                logger.warning(f"Invalid feed: {url}")
                 return False
             
             name = name or feed.feed.get("title", url)
