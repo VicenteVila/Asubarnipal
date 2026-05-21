@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml/badge.svg)](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-132%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-147%20passing-brightgreen.svg)](tests/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-blue.svg)](https://core.telegram.org/bots)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -330,8 +330,10 @@ Access at `http://localhost:8000/docs` for Swagger UI.
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | API info |
-| `/health` | GET | Health check |
+| `/health` | GET | Health check with uptime |
+| `/metrics` | GET | Request metrics (error rate, response times) |
 | `/command` | POST | Execute command via SkillRegistry |
+| `/query` | POST | Knowledge query (wiki, vectorial, hybrid, hmem) |
 | `/status` | GET | Agent state |
 | `/stats` | GET | Wiki statistics |
 | `/feeds` | GET | List RSS subscriptions |
@@ -340,7 +342,15 @@ Access at `http://localhost:8000/docs` for Swagger UI.
 | `/feeds/check` | GET | Check feed updates |
 | `/history` | GET | Command history |
 | `/history/add` | POST | Add to history |
-| `/logs` | GET | Get agent logs |
+| `/logs` | GET | Get agent logs (with level filter) |
+| `/schedules` | GET | List scheduled research tasks |
+| `/vaults` | GET | List all vaults |
+
+**Features:**
+- Rate limiting (60 req/min per IP)
+- CORS enabled
+- Error handlers with structured responses
+- Metrics collection (p95 response time, error rate)
 
 ---
 
@@ -387,7 +397,7 @@ python -m pytest tests/test_llm_router.py -v
 python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-**Test Coverage**: 132 passing tests across 9 test modules (100%).
+**Test Coverage**: 147 passing tests across 11 test modules (100%).
 
 ---
 
