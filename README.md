@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml/badge.svg)](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-147%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-154%20passing-brightgreen.svg)](tests/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-blue.svg)](https://core.telegram.org/bots)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -397,7 +397,7 @@ python -m pytest tests/test_llm_router.py -v
 python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-**Test Coverage**: 147 passing tests across 11 test modules (100%).
+**Test Coverage**: 154 passing tests across 12 test modules (100%).
 
 ---
 
@@ -406,7 +406,8 @@ python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 Asubarnipal/
 ├── api/
-│   └── main.py                 # FastAPI REST server (port 8000)
+│   ├── main.py                 # FastAPI REST server (port 8000)
+│   └── middleware.py           # Rate limiting, metrics, CORS
 ├── app/
 │   └── service.py              # Agent service (LLM + skills + RAG)
 ├── core/
@@ -426,6 +427,8 @@ Asubarnipal/
 │   ├── stt.py                  # Speech-to-text (Whisper)
 │   ├── vision.py               # Image analysis (Ollama vision)
 │   ├── research_scheduler.py   # Scheduled research tasks
+│   ├── rate_limiter.py         # Token bucket rate limiting
+│   ├── logging_config.py       # Structured JSON logging
 │   └── ...
 ├── interface/
 │   ├── telegram_bot.py         # Bot entrypoint
@@ -450,7 +453,7 @@ Asubarnipal/
 ├── dashboard.py                # Streamlit dashboard (12 tabs)
 ├── config.py                   # Configuration
 ├── requirements.txt            # Python dependencies
-├── tests/                      # Unit tests (132 passing)
+├── tests/                      # Unit tests (154 passing)
 ├── examples/                   # Usage examples
 └── data/                       # SQLite, FAISS index, logs
 ```
