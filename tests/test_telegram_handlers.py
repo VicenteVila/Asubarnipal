@@ -41,6 +41,7 @@ class MockContext:
     """Mock Telegram CallbackContext."""
     def __init__(self, args=None):
         self.args = args or []
+        self.user_data = {}
 
 
 def run_async(coro):
@@ -115,7 +116,7 @@ class TestWikiHandlers(unittest.TestCase):
 
             run_async(query_cmd(update, context))
 
-            self.assertIn("No encontré", update.message._reply)
+            self.assertIn("No encontre", update.message._reply)
 
     def test_query_cmd_no_args(self):
         from interface.handlers.wiki import query_cmd
@@ -125,7 +126,8 @@ class TestWikiHandlers(unittest.TestCase):
 
         run_async(query_cmd(update, context))
 
-        self.assertIn("Usa: /query", update.message._reply)
+        self.assertIn("Buscar en Wiki", update.message._reply)
+        self.assertIn("selecciona un modo", update.message._reply)
 
     def test_hubs_cmd(self):
         with patch('core.wiki.Wiki') as mock_wiki_class:
