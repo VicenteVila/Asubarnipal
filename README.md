@@ -3,11 +3,12 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml/badge.svg)](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-57%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-110%20passing-brightgreen.svg)](tests/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-blue.svg)](https://core.telegram.org/bots)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue?style=flat&logo=docker)](docker-compose.yml)
 
 **Autonomous AI Agent** with Telegram interface, RAG-powered knowledge base, hybrid memory system (H-Mem), and real-time analytics dashboard.
 
@@ -133,6 +134,27 @@ streamlit run dashboard.py
 # FastAPI REST API (port 8000)
 python -m api.main
 ```
+
+### Docker
+
+```bash
+# Build and start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f bot
+
+# Stop all services
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up -d --build
+```
+
+Services available at:
+- **Dashboard**: http://localhost:8501
+- **API**: http://localhost:8001/docs
+- **Bot**: Connects to Ollama on host via `host.docker.internal:11434`
 
 ---
 
@@ -343,7 +365,7 @@ python -m pytest tests/test_llm_router.py -v
 python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-**Test Coverage**: 57 passing tests across 4 test modules.
+**Test Coverage**: 110 passing tests across 6 test modules (100%).
 
 ---
 
@@ -380,6 +402,7 @@ Asubarnipal/
 │       ├── agente.py           # /agente, /model, /query_vectorial
 │       ├── hmem_commands.py    # H-Mem commands
 │       ├── vault.py            # Vault management commands
+│       ├── keyboards.py        # Inline keyboard builders
 │       └── validators.py       # Input validators
 ├── skills/
 │   ├── default_skills.py       # 45+ operational skills
@@ -390,7 +413,7 @@ Asubarnipal/
 ├── dashboard.py                # Streamlit dashboard (12 tabs)
 ├── config.py                   # Configuration
 ├── requirements.txt            # Python dependencies
-├── tests/                      # Unit tests (57 passing)
+├── tests/                      # Unit tests (110 passing)
 ├── examples/                   # Usage examples
 └── data/                       # SQLite, FAISS index, logs
 ```
@@ -405,6 +428,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Author
 
-**Vicente Vila** - AI Engineer & Researcher
+**Vicente Vila**
 
 - GitHub: [@VicenteVila](https://github.com/VicenteVila)
