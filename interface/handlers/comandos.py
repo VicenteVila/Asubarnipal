@@ -9,6 +9,7 @@ from telegram.ext import CallbackContext
 
 from core.bot_logger import logger
 from core.background_manager import BraveCounter
+from .error_handler import handle_errors
 
 
 def get_status_text() -> str:
@@ -127,13 +128,15 @@ async def manual_cmd(update: Update, context: CallbackContext):
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
-async def status_cmd(update: Update, context: CallbackContext):
+@handle_errors("Status unavailable. System may be overloaded.")
+async def status_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /status command."""
     logger.incoming("/status")
     await update.message.reply_text(get_status_text(), parse_mode="Markdown")
 
 
-async def reporte_cmd(update: Update, context: CallbackContext):
+@handle_errors("Report generation failed. Please try again.")
+async def reporte_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /reporte command."""
     logger.incoming("/reporte")
 
