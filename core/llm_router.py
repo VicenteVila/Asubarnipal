@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class LLMRouter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.base_url = config.OLLAMA_BASE_URL
         self.model = config.OLLAMA_MODEL
         self.ollama_client = None
@@ -20,20 +20,20 @@ class LLMRouter:
         self.current_key_index = 0
         self._init_ollama()
     
-    def _check_ollama(self):
+    def _check_ollama(self) -> bool:
         """Check if Ollama is running."""
         try:
             return requests.get(f"{self.base_url}/api/tags", timeout=3).status_code == 200
         except Exception:
             return False
     
-    def rotate_gemini(self):
+    def rotate_gemini(self) -> None:
         """Rotate to next Gemini key."""
         if self.gemini_keys:
             self.current_key_index = (self.current_key_index + 1) % len(self.gemini_keys)
             logger.info("🔄 Rotando clave Gemini...")
     
-    def _init_ollama(self):
+    def _init_ollama(self) -> None:
         try:
             from ollama import Client
             self.ollama_client = Client(self.base_url)
@@ -227,7 +227,7 @@ class LLMRouter:
 
 
 class GeminiRouter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.keys = config.GEMINI_KEYS
         self.current_key = 0
     
@@ -262,7 +262,7 @@ class GeminiRouter:
 
 
 class BraveRouter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.api_key = config.BRAVE_API_KEY
         if not self.api_key:
             raise ValueError("BRAVE_API_KEY not configured")
@@ -291,16 +291,16 @@ class BraveRouter:
 
 
 class BraveCounter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.count = 0
     
     def get_left(self) -> int:
         return 100 - self.count
     
-    def decrement(self):
+    def decrement(self) -> None:
         self.count += 1
     
-    def reset(self):
+    def reset(self) -> None:
         self.count = 0
 
 

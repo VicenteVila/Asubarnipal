@@ -55,7 +55,7 @@ class EntityGraph:
             return config.DATA_DIR / f"entity_graph_{safe_name}.db"
         return config.DATA_DIR / "entity_graph.db"
     
-    def _init_db(self):
+    def _init_db(self) -> None:
         self.conn = sqlite3.connect(str(self.db_path))
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
@@ -119,7 +119,7 @@ class EntityGraph:
         self.conn.commit()
         logger.info(f"EntityGraph initialized at {self.db_path}")
     
-    def _get_llm(self):
+    def _get_llm(self) -> Any:
         if self.llm_router is None:
             from core.llm_router import LLMRouter
             self.llm_router = LLMRouter()
@@ -560,7 +560,7 @@ Solo devuelve el JSON, sin explicaciones:"""
             "by_type": type_counts,
         }
     
-    def close(self):
+    def close(self) -> None:
         """Close database connection."""
         self.conn.close()
 

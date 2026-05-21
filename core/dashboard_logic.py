@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class DashboardManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.stats = {
             "total_queries": 0,
             "successful": 0,
@@ -56,7 +56,7 @@ class DashboardManager:
             "recent_errors": self.stats["errors"][-5:],
         }
     
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         self.stats = {
             "total_queries": 0,
             "successful": 0,
@@ -68,7 +68,7 @@ class DashboardManager:
 
 
 class MetricsCollector:
-    def __init__(self):
+    def __init__(self) -> None:
         self.metrics = defaultdict(list)
     
     def record(self, metric_name: str, value: float):

@@ -19,7 +19,7 @@ class BackgroundManager:
     
     HMEM_INTERVAL = 1800
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.running = False
         self.threads = []
         self.last_heartbeat = None
@@ -28,7 +28,7 @@ class BackgroundManager:
         self.last_hmem = None
         self.last_graphify = None
     
-    def start(self):
+    def start(self) -> None:
         """Start all background rituals."""
         if self.running:
             logger.warning("Background manager already running")
@@ -62,7 +62,7 @@ class BackgroundManager:
         self.threads.append(t)
         logger.info("🕸️ Graphify knowledge graph ritual started")
     
-    def stop(self):
+    def stop(self) -> None:
         """Stop all background rituals."""
         self.running = False
         logger.info("Stopping background rituals...")
@@ -230,11 +230,11 @@ class BackgroundManager:
 class BraveCounter:
     """Brave Search API counter."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.limit = config.BRAVE_MONTHLY_LIMIT
         self._load()
     
-    def _load(self):
+    def _load(self) -> None:
         """Load counter from file."""
         if config.BRAVE_COUNTER_FILE.exists():
             try:
@@ -248,7 +248,7 @@ class BraveCounter:
             self.count = 0
             self.month = datetime.now().month
     
-    def _save(self):
+    def _save(self) -> None:
         """Save counter to file."""
         if datetime.now().month != self.month:
             self.count = 0
@@ -278,11 +278,11 @@ class BraveCounter:
 class MemorySkill:
     """Persistent memory for the agent."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.memory_file = config.STORAGE_DIR / "memory.json"
         self._load()
     
-    def _load(self):
+    def _load(self) -> None:
         """Load memory."""
         self.memories = []
         if self.memory_file.exists():
@@ -291,7 +291,7 @@ class MemorySkill:
             except Exception:
                 self.memories = []
     
-    def _save(self):
+    def _save(self) -> None:
         """Save memory."""
         config.STORAGE_DIR.mkdir(exist_ok=True)
         self.memory_file.write_text(json.dumps(self.memories[-100:], indent=2), encoding="utf-8")
@@ -341,10 +341,10 @@ class WikiHealer:
 class AgentState:
     """Tracks agent alive/failed state persistently."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._load()
     
-    def _load(self):
+    def _load(self) -> None:
         """Load state from file."""
         if config.AGENT_STATE_FILE.exists():
             try:
@@ -365,7 +365,7 @@ class AgentState:
             "failures": [],
         }
     
-    def _save(self):
+    def _save(self) -> None:
         """Save state to file."""
         config.AGENT_STATE_FILE.write_text(json.dumps(self.state, indent=2), encoding="utf-8")
     

@@ -41,7 +41,7 @@ class BotLogger:
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         if self._initialized:
             return
 
@@ -77,7 +77,7 @@ class BotLogger:
         # Live activity tracker
         self._activity_tracker = None
 
-    def _get_tracker(self):
+    def _get_tracker(self) -> Any:
         """Obtiene el tracker de actividad."""
         if self._activity_tracker is None:
             try:

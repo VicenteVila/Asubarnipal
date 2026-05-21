@@ -25,7 +25,7 @@ class GraphBuilder:
         }
         self._init_connection()
     
-    def _init_connection(self):
+    def _init_connection(self) -> None:
         """Inicializa conexion a la base de datos."""
         if not self.db_path.exists():
             logger.warning(f"Wiki database not found: {self.db_path}")
@@ -145,7 +145,7 @@ class GraphBuilder:
         
         return nodes_with_connections
     
-    def _save_graph(self):
+    def _save_graph(self) -> None:
         """Guarda el grafo en archivo."""
         graph_file = config.DATA_DIR / "knowledge_graph.json"
         graph_file.parent.mkdir(exist_ok=True)
@@ -196,7 +196,7 @@ class GraphBuilder:
         
         return neighbors
     
-    def close(self):
+    def close(self) -> None:
         """Cierra la conexion."""
         if self.conn:
             self.conn.close()

@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 class FeedTracker:
     """跟踪RSS/Atom feeds y detectar actualizaciones."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.subscriptions_file = config.STORAGE_DIR / "feeds.json"
         self.alerts_file = config.STORAGE_DIR / "feed_alerts.json"
         self._load()
     
-    def _load(self):
+    def _load(self) -> None:
         """Cargar suscripciones."""
         self.subscriptions = []
         self.last_entries = {}
@@ -35,7 +35,7 @@ class FeedTracker:
                 self.subscriptions = []
                 self.last_entries = {}
     
-    def _save(self):
+    def _save(self) -> None:
         """Guardar suscripciones."""
         config.STORAGE_DIR.mkdir(exist_ok=True)
         self.subscriptions_file.write_text(json.dumps({
@@ -124,7 +124,7 @@ class FeedTracker:
         
         return updates
     
-    def _save_alerts(self, updates: list[dict]):
+    def _save_alerts(self, updates: list[dict[str, Any]]) -> None:
         """Guardar alertas."""
         config.STORAGE_DIR.mkdir(exist_ok=True)
         
@@ -180,7 +180,7 @@ class FeedTracker:
 
 
 # Funciones de utilidad para schedulers
-def check_all_feeds():
+def check_all_feeds() -> list[dict[str, Any]]:
     """Verificar todos los feeds (para scheduler)."""
     tracker = FeedTracker()
     updates = tracker.check_updates()

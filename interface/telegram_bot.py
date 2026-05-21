@@ -591,7 +591,7 @@ Límites:
         await update.message.reply_text(f"❌ Error: {e}")
 
 
-def main():
+def main() -> None:
     global service, bg_manager, wiki, brave_counter
 
     inicio_completo()

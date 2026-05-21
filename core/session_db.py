@@ -23,7 +23,7 @@ class SessionDB:
             cls._instance._initialized = False
         return cls._instance
     
-    def __init__(self):
+    def __init__(self) -> None:
         if self._initialized:
             return
         
@@ -351,7 +351,7 @@ class SessionDB:
                 deleted += 1
         return deleted
     
-    def close(self):
+    def close(self) -> None:
         """Close database connection."""
         if self.conn:
             self.conn.close()
