@@ -215,7 +215,7 @@ class Wiki(WikiSearchMixin, WikiIngestMixin, WikiObsidianMixin):
         alerts = [e for e in history if e.get("has_alert") or e["quality_score"] < 50]
         return sorted(alerts, key=lambda x: x["timestamp"], reverse=True)[:10]
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize SQLite database."""
         self.conn = sqlite3.connect(str(self.db_path))
         self.conn.row_factory = sqlite3.Row
@@ -268,7 +268,7 @@ class Wiki(WikiSearchMixin, WikiIngestMixin, WikiObsidianMixin):
         self.conn.commit()
         logger.info(f"Wiki initialized at {self.db_path}")
 
-    def _create_tables(self):
+    def _create_tables(self) -> None:
         """Create all necessary tables."""
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS entities (
@@ -332,7 +332,7 @@ class Wiki(WikiSearchMixin, WikiIngestMixin, WikiObsidianMixin):
 
         self.conn.commit()
 
-    def _ensure_fts5(self):
+    def _ensure_fts5(self) -> None:
         """Ensure FTS5 virtual table exists and is synced with entities."""
         if getattr(self, '_fts5_initialized', False):
             return
@@ -530,6 +530,6 @@ class Wiki(WikiSearchMixin, WikiIngestMixin, WikiObsidianMixin):
         logger.info(f"Backfilled tags for {fixed} entities")
         return {"fixed": fixed}
 
-    def close(self):
+    def close(self) -> None:
         """Close database connection."""
         self.conn.close()
