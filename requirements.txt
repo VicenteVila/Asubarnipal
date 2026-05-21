@@ -31,3 +31,5 @@ pdf2image>=1.17.0
 # glmocr>=1.0.0  # No existe en PyPI — el OCR lo hace Ollama directamente (glm-ocr:latest)
 PyMuPDF>=1.24.0
 graphifyy>=0.8.0
+# Optional: Speech-to-Text for voice messages
+# openai-whisper>=20231117

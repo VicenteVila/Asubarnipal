@@ -444,8 +444,46 @@ async def handle_message(update: Update, context: CallbackContext):
 
     # Ask for evaluation
     await update.message.reply_text(
-        "📊 ¿La respuesta fue precisa? (sí/no/ms)"
+        "¿La respuesta fue precisa? (si/no/ms)"
     )
+
+
+async def handle_voice(update: Update, context: CallbackContext):
+    """Handle voice messages with STT transcription."""
+    voice = update.message.voice or update.message.audio
+    if not voice:
+        return
+
+    user_id = update.effective_user.id
+    file = await context.bot.get_file(voice.file_id)
+    
+    import tempfile
+    import os
+    from pathlib import Path
+    
+    ogg_path = Path(tempfile.gettempdir()) / f"voice_{user_id}_{file.file_id}.ogg"
+    
+    try:
+        await file.download_to_drive(str(ogg_path))
+        logger.info(f"Voice message downloaded: {ogg_path}")
+        
+        from core.stt import transcribe_ogg
+        success, result = transcribe_ogg(str(ogg_path))
+        
+        if success:
+            logger.info(f"Voice transcribed: {len(result)} chars")
+            await update.message.reply_text(f"Transcripcion: {result[:200]}")
+            
+            update.message.text = result
+            await handle_message(update, context)
+        else:
+            await update.message.reply_text(f"STT no disponible: {result}")
+    except Exception as e:
+        logger.error(f"Voice handling error: {e}")
+        await update.message.reply_text("Error procesando mensaje de voz")
+    finally:
+        if ogg_path.exists():
+            os.remove(ogg_path)
 
 
 async def agent_callback(update: Update, context: CallbackContext):
@@ -673,6 +711,7 @@ def main() -> None:
     app.add_handler(CommandHandler("graph_export", graph_export_cmd))
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, handle_voice))
     app.add_handler(CallbackQueryHandler(agent_callback))
     app.add_handler(CallbackQueryHandler(vault_callback))
     app.add_handler(CallbackQueryHandler(query_callback_handler))
