@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml/badge.svg)](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-110%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-132%20passing-brightgreen.svg)](tests/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-blue.svg)](https://core.telegram.org/bots)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -387,7 +387,7 @@ python -m pytest tests/test_llm_router.py -v
 python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-**Test Coverage**: 110 passing tests across 6 test modules (100%).
+**Test Coverage**: 132 passing tests across 9 test modules (100%).
 
 ---
 
@@ -413,6 +413,9 @@ Asubarnipal/
 │   ├── graph_builder.py        # Vector relationships
 │   ├── dashboard_logic.py      # Metrics and analytics
 │   ├── feed_tracker.py         # RSS feed subscriptions
+│   ├── stt.py                  # Speech-to-text (Whisper)
+│   ├── vision.py               # Image analysis (Ollama vision)
+│   ├── research_scheduler.py   # Scheduled research tasks
 │   └── ...
 ├── interface/
 │   ├── telegram_bot.py         # Bot entrypoint
@@ -425,6 +428,8 @@ Asubarnipal/
 │       ├── hmem_commands.py    # H-Mem commands
 │       ├── vault.py            # Vault management commands
 │       ├── keyboards.py        # Inline keyboard builders
+│       ├── vision.py           # /vision, /ocr commands
+│       ├── scheduled_research.py # /schedule commands
 │       └── validators.py       # Input validators
 ├── skills/
 │   ├── default_skills.py       # 45+ operational skills
@@ -435,7 +440,7 @@ Asubarnipal/
 ├── dashboard.py                # Streamlit dashboard (12 tabs)
 ├── config.py                   # Configuration
 ├── requirements.txt            # Python dependencies
-├── tests/                      # Unit tests (110 passing)
+├── tests/                      # Unit tests (132 passing)
 ├── examples/                   # Usage examples
 └── data/                       # SQLite, FAISS index, logs
 ```
