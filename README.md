@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml/badge.svg)](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-154%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-179%20passing-brightgreen.svg)](tests/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-blue.svg)](https://core.telegram.org/bots)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -17,16 +17,21 @@
 
 ## Features
 
-- **Telegram Bot** - 35+ commands with inline keyboards for interaction, research, and knowledge management
+- **Telegram Bot** - 40+ commands with inline keyboards for interaction, research, and knowledge management
 - **RAG Engine** - Hybrid search (FAISS + BM25) with cross-encoder re-ranking and smart chunking
 - **H-Mem** - Hybrid temporal-semantic tree + entity knowledge graph memory
 - **Graphify** - Interactive knowledge graph visualization + natural language queries
 - **Vision** - Image analysis and OCR via Ollama vision models (llava)
 - **Voice STT** - Speech-to-text transcription via Whisper for voice messages
 - **Scheduled Research** - Recurring research tasks with configurable intervals
+- **Backup System** - Automated vault backup with rotation and restore
+- **Query Cache** - File-based cache for frequent queries with TTL
+- **Rate Limiting** - Token bucket rate limiter per user/command
+- **API Auth** - API key authentication for REST endpoints
+- **Structured Logging** - JSON log formatter with timed operation context
 - **Multi-LLM** - Ollama (local), Google Gemini, Brave Search routing
 - **Streamlit Dashboard** - 12 tabs with interactive graph visualization (850px window)
-- **REST API** - FastAPI server with 12+ endpoints
+- **REST API** - FastAPI server with 16+ endpoints, CORS, metrics, rate limiting
 - **Multi-Vault** - Isolated knowledge bases with separate databases and indices
 - **Docker** - Full docker-compose setup (bot, dashboard, api)
 - **Background Rituals** - Heartbeat, wiki repair, graph rebuilding, Graphify auto-update
@@ -250,6 +255,16 @@ Services available at:
 | `/vault_export [name]` | Export vault to JSON |
 | `/vault_import <name> <file>` | Import vault from JSON |
 
+### Backup & Recovery
+
+| Command | Description |
+|---------|-------------|
+| `/backup [vault]` | Create backup of vault or all data |
+| `/backups` | List all available backups |
+| `/restore <name>` | Restore from a backup |
+| `/backup_stats` | Show backup statistics |
+| `/backup_clear` | Clear all backups |
+
 ---
 
 ## H-Mem: Hybrid Memory System
@@ -349,8 +364,10 @@ Access at `http://localhost:8000/docs` for Swagger UI.
 **Features:**
 - Rate limiting (60 req/min per IP)
 - CORS enabled
+- API key authentication (set `API_KEYS` env var)
 - Error handlers with structured responses
 - Metrics collection (p95 response time, error rate)
+- Query caching with TTL
 
 ---
 
@@ -397,7 +414,7 @@ python -m pytest tests/test_llm_router.py -v
 python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-**Test Coverage**: 154 passing tests across 12 test modules (100%).
+**Test Coverage**: 179 passing tests across 15 test modules (100%).
 
 ---
 
@@ -429,6 +446,8 @@ Asubarnipal/
 │   ├── research_scheduler.py   # Scheduled research tasks
 │   ├── rate_limiter.py         # Token bucket rate limiting
 │   ├── logging_config.py       # Structured JSON logging
+│   ├── cache.py                # Query cache with TTL
+│   ├── backup_manager.py       # Automated backup with rotation
 │   └── ...
 ├── interface/
 │   ├── telegram_bot.py         # Bot entrypoint
@@ -443,6 +462,7 @@ Asubarnipal/
 │       ├── keyboards.py        # Inline keyboard builders
 │       ├── vision.py           # /vision, /ocr commands
 │       ├── scheduled_research.py # /schedule commands
+│       ├── backup.py           # /backup, /restore commands
 │       └── validators.py       # Input validators
 ├── skills/
 │   ├── default_skills.py       # 45+ operational skills
@@ -453,7 +473,7 @@ Asubarnipal/
 ├── dashboard.py                # Streamlit dashboard (12 tabs)
 ├── config.py                   # Configuration
 ├── requirements.txt            # Python dependencies
-├── tests/                      # Unit tests (154 passing)
+├── tests/                      # Unit tests (179 passing)
 ├── examples/                   # Usage examples
 └── data/                       # SQLite, FAISS index, logs
 ```
