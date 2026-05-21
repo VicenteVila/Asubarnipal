@@ -28,7 +28,7 @@ def _slugify(name: str) -> str:
 class Wiki(WikiSearchMixin, WikiIngestMixin, WikiObsidianMixin):
     """Wiki database and file management."""
 
-    def __init__(self, wiki_path: Optional[Path] = None, vault_name: Optional[str] = None):
+    def __init__(self, wiki_path: Optional[Path] = None, vault_name: Optional[str] = None) -> None:
         self.wiki_path = wiki_path or self._get_vault_path(vault_name)
         self.wiki_path.mkdir(exist_ok=True)
 
@@ -89,7 +89,7 @@ class Wiki(WikiSearchMixin, WikiIngestMixin, WikiObsidianMixin):
                 return []
         return []
 
-    def _save_quality_history(self, history: list):
+    def _save_quality_history(self, history: list[dict[str, Any]]) -> None:
         """Save quality history to JSON."""
         qf = self._get_quality_file()
         qf.write_text(json.dumps(history[-500:], indent=2, ensure_ascii=False), encoding="utf-8")
@@ -309,7 +309,7 @@ class Wiki(WikiSearchMixin, WikiIngestMixin, WikiObsidianMixin):
         except Exception as e:
             return {"error": str(e)}
 
-    def _update_relations(self, entity_name: str, relacionados: list):
+    def _update_relations(self, entity_name: str, relacionados: list[str]) -> None:
         """Update relations for an entity."""
         self.cursor.execute("SELECT id FROM entities WHERE name = ?", (entity_name,))
         row = self.cursor.fetchone()

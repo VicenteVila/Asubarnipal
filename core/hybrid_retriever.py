@@ -28,7 +28,7 @@ class HybridRetriever:
         "lambda_temporal": 0.5,
     }
     
-    def __init__(self, vault_name: Optional[str] = None):
+    def __init__(self, vault_name: Optional[str] = None) -> None:
         self.vault_name = vault_name
         self.memory_tree = None
         self.entity_graph = None
@@ -391,15 +391,15 @@ class HMemManager:
     Coordinates tree, graph, and retrieval components.
     """
     
-    _instance = None
+    _instance: Optional[HMemManager] = None
     
-    def __new__(cls, vault_name: str = None):
+    def __new__(cls, vault_name: Optional[str] = None) -> HMemManager:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
     
-    def __init__(self, vault_name: str = None):
+    def __init__(self, vault_name: Optional[str] = None) -> None:
         if self._initialized:
             return
         

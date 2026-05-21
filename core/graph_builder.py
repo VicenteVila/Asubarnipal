@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class GraphBuilder:
     """Construye y mantiene el grafo de conocimiento."""
     
-    def __init__(self, wiki_path: Optional[Path] = None):
+    def __init__(self, wiki_path: Optional[Path] = None) -> None:
         self.wiki_path = wiki_path or config.WIKI_DIR
         self.db_path = config.WIKI_PATH
         self.graph_data = {

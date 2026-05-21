@@ -34,7 +34,7 @@ def extract_url_from_text(text: str) -> str:
     return text if is_url(text) else ""
 
 
-async def ingest_cmd(update: Update, context: CallbackContext):
+async def ingest_cmd(update: Update, context: CallbackContext) -> None:
     """Ingest URL, local file, or Telegram document to wiki."""
     from core.wiki import Wiki
 
@@ -76,7 +76,7 @@ async def ingest_cmd(update: Update, context: CallbackContext):
             )
 
 
-async def _ingest_url(update: Update, url: str):
+async def _ingest_url(update: Update, url: str) -> None:
     """Ingest a URL."""
     from core.wiki import Wiki
 
@@ -147,7 +147,7 @@ async def _ingest_url(update: Update, url: str):
         await update.message.reply_text(f"❌ Error inesperado: {str(e)}")
 
 
-async def _ingest_local_file(update: Update, file_path: str):
+async def _ingest_local_file(update: Update, file_path: str) -> None:
     """Ingest a local file."""
     from core.wiki import Wiki
 
@@ -233,7 +233,7 @@ async def _ingest_local_file(update: Update, file_path: str):
         await update.message.reply_text(f"❌ Error inesperado: {str(e)}")
 
 
-async def _ingest_telegram_document(update: Update, context: CallbackContext):
+async def _ingest_telegram_document(update: Update, context: CallbackContext) -> None:
     """Ingest a document sent via Telegram."""
     from core.wiki import Wiki
     import config
@@ -310,7 +310,7 @@ async def _ingest_telegram_document(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ Error: {str(e)}")
 
 
-async def _ingest_telegram_photo(update: Update, context: CallbackContext):
+async def _ingest_telegram_photo(update: Update, context: CallbackContext) -> None:
     """Ingest a photo sent via Telegram using OCR."""
     from core.wiki import Wiki
     import config
@@ -354,7 +354,7 @@ async def _ingest_telegram_photo(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ Error: {str(e)}")
 
 
-async def investigar_cmd(update: Update, context: CallbackContext):
+async def investigar_cmd(update: Update, context: CallbackContext) -> None:
     """Research a topic deeply."""
     topic = " ".join(context.args)
 

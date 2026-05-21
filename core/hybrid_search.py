@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class HybridSearch:
     """Búsqueda que combina SQLite y Obsidian vault."""
 
-    def __init__(self, vault_name: str = None):
+    def __init__(self, vault_name: Optional[str] = None) -> None:
         self.vault_name = vault_name or self._get_active_vault()
         self.vault_path = None
         if self.vault_name:

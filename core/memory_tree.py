@@ -41,7 +41,7 @@ class MemoryTree:
     TAU = 30.0
     ETA = 0.5
     
-    def __init__(self, vault_name: Optional[str] = None, levels: dict = None):
+    def __init__(self, vault_name: Optional[str] = None, levels: Optional[dict[str, Any]] = None) -> None:
         self.vault_name = vault_name or self._get_active_vault_name()
         self.levels_config = levels or self.DEFAULT_LEVELS.copy()
         self.db_path = self._get_db_path()
@@ -313,7 +313,7 @@ RESUMEN:"""
         else:
             self._create_parent_node(node_id, next_level, window_start, window_end)
     
-    def _merge_nodes(self, parent_node_id: str, child_node_id: str, level: int):
+    def _merge_nodes(self, parent_node_id: str, child_node_id: str, level: int) -> None:
         """Merge a child node into an existing parent."""
         self.cursor.execute("SELECT * FROM memory_nodes WHERE node_id = ?", (parent_node_id,))
         parent = dict(self.cursor.fetchone())
@@ -361,7 +361,7 @@ RESUMEN:"""
         
         self._propagate_consolidation(parent_node_id, level + 1)
     
-    def _create_parent_node(self, child_node_id: str, level: int, window_start: str, window_end: str):
+    def _create_parent_node(self, child_node_id: str, level: int, window_start: str, window_end: str) -> None:
         """Create a new parent node at the given level."""
         self.cursor.execute("SELECT * FROM memory_nodes WHERE node_id = ?", (child_node_id,))
         child = dict(self.cursor.fetchone())

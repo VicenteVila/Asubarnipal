@@ -31,7 +31,7 @@ class LiveActivityTracker:
     _instance = None
     _lock = threading.Lock()
     
-    def __new__(cls):
+    def __new__(cls) -> Self:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -52,7 +52,7 @@ class LiveActivityTracker:
         
         self._load_from_file()
     
-    def _load_from_file(self):
+    def _load_from_file(self) -> None:
         """Carga historial desde archivo."""
         if self._activity_file.exists():
             try:
@@ -63,7 +63,7 @@ class LiveActivityTracker:
             except Exception:
                 self._entries = deque(maxlen=self.max_entries)
     
-    def _save_to_file(self):
+    def _save_to_file(self) -> None:
         """Guarda historial a archivo."""
         config.STORAGE_DIR.mkdir(exist_ok=True)
         data = {
@@ -98,7 +98,7 @@ class LiveActivityTracker:
         
         return entry
     
-    def update_progress(self, progress: int, message: Optional[str] = None, details: Optional[str] = None):
+    def update_progress(self, progress: int, message: Optional[str] = None, details: Optional[str] = None) -> None:
         """Actualiza el progreso de la actividad actual."""
         with self._update_lock:
             if self._current_activity:
@@ -109,7 +109,7 @@ class LiveActivityTracker:
                     self._current_activity.details = details
                 self._save_to_file()
     
-    def complete_current(self, status: str = "completed", details: Optional[str] = None):
+    def complete_current(self, status: str = "completed", details: Optional[str] = None) -> None:
         """Marca la actividad actual como completada."""
         with self._update_lock:
             if self._current_activity:
@@ -147,7 +147,7 @@ class LiveActivityTracker:
             progress=0
         )
     
-    def ingest_step(self, step: str, progress: int):
+    def ingest_step(self, step: str, progress: int) -> None:
         """Actualiza paso de ingest."""
         step_messages = {
             10: "Descargando contenido...",
@@ -164,7 +164,7 @@ class LiveActivityTracker:
             details=step
         )
     
-    def ingest_complete(self, success: bool = True, details: Optional[str] = None):
+    def ingest_complete(self, success: bool = True, details: Optional[str] = None) -> None:
         """Completa seguimiento de ingest."""
         self.complete_current(
             status="completed" if success else "error",

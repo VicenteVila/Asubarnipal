@@ -10,7 +10,7 @@ from core.bot_logger import logger
 from .validators import validate_task, validate_query
 
 
-async def agente_cmd(update: Update, context: CallbackContext):
+async def agente_cmd(update: Update, context: CallbackContext) -> None:
     """Activate autonomous agent."""
     task = " ".join(context.args)
 
@@ -59,7 +59,7 @@ async def agente_cmd(update: Update, context: CallbackContext):
         logger.error(f"Error al enviar respuesta: {e}")
 
 
-async def model_cmd(update: Update, context: CallbackContext):
+async def model_cmd(update: Update, context: CallbackContext) -> None:
     """Show or switch LLM model."""
     args = context.args
 
@@ -111,7 +111,7 @@ Ejemplo: `/model llama3:8b` o `/model gemini-2.0-flash`"""
         )
 
 
-async def query_vectorial_cmd(update: Update, context: CallbackContext):
+async def query_vectorial_cmd(update: Update, context: CallbackContext) -> None:
     """Vector search in index."""
     query = " ".join(context.args)
 
@@ -148,7 +148,7 @@ async def query_vectorial_cmd(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ Error en búsqueda vectorial")
 
 
-async def rate_cmd(update: Update, context: CallbackContext):
+async def rate_cmd(update: Update, context: CallbackContext) -> None:
     """Rate the last agent response (1-5)."""
     args = context.args
 
@@ -211,7 +211,7 @@ async def rate_cmd(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ Error: {result.get('error')}")
 
 
-async def calidad_cmd(update: Update, context: CallbackContext):
+async def calidad_cmd(update: Update, context: CallbackContext) -> None:
     """Show quality statistics of agent responses."""
     from skills.default_skills import get_eval_stats
     import logging as _logger

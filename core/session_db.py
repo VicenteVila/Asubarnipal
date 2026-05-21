@@ -17,7 +17,7 @@ class SessionDB:
     
     _instance = None
     
-    def __new__(cls):
+    def __new__(cls) -> Self:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
@@ -32,7 +32,7 @@ class SessionDB:
         self._init_tables()
         logger.info(f"SessionDB initialized at {self.db_path}")
     
-    def _init_tables(self):
+    def _init_tables(self) -> None:
         """Initialize database tables."""
         self.conn = sqlite3.connect(str(self.db_path))
         self.conn.row_factory = sqlite3.Row
@@ -181,8 +181,8 @@ class SessionDB:
             logger.error(f"Failed to get system prompt: {e}")
             return None
     
-    def update_session_meta(self, user_id: int, mode: str = None, model: str = None,
-                           fallback_tried: int = None) -> bool:
+    def update_session_meta(self, user_id: int, mode: Optional[str] = None, model: Optional[str] = None,
+                           fallback_tried: Optional[int] = None) -> bool:
         """Update session metadata (charla_mode, last_model, etc.)."""
         try:
             self._get_or_create_session(user_id)

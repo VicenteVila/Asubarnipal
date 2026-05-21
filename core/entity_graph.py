@@ -33,7 +33,7 @@ class EntityGraph:
         "created_by", "mentioned_in", "references", "depends_on"
     ]
     
-    def __init__(self, vault_name: Optional[str] = None):
+    def __init__(self, vault_name: Optional[str] = None) -> None:
         self.vault_name = vault_name or self._get_active_vault_name()
         self.db_path = self._get_db_path()
         self.llm_router = None

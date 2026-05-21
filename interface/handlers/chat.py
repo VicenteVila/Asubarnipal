@@ -100,7 +100,7 @@ Sé creativo y sorprendente. No te limites a lo OBVIO.""",
 }
 
 
-async def charlar_cmd(update: Update, context: CallbackContext):
+async def charlar_cmd(update: Update, context: CallbackContext) -> None:
     """Chat with 5 specialized modes."""
     args = context.args
 

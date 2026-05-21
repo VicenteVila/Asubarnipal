@@ -67,7 +67,7 @@ class BackgroundManager:
         self.running = False
         logger.info("Stopping background rituals...")
     
-    def _heartbeat_loop(self):
+    def _heartbeat_loop(self) -> None:
         """Heartbeat - runs every minute."""
         agent_state = AgentState()
         
@@ -79,7 +79,7 @@ class BackgroundManager:
                 logger.error(f"Heartbeat error: {e}")
             time.sleep(config.HEARTBEAT_INTERVAL)
     
-    def _suture_loop(self):
+    def _suture_loop(self) -> None:
         """Suture - runs every 10 minutes."""
         while self.running:
             try:
@@ -88,7 +88,7 @@ class BackgroundManager:
                 logger.error(f"Suture error: {e}")
             time.sleep(config.SUTURE_INTERVAL)
     
-    def _graph_loop(self):
+    def _graph_loop(self) -> None:
         """Graph update - runs every 30 minutes."""
         while self.running:
             try:
@@ -97,7 +97,7 @@ class BackgroundManager:
                 logger.error(f"Graph error: {e}")
             time.sleep(config.GRAPH_INTERVAL)
     
-    def _hmem_loop(self):
+    def _hmem_loop(self) -> None:
         """H-Mem consolidation - runs every 30 minutes."""
         while self.running:
             try:
@@ -106,7 +106,7 @@ class BackgroundManager:
                 logger.error(f"H-Mem error: {e}")
             time.sleep(self.HMEM_INTERVAL)
     
-    def _run_hmem_consolidation(self):
+    def _run_hmem_consolidation(self) -> None:
         """Consolidate H-Mem tree and update entity graph."""
         try:
             from core.hybrid_retriever import get_hmem_manager
@@ -138,7 +138,7 @@ class BackgroundManager:
         except Exception as e:
             logger.error(f"H-Mem consolidation error: {e}")
     
-    def _graphify_loop(self):
+    def _graphify_loop(self) -> None:
         """Graphify knowledge graph update - runs every 30 minutes."""
         while self.running:
             try:
@@ -147,7 +147,7 @@ class BackgroundManager:
                 logger.error(f"Graphify error: {e}")
             time.sleep(config.GRAPH_INTERVAL)
     
-    def _update_graphify(self):
+    def _update_graphify(self) -> None:
         """Update knowledge graph using Graphify."""
         try:
             from core.graphify_integration import build_graph, get_graph_stats
@@ -172,7 +172,7 @@ class BackgroundManager:
         except Exception as e:
             logger.error(f"Graphify update error: {e}")
     
-    def _update_heartbeat(self):
+    def _update_heartbeat(self) -> None:
         """Update heartbeat.json."""
         import psutil
         
@@ -188,7 +188,7 @@ class BackgroundManager:
         self.last_heartbeat = heartbeat
         logger.debug(f"💓 Heartbeat: CPU {heartbeat['cpu_percent']}%")
     
-    def _run_suture(self):
+    def _run_suture(self) -> None:
         """Heal orphaned notes in wiki."""
         from core.wiki_healer import WikiHealer
         
@@ -201,7 +201,7 @@ class BackgroundManager:
         }
         logger.info(f"💉 Suture: healed {healed} orphans")
     
-    def _update_graph(self):
+    def _update_graph(self) -> None:
         """Update knowledge graph."""
         from core.graph_builder import GraphBuilder
         
@@ -264,7 +264,7 @@ class BraveCounter:
         self._load()
         return self.count < self.limit
     
-    def increment(self):
+    def increment(self) -> None:
         """Increment counter."""
         self.count += 1
         self._save()
@@ -296,7 +296,7 @@ class MemorySkill:
         config.STORAGE_DIR.mkdir(exist_ok=True)
         self.memory_file.write_text(json.dumps(self.memories[-100:], indent=2), encoding="utf-8")
     
-    def add(self, memory: str, category: str = "general"):
+    def add(self, memory: str, category: str = "general") -> None:
         """Add a memory."""
         self.memories.append({
             "content": memory,
@@ -369,7 +369,7 @@ class AgentState:
         """Save state to file."""
         config.AGENT_STATE_FILE.write_text(json.dumps(self.state, indent=2), encoding="utf-8")
     
-    def mark_alive(self):
+    def mark_alive(self) -> None:
         """Mark agent as alive."""
         now = datetime.now().isoformat()
         self.state["alive"] = True
@@ -378,13 +378,13 @@ class AgentState:
             self.state["uptime_start"] = now
         self._save()
     
-    def mark_dead(self):
+    def mark_dead(self) -> None:
         """Mark agent as dead."""
         self.state["alive"] = False
         self.state["uptime_start"] = None
         self._save()
     
-    def record_failure(self, error: str):
+    def record_failure(self, error: str) -> None:
         """Record a failure."""
         now = datetime.now().isoformat()
         self.state["last_failure"] = now
@@ -397,7 +397,7 @@ class AgentState:
         self.state["failures"] = self.state["failures"][-20:]
         self._save()
     
-    def record_success(self):
+    def record_success(self) -> None:
         """Record a success."""
         self.state["success_count"] += 1
     

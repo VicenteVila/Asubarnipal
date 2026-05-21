@@ -8,11 +8,11 @@ import config
 class WikiReader:
     """Read-only wiki access."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.wiki_path = config.WIKI_PATH
         self.conn = None
 
-    def _connect(self):
+    def _connect(self) -> None:
         if not self.conn:
             self.conn = sqlite3.connect(str(self.wiki_path))
             self.conn.row_factory = sqlite3.Row

@@ -7,7 +7,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Self, Dict, List, Optional, Tuple
 
 import yaml
 
@@ -63,7 +63,7 @@ def guardar_schema() -> None:
 class WikiEngine:
     """Motor de wiki Karpathy-style."""
     
-    def __init__(self, obsidian_path: str = None):
+    def __init__(self, obsidian_path: Optional[str] = None) -> None:
         self.path = Path(obsidian_path) if obsidian_path else config.OBSIDIAN_PATH
         self.raw_path = self.path / "raw"
         self.wiki_path = self.path / "wiki"
@@ -134,7 +134,7 @@ class WikiEngine:
         
         return sorted(relacionadas, key=lambda x: x["score"], reverse=True)[:5]
     
-    def _actualizar_index(self, notas: List[Dict]):
+    def _actualizar_index(self, notas: list[dict[str, Any]]) -> None:
         """Regenera el index.md."""
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         
@@ -184,7 +184,7 @@ class WikiEngine:
         except Exception as e:
             logger.warning(f"Error actualizando index: {e}")
     
-    def log_ingest(self, fuente: str, paginas: int, accion: str = "ingest"):
+    def log_ingest(self, fuente: str, paginas: int, accion: str = "ingest") -> None:
         """Log estructurado en log.md."""
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         entry = f"\n## [{timestamp}] {accion} | {fuente} | Páginas: {paginas}\n"
@@ -426,7 +426,7 @@ Requisitos:
 class WikiVectorIndex:
     """Indexador vectorial del wiki."""
     
-    def __init__(self, wiki_path: str = None):
+    def __init__(self, wiki_path: Optional[str] = None) -> None:
         self.wiki_path = Path(wiki_path) if wiki_path else config.OBSIDIAN_PATH / "wiki"
         self.graph_store_path = config.OBSIDIAN_PATH / "graph_store"
         self.graph_store_path.mkdir(parents=True, exist_ok=True)
