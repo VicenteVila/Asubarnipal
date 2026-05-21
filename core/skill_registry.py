@@ -6,11 +6,11 @@ logger = logging.getLogger(__name__)
 
 
 class SkillRegistry:
-    def __init__(self):
+    def __init__(self) -> None:
         self.skills: dict[str, Callable] = {}
         self._register_default_skills()
     
-    def _register_default_skills(self):
+    def _register_default_skills(self) -> None:
         from skills import default_skills
         for name, func in inspect.getmembers(default_skills, inspect.isfunction):
             if not name.startswith("_"):

@@ -27,14 +27,14 @@ class HMemService:
     Wraps AgentService with hybrid memory capabilities.
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.hmem = None
         self.llm = LLMRouter()
         self.skill_registry = SkillRegistry()
         self._init_hmem()
         logger.info("HMemService initialized")
     
-    def _init_hmem(self):
+    def _init_hmem(self) -> None:
         try:
             from core.hybrid_retriever import get_hmem_manager
             self.hmem = get_hmem_manager()
@@ -100,7 +100,7 @@ class HMemService:
 
 
 class AgentService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.llm = LLMRouter()
         self.skill_registry = SkillRegistry()
         self.rag = RAGEngine(config.INDEX_DIR / "index.faiss")
@@ -217,14 +217,14 @@ class AgentService:
 class AsubarnipalService:
     """Extended service with wiki, research, and graph features."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.llm = LLMRouter()
         self.skill_registry = SkillRegistry()
         self.rag = RAGEngine(config.INDEX_DIR / "index.faiss")
         self._init_wiki()
         logger.info("AsubarnipalService initialized")
     
-    def _init_wiki(self):
+    def _init_wiki(self) -> None:
         """Initialize wiki database."""
         try:
             import sqlite3
@@ -236,7 +236,7 @@ class AsubarnipalService:
             logger.warning(f"Wiki not available: {e}")
             self.wiki_conn = None
     
-    def _ensure_wiki_tables(self):
+    def _ensure_wiki_tables(self) -> None:
         """Ensure wiki tables exist."""
         if not self.wiki_conn:
             return

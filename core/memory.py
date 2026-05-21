@@ -18,7 +18,7 @@ class ProposalMemory:
     MEMORY_FILE = config.DATA_DIR / "research_proposals.json"
     PREFERENCES_FILE = config.DATA_DIR / "research_preferences.json"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.proposals = self._load_proposals()
         self.preferences = self._load_preferences()
 
@@ -33,7 +33,7 @@ class ProposalMemory:
                 return []
         return []
 
-    def _save_proposals(self):
+    def _save_proposals(self) -> None:
         """Save proposals to JSON file."""
         try:
             self.MEMORY_FILE.write_text(
@@ -53,7 +53,7 @@ class ProposalMemory:
                 return {}
         return {}
 
-    def _save_preferences(self):
+    def _save_preferences(self) -> None:
         """Save user preferences to JSON file."""
         try:
             self.PREFERENCES_FILE.write_text(
@@ -220,7 +220,7 @@ class EnhancedMemory:
 
     MEMORY_FILE = config.DATA_DIR / "memories.json"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.memories = self._load()
         self._next_id = max([m.get("id", 0) for m in self.memories], default=0) + 1
 
@@ -234,7 +234,7 @@ class EnhancedMemory:
                 return []
         return []
 
-    def _save(self):
+    def _save(self) -> None:
         try:
             self.MEMORY_FILE.write_text(
                 json.dumps(self.memories, ensure_ascii=False, indent=2),

@@ -50,7 +50,7 @@ relacionados: [[Nota1]], [[Nota2]]
 SCHEMA_PATH = config.OBSIDIAN_PATH / "CLAUDE.md"
 
 
-def guardar_schema():
+def guardar_schema() -> None:
     """Persiste el schema en el vault de Obsidian."""
     try:
         config.OBSIDIAN_PATH.mkdir(parents=True, exist_ok=True)
@@ -438,7 +438,7 @@ class WikiVectorIndex:
         
         self._scan()
     
-    def _scan(self):
+    def _scan(self) -> None:
         """Escanea las notas."""
         if not self.wiki_path.exists():
             return
@@ -478,7 +478,7 @@ class WikiVectorIndex:
         
         logger.info(f"📄 Wiki escaneado: {len(self.notes)} notas")
     
-    def generar_embeddings(self):
+    def generar_embeddings(self) -> None:
         """Genera embeddings (si sentence-transformers disponible)."""
         try:
             from sentence_transformers import SentenceTransformer
@@ -498,7 +498,7 @@ class WikiVectorIndex:
         except Exception as e:
             logger.warning(f"Error embeddings: {e}")
     
-    def construir_grafo(self):
+    def construir_grafo(self) -> Any:
         """Construye grafo de conocimiento."""
         try:
             import networkx as nx
@@ -523,7 +523,7 @@ class WikiVectorIndex:
             logger.warning("networkx no disponible")
             return None
     
-    def detectar_comunidades(self):
+    def detectar_comunidades(self) -> dict[str, int]:
         """Detecta comunidades (Louvain)."""
         try:
             import networkx as nx
@@ -548,7 +548,7 @@ class WikiVectorIndex:
             logger.warning(f"Error comunidades: {e}")
             return {}
     
-    def identificar_hubs(self):
+    def identificar_hubs(self) -> list[tuple[str, float]]:
         """Identifica hubs por betweenness centrality."""
         try:
             import networkx as nx
@@ -573,7 +573,7 @@ class WikiVectorIndex:
             logger.warning(f"Error hubs: {e}")
             return []
     
-    def full_index(self):
+    def full_index(self) -> dict[str, int]:
         """Pipeline completo de indexación."""
         self.generar_embeddings()
         self.detectar_comunidades()

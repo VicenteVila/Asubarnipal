@@ -35,19 +35,19 @@ class HybridRetriever:
         self.llm_router = None
         self.weights = self.DEFAULT_WEIGHTS.copy()
     
-    def _get_tree(self):
+    def _get_tree(self) -> Any:
         if self.memory_tree is None:
             from core.memory_tree import MemoryTree
             self.memory_tree = MemoryTree(vault_name=self.vault_name)
         return self.memory_tree
     
-    def _get_graph(self):
+    def _get_graph(self) -> Any:
         if self.entity_graph is None:
             from core.entity_graph import EntityGraph
             self.entity_graph = EntityGraph(vault_name=self.vault_name)
         return self.entity_graph
     
-    def _get_llm(self):
+    def _get_llm(self) -> Any:
         if self.llm_router is None:
             from core.llm_router import LLMRouter
             self.llm_router = LLMRouter()
@@ -377,7 +377,7 @@ RESPUESTA:"""
             "weights": self.weights,
         }
     
-    def close(self):
+    def close(self) -> None:
         """Close all connections."""
         if self.memory_tree:
             self.memory_tree.close()
@@ -432,7 +432,7 @@ class HMemManager:
         """Get recent memories from the tree."""
         return self.retriever.memory_tree.get_recent(limit=limit)
     
-    def close(self):
+    def close(self) -> None:
         """Clean shutdown."""
         self.retriever.close()
 

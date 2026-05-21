@@ -39,7 +39,7 @@ class TurboQuantEngine:
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         if self._initialized:
             return
 

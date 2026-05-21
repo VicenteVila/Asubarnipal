@@ -65,7 +65,7 @@ class MemoryTree:
             return config.DATA_DIR / f"memory_tree_{safe_name}.db"
         return config.DATA_DIR / "memory_tree.db"
     
-    def _init_db(self):
+    def _init_db(self) -> None:
         self.conn = sqlite3.connect(str(self.db_path))
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
@@ -113,13 +113,13 @@ class MemoryTree:
         self.conn.commit()
         logger.info(f"MemoryTree initialized at {self.db_path}")
     
-    def _get_llm(self):
+    def _get_llm(self) -> Any:
         if self.llm_router is None:
             from core.llm_router import LLMRouter
             self.llm_router = LLMRouter()
         return self.llm_router
     
-    def _get_embeddings_model(self):
+    def _get_embeddings_model(self) -> Any:
         if self.embeddings_model is None:
             try:
                 from sentence_transformers import SentenceTransformer
@@ -260,7 +260,7 @@ RESUMEN:"""
         logger.info(f"Inserted memory node: {node_id[:20]}...")
         return node
     
-    def _propagate_consolidation(self, node_id: str, level: int):
+    def _propagate_consolidation(self, node_id: str, level: int) -> None:
         """Propagate consolidation up the tree."""
         if level >= max(self.levels_config.keys()):
             return
@@ -606,7 +606,7 @@ RESUMEN:"""
         logger.info(f"Pruned {deleted} old nodes")
         return deleted
     
-    def close(self):
+    def close(self) -> None:
         """Close database connection."""
         self.conn.close()
 

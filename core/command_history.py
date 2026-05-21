@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 class CommandHistory:
     """Control de historial de comandos ejecutados."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.history_file = config.DATA_DIR / "command_history.json"
         self._load()
     
-    def _load(self):
+    def _load(self) -> None:
         """Cargar historial."""
         if self.history_file.exists():
             try:
@@ -29,7 +29,7 @@ class CommandHistory:
         else:
             self.history = []
     
-    def _save(self):
+    def _save(self) -> None:
         """Guardar historial."""
         config.DATA_DIR.mkdir(exist_ok=True)
         self.history_file.write_text(json.dumps(self.history[-500:], indent=2), encoding="utf-8")

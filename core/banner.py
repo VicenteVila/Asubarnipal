@@ -72,17 +72,17 @@ DIOS_ASIRIO = r"""
 """
 
 
-def mostrar_banner():
+def mostrar_banner() -> None:
     """Muestra el banner principal."""
     print(BANNER)
 
 
-def mostrar_dios_asirio():
+def mostrar_dios_asirio() -> None:
     """Muestra el relieve del dios asirio."""
     print(DIOS_ASIRIO)
 
 
-def imagen_a_ascii(img, ancho=80):
+def imagen_a_ascii(img: Any, ancho: int = 80) -> str:
     """Convierte una imagen PIL a arte ASCII."""
     caracteres = "@%#*+=-:. "
     ratio = img.height / img.width
@@ -99,7 +99,7 @@ def imagen_a_ascii(img, ancho=80):
     return ascii_str
 
 
-def cargar_imagen_ascii(base_dir=None):
+def cargar_imagen_ascii(base_dir: Optional[Path] = None) -> None:
     """Busca y carga la imagen asubarnipal."""
     if not HAS_PIL:
         print("\n  📦 Instala Pillow: pip install Pillow")
@@ -138,7 +138,7 @@ def cargar_imagen_ascii(base_dir=None):
         print("\n  💡 Tip: Coloca 'Asubarnipal.jfif' o 'Asubarnipal.png' para ver el relieve.\n")
 
 
-def inicio_completo():
+def inicio_completo() -> None:
     """Secuencia de inicio completa con banner y arte."""
     mostrar_banner()
     print()

@@ -39,7 +39,7 @@ class LiveActivityTracker:
                     cls._instance._initialized = False
         return cls._instance
     
-    def __init__(self):
+    def __init__(self) -> None:
         if self._initialized:
             return
         
@@ -131,7 +131,7 @@ class LiveActivityTracker:
             return asdict(self._current_activity)
         return None
     
-    def clear(self):
+    def clear(self) -> None:
         """Limpia todo el historial."""
         with self._update_lock:
             self._entries.clear()

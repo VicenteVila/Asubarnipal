@@ -18,7 +18,7 @@ class WikiHealer:
         self.db_path = config.WIKI_PATH
         self._init_connection()
     
-    def _init_connection(self):
+    def _init_connection(self) -> None:
         """Inicializa conexion a la base de datos."""
         if not self.db_path.exists():
             logger.warning(f"Wiki database not found: {self.db_path}")
@@ -120,7 +120,7 @@ class WikiHealer:
             logger.error(f"Error in vacuum_database: {e}")
             return False
     
-    def close(self):
+    def close(self) -> None:
         """Cierra la conexion."""
         if self.conn:
             self.conn.close()
