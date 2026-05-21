@@ -57,7 +57,7 @@ class SkillRegistry:
             result = func(**arguments)
             return result
         except Exception as e:
-            logger.error(f"Error executing {tool_name}: {e}", exc_info=True)
+            logger.error(f"Error executing {tool_name}: {e}", exc=e)
             return {"error": str(e)}
     
     def list_skills(self) -> list[str]:

@@ -36,16 +36,27 @@ async def agente_cmd(update: Update, context: CallbackContext):
 
     response = result.get("response", "Sin respuesta")
 
-    if result.get("tool_calls"):
+    if result.get("tool_calls") and update and update.message:
         logger.debug(f"Tool calls: {len(result.get('tool_calls', []))}")
-        buttons = [[InlineKeyboardButton("Continuar", callback_data="agent_continue")]]
-        await update.message.reply_text("¿Continuar?", reply_markup=InlineKeyboardMarkup(buttons))
+        try:
+            buttons = [[InlineKeyboardButton("Continuar", callback_data="agent_continue")]]
+            await update.message.reply_text("¿Continuar?", reply_markup=InlineKeyboardMarkup(buttons))
+        except Exception as e:
+            logger.warning(f"No se pudo enviar botones: {e}")
 
     logger.agent_end(response[:80])
-    await update.message.reply_text(
-        f"🤖 *Resultado:*\n\n{response[:4000]}",
-        parse_mode="Markdown"
-    )
+    
+    # Verificar que update aún es válido antes de responder
+    try:
+        if update and update.message:
+            await update.message.reply_text(
+                f"🤖 *Resultado:*\n\n{response[:4000]}",
+                parse_mode="Markdown"
+            )
+        else:
+            logger.warning("Update no disponible para responder")
+    except Exception as e:
+        logger.error(f"Error al enviar respuesta: {e}")
 
 
 async def model_cmd(update: Update, context: CallbackContext):
@@ -198,3 +209,64 @@ async def rate_cmd(update: Update, context: CallbackContext):
         )
     else:
         await update.message.reply_text(f"❌ Error: {result.get('error')}")
+
+
+async def calidad_cmd(update: Update, context: CallbackContext):
+    """Show quality statistics of agent responses."""
+    from skills.default_skills import get_eval_stats
+    import logging as _logger
+
+    logger.incoming("/calidad")
+
+    result = get_eval_stats(20)
+
+    if result.get("error"):
+        await update.message.reply_text(f"❌ Error: {result['error']}")
+        return
+
+    total = result.get("total", 0)
+    if total == 0:
+        await update.message.reply_text(
+            "📊 *Calidad de Respuestas*\n\n"
+            "Aún no hay evaluaciones.\n"
+            "Después de cada respuesta del agente, se te preguntará:\n"
+            "¿La respuesta fue precisa? (sí/no/ms)",
+            parse_mode="Markdown"
+        )
+        return
+
+    stats = result.get("stats", {})
+    accuracy = stats.get("accuracy_rate", 0) * 100
+    avg_rating = stats.get("avg_rating", 0)
+    yes_c = stats.get("yes_count", 0)
+    no_c = stats.get("no_count", 0)
+    ms_c = stats.get("ms_count", 0)
+
+    text = f"""📊 *Calidad de Respuestas*
+
+*Estadísticas:*
+• Evaluadas: {total}
+• Accuracy: {accuracy:.0f}%
+• Promedio: {avg_rating}/5
+
+*Respuestas:*
+✅ Sí: {yes_c}
+❌ No: {no_c}
+😐 Más o menos: {ms_c}
+"""
+
+    # Show low quality alerts
+    recent = result.get("recent", [])
+    low_quality = [e for e in recent if e.get("user_feedback") == "no"]
+    if low_quality:
+        text += "\n*⚠️ Respuestas de baja calidad:*\n"
+        for e in low_quality[:3]:
+            query = e.get("query", "")[:40]
+            text += f"• {query}...\n"
+
+    # Check for accuracy alert
+    if accuracy < 60 and total >= 5:
+        text += f"\n⚠️ *Alerta*: Accuracy bajo ({accuracy:.0f}%). Revisa las respuestas del agente."
+
+    await update.message.reply_text(text, parse_mode="Markdown")
+    logger.success(f"Calidad: {accuracy:.0f}% accuracy, {total} evaluadas")

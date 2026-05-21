@@ -1,0 +1,103 @@
+✅ Checklist de Evaluación - Ingestión YouTube
+
+
+PASO 1: Verificar respuesta del bot
+
+Cuando termine la ingestión, el bot debería responder con:
+✅ Ingesta completada
+📄 *<título_del_video>*
+🎬 *YouTube Video*
+• Transcript: ✅ o ❌
+• Duración: MM:SS
+• Vistas: X,XXX
+• Autor: <nombre>
+• Conceptos: X
+📝 Resumen: <resumen_corto>
+
+Registra:-¿Transcript extraído? (✅ o ❌)
+- Duración del video
+- Vistas
+- Autor
+
+
+PASO 2: Verificar en Wiki
+
+Ejecuta estos comandos:
+
+/query <tema_del_video>
+
+Observa:-¿Hay resultados?
+-¿Los títulos son relevantes?
+-¿El contenido está en español?
+
+/hubs
+
+Observa:-¿Hay conceptos del video en los hubs?
+- ¿Cuántos hubs hay?
+
+/lint
+
+Observa:-Health score (ideal > 80)
+- ¿Orphan notes (notas sin relaciones)?
+- ¿Broken links?
+
+
+PASO 3: Evaluar calidad del transcript
+
+Busca en los resultados de /query una nota que contenga:
+[<minutos>:<segundos>] <texto>
+Ejemplo:
+[02:34] Este video trata sobre estrategias de monetización...
+[05:12] La primera técnica mencionada es...
+
+Registra:-¿Hay timestamps?
+- ¿El texto tiene sentido?
+- ¿Está en español?
+- ¿Aproximadamente cuántas líneas de transcript?
+
+
+PASO 4: Verificar conceptos extraídos
+
+/query conceptos_del_video
+
+Registra:-¿Cuántos conceptos se generaron?
+- ¿Son relevantes al tema?
+- ¿Hay conceptos irrelevantes o redundantes?
+
+
+PASO 5: Verificar metadata
+
+En la respuesta del bot o en la wiki, verifica:
+Campo	Valor esperado	¿Correcto?
+Título	Título real del video	☐
+Duración	Formato MM:SS	☐
+Vistas	Número aproximado	☐
+Autor	Nombre del canal	☐
+Tags	Términos relevantes	☐
+
+PASO 6: Probar búsqueda semántica
+
+/query_vectorial <palabra_clave_del_video>
+Registra:-¿Encuentra resultados relevantes?
+- ¿Los resultados son del video ingested?
+
+
+📋 Resumen de métricas
+          Métrica	Ideal	    Tu resultado
+Transcript extraído	✅ Sí	        ____
+Texto en español	✅ Sí	        ____
+Conceptos relevantes	≥ 5	        ____
+Health score    	> 80	        ____
+Búsqueda semántica	≥ 3 resultados	____
+
+📝 Notas para después del PDF
+
+Cuando hagas la ingestión de PDF, añade:
+         Métrica	Tu resultado
+Páginas procesadas	   ____
+Páginas con OCR	           ____
+Caracteres extraídos	   ____
+Tiempo de procesamiento	   ____
+
+Cuando termines la ingestión de YouTube, vuelve aquí y reporta los resultados del checklist. 
+Analizaré la calidad y te daré feedback.

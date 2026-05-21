@@ -100,7 +100,7 @@ def imagen_a_ascii(img, ancho=80):
 
 
 def cargar_imagen_ascii(base_dir=None):
-    """Busca y carga la imagen asubarnipal.png."""
+    """Busca y carga la imagen asubarnipal."""
     if not HAS_PIL:
         print("\n  📦 Instala Pillow: pip install Pillow")
         return
@@ -109,10 +109,12 @@ def cargar_imagen_ascii(base_dir=None):
         base_dir = Path(__file__).parent
     
     candidates = [
+        base_dir.parent / "Asubarnipal.jfif",
+        base_dir.parent / "Asubarnipal.png",
+        base_dir.parent / "Asubarnipal.jpg",
+        base_dir.parent / "asubarnipal.jpg",
         base_dir / "asubarnipal.png",
         base_dir / "asubarnipal.jpg",
-        base_dir.parent / "asubarnipal.png",
-        base_dir.parent / "asubarnipal.jpg",
     ]
     
     imagen_path = None
@@ -126,14 +128,14 @@ def cargar_imagen_ascii(base_dir=None):
             img = Image.open(imagen_path)
             ascii_str = imagen_a_ascii(img, ancho=80)
             print("\n" + "═" * 82)
-            print("  🖼️  RELIEVE ASUBARNIPAL CARGADO DESDE:", imagen_path)
+            print("  🖼️  DIOS ASIRIO CARGADO DESDE:", imagen_path)
             print("═" * 82)
             print(ascii_str)
             print("═" * 82 + "\n")
         except Exception as e:
             print(f"\n  ⚠️ No se pudo cargar la imagen: {e}\n")
     else:
-        print("\n  💡 Tip: Coloca 'asubarnipal.png' para ver el relieve.\n")
+        print("\n  💡 Tip: Coloca 'Asubarnipal.jfif' o 'Asubarnipal.png' para ver el relieve.\n")
 
 
 def inicio_completo():

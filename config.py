@@ -24,6 +24,7 @@ GRAPH_STORE_PATH = OBSIDIAN_PATH / "graph_store"
 DATA_DIR = BASE_DIR / "data"
 INDEX_DIR = BASE_DIR / "index"
 STORAGE_DIR = BASE_DIR / "storage"
+TEMP_DIR = BASE_DIR / "temp"
 SKILLS_DIR = BASE_DIR / "skills"
 STORAGE_DIR.mkdir(exist_ok=True)
 
@@ -41,13 +42,18 @@ MANUAL_FILE = DATA_DIR / "manual_agente.md"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.5:4b")
+OLLAMA_MODELS = os.getenv("OLLAMA_MODELS", "/mnt/c/Users/Vicente/.ollama/models")
+
+# OCR — modelo Ollama usado para extraer texto de imágenes y PDFs escaneados
+# Asegúrate de tenerlo disponible: ollama pull glm-ocr:latest
+OCR_MODEL = os.getenv("OCR_MODEL", "glm-ocr:latest")
 
 GEMINI_KEYS = [k.strip() for k in os.getenv("GEMINI_KEYS", "").split(",") if k.strip()]
 GEMINI_CURRENT = 0
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY", "")
 HF_TOKEN = os.getenv("HF_TOKEN", "")
 
-RAG_MODEL = os.getenv("RAG_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+RAG_MODEL = os.getenv("RAG_MODEL", "sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
 RAG_DEVICE = os.getenv("RAG_DEVICE", "cpu")
 
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "auto")
@@ -73,7 +79,7 @@ TURBOQUANT_TOP_MODELS = [
 
 def ensure_directories():
     """Crea directorios necesarios si no existen."""
-    dirs = [DATA_DIR, INDEX_DIR, STORAGE_DIR, SKILLS_DIR]
+    dirs = [DATA_DIR, INDEX_DIR, STORAGE_DIR, SKILLS_DIR, TEMP_DIR]
     for d in dirs:
         d.mkdir(exist_ok=True)
     

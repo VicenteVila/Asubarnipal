@@ -1,59 +1,61 @@
 # AGENTS.md
 
+**Agent-focused instruction file for Asubarnipal - AI agent with Telegram interface + RAG + Dashboard.**
+
+## Quick Commands
+
+```bash
+# Activate virtualenv (platform-dependent)
+Windows: .venv\Scripts\activate
+Linux:   source venv_linux/bin/activate
+
+# Run services
+python -m interface.telegram_bot   # Telegram bot
+streamlit run dashboard.py         # Dashboard (port 8501)
+python -m api.main                 # REST API (port 8000)
+```
+
 ## Project Structure
 
 ```
 Asubarnipal/
-├── api/main.py              # FastAPI REST server (port 8000)
-├── app/service.py          # Agent service (LLM + skills + RAG)
+├── config.py                     # Configuration + paths
+├── dashboard.py                  # Streamlit (11 tabs)
+├── api/main.py                   # FastAPI (port 8000)
+├── app/service.py                # Agent orchestration
 ├── core/
-│   ├── background_manager.py # Heartbeat, Suture, Graph rituals
-│   ├── command_history.py  # Command analytics
-│   ├── feed_tracker.py    # RSS feed subscriptions with alerts
-│   ├── llm_router.py      # Ollama/Gemini/Brave routers
-│   ├── memory.py          # Enhanced persistent memory
-│   ├── skill_registry.py  # Skills/tools registry
-│   └── dashboard_logic.py # Metrics and dashboard
-├── interface/telegram_bot.py # Telegram bot (15 commands)
-├── skills/default_skills.py  # 40+ operational skills
-├── index/rag.py            # RAG (sentence-transformers + FAISS)
-├── ingestion/             # Web content ingestion
-├── processing/           # Data processing
-├── storage/               # Memory, feeds, state files
-├── data/wiki/             # Wiki notes (SQLite)
-├── dashboard.py           # Streamlit dashboard (11 tabs)
-├── config.py              # Configuration
-├── .env                   # Environment variables
-└── scripts/               # Scripts de prueba y debugging
+│   ├── llm_router.py             # Ollama/Gemini/Brave routers
+│   ├── memory.py                 # Persistent memory (legacy flat JSON)
+│   ├── memory_tree.py            # H-Mem temporal-semantic tree (L0-L3)
+│   ├── entity_graph.py           # H-Mem entity knowledge graph
+│   ├── hybrid_retriever.py       # H-Mem hybrid retrieval (tree + graph)
+│   ├── background_manager.py     # Heartbeat/Suture/Graph rituals
+│   ├── vault_manager.py          # Multi-vault management
+│   ├── turboquant_engine.py      # LLM optimization
+│   ├── wiki.py                   # Wiki SQLite operations
+│   ├── wiki_healer.py            # Orphan detection/repair
+│   ├── graph_builder.py          # Vector relationships
+│   └── dashboard_logic.py        # Metrics
+├── interface/
+│   ├── telegram_bot.py           # Bot entrypoint
+│   └── handlers/                 # Modular command handlers
+│       ├── comandos.py           # /start, /status, /manual, /reporte
+│       ├── wiki.py               # /query, /hubs, /clusters, /lint
+│       ├── busqueda.py           # /ingest, /investigar
+│       ├── chat.py               # /charlar (5 modes)
+│       └── agente.py             # /agente, /model, /query_vectorial
+├── skills/
+│   ├── default_skills.py         # 45+ operational skills
+│   ├── vault_skills.py           # Vault management
+│   └── optimize_llm.py           # TurboQuant skills
+├── index/rag.py                  # FAISS + sentence-transformers
+├── tests/                        # pytest (57 passing)
+└── data/                         # SQLite, FAISS index, logs
 ```
 
-## Running the Agent
+## Environment Variables (.env)
 
-### Start the Telegram Bot
-```bash
-# Windows
-.venv\Scripts\activate
-python -m interface.telegram_bot
-
-# Linux
-source venv_linux/bin/activate
-python -m interface.telegram_bot
 ```
-
-### Start Dashboard
-```bash
-streamlit run dashboard.py
-```
-
-### Start API (optional)
-```bash
-python -m api.main
-# API at http://localhost:8000
-```
-
-### Environment Variables (.env)
-
-```bash
 TELEGRAM_TOKEN=your_bot_token
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=qwen3.5:4b
@@ -64,6 +66,8 @@ RAG_MODEL=sentence-transformers/all-MiniLM-L6-v2
 OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 ```
 
+**Required**: `TELEGRAM_TOKEN`, `OLLAMA_BASE_URL`. Others optional.
+
 ## Telegram Bot Commands (21 total)
 
 | Command | Description |
@@ -72,7 +76,7 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/manual` | Send operations manual |
 | `/status` | System telemetry (CPU, RAM, heartbeat, Brave limit) |
 | `/reporte` | Agent self-reflection report |
-| `/model [ollama\|gemini\|auto]` | Show or switch LLM model |
+| `/model [ollama|gemini|auto]` | Show or switch LLM model |
 | `/ingest <url>` | Add URL to wiki |
 | `/sync_obsidian` | Import notes from external Obsidian vault |
 | `/investigar <topic>` | Deep research via Brave Search |
@@ -94,6 +98,32 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 
 Also handles plain text messages (passes to agent with RAG context).
 
+## H-Mem Commands (6 total)
+
+| Command | Description |
+|---------|-------------|
+| `/memoria` | H-Mem system status (tree + graph stats) |
+| `/recordar <texto>` | Add memory to H-Mem system |
+| `/pensar <pregunta>` | Query H-Mem with full retrieval + answer |
+| `/contexto <query>` | Get memory context for prompts |
+| `/entidades` | Show entity graph hubs |
+| `/recientes [n]` | Show recent memories (default 10, max 30) |
+
+## Testing
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run specific test
+python -m pytest tests/test_llm_router.py -v
+
+# Coverage
+python -m pytest tests/ --cov=. --cov-report=term-missing
+```
+
+**Tests**: 57 passing (test_llm_router.py, test_wiki.py, test_telegram_handlers.py, test_startup.py)
+
 ## Chat Modes (/charlar)
 
 - **libre** - Conversación natural y creativa
@@ -107,9 +137,9 @@ Also handles plain text messages (passes to agent with RAG context).
 Multiple vaults with separate databases and RAG indices.
 
 ```python
-from core.vault_manager import get_vault_manager
+from core.vault_manager import VaultManager
 
-vm = get_vault_manager()
+vm = VaultManager()
 
 # List all vaults
 vm.list_vaults()
@@ -138,20 +168,40 @@ Each vault has:
 
 ## Memory System
 
+### Legacy Memory (Flat JSON)
 ```python
 from core.memory import EnhancedMemory
 
 memory = EnhancedMemory()
-
-# Remember something
 memory.add("Important fact", category="fact", priority=8, importance="high")
-
-# Search memories
 results = memory.search("query", limit=10)
-
-# Get recent
 recent = memory.get_recent(10, category="fact")
 ```
+
+### H-Mem (Hybrid Tree + Graph - NEW)
+```python
+from core.hybrid_retriever import get_hmem_manager
+
+hmem = get_hmem_manager()
+
+# Add memory
+hmem.remember("Important fact", metadata={"category": "fact"})
+
+# Query with answer
+answer = hmem.think("What do I know about X?")
+
+# Get context for prompts
+context = hmem.get_context("topic")
+
+# System stats
+stats = hmem.stats()
+```
+
+**H-Mem Architecture:**
+- **Tree**: Temporal-semantic hierarchy (L0-L3) with Ebbinghaus-based robustness
+- **Graph**: Entity knowledge graph with multi-hop expansion
+- **Retrieval**: 3-step (Planning → Tree+Graph search → Ranking)
+- **Weights**: Semantic (0.4), Temporal (0.3), Robustness (0.3)
 
 ## Operational Skills (51+)
 
@@ -181,20 +231,6 @@ recent = memory.get_recent(10, category="fact")
 10. **Feeds** - RSS subscriptions with alerts
 11. **Analytics** - Command history + Memory
 
-## Key Dependencies
-
-- **Ollama**: Must be running locally for LLM
-- **Obsidian Vault**: External folder referenced by `OBSIDIAN_PATH` env var
-- **FAISS index**: Built from wiki notes at `data/vector.index`
-- **SQLite**: Wiki stored at `data/wiki.db`
-
-## Dual Virtual Environments
-
-- `.venv/` - Windows virtual environment
-- `venv_linux/` - Linux virtual environment
-
-Always activate the appropriate venv for your platform before running.
-
 ## Notable Code Locations
 
 - `config.py:10` - Base directory and path configuration
@@ -202,7 +238,7 @@ Always activate the appropriate venv for your platform before running.
 - `core/llm_router.py` - Multi-model LLM routing (Ollama/Gemini/Brave)
 - `core/vault_manager.py` - Multiple vault management
 - `core/turboquant_engine.py` - TurboQuant LLM optimization
-- `skills/default_skills.py` - 40+ skill definitions
+- `skills/default_skills.py` - 45+ skill definitions
 - `skills/vault_skills.py` - Vault management skills
 - `skills/optimize_llm.py` - TurboQuant optimization skills
 - `index/rag.py` - Vector search engine (vault-aware)
@@ -217,3 +253,23 @@ Always activate the appropriate venv for your platform before running.
 - Brave Search limit: 1500/month
 - Multiple vaults with separate DB and RAG indices
 - TurboQuant auto-detection for chat modes
+
+## Wiki Conventions (from CLAUDE.md)
+
+- Raw sources: `/raw/` - IMMUTABLE. Agent never modifies.
+- Generated wiki: `/wiki/` - Agent has full control.
+- Frontmatter required for all notes:
+  ```yaml
+  tipo: source|entity|concept|synthesis|moc
+  fuente: "source name or N/A"
+  fecha_ingesta: YYYY-MM-DD
+  fecha_actualizacion: YYYY-MM-DD
+  estado: draft|review|final
+  tags: [tag1, tag2]
+  relacionados: [[Note1]], [[Note2]]
+  ```
+- Before creating a new note, search for existing related entities/concepts
+- If source contradicts existing entity, DOCUMENT the contradiction with date
+- Update index.md after EVERY ingestion operation
+- Cross-reference: every note must have at least 2 outgoing or incoming wikilinks
+- NEVER leave a note as orphan (no links) after ingestion

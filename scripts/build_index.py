@@ -94,7 +94,7 @@ def build_wiki_index():
     faiss.write_index(index, str(index_path))
     
     docs_path = GRAPH_STORE_PATH / "documents.json"
-    docs_path.write_text(json.dumps(filenames, indent=2))
+    docs_path.write_text(json.dumps(filenames, indent=2), encoding="utf-8")
     
     # Build knowledge graph from links
     logger.info("Building knowledge graph...")
@@ -155,8 +155,8 @@ def build_wiki_index():
     }
     
     meta_path = GRAPH_STORE_PATH / "metadata.json"
-    meta_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False))
-    
+    meta_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
+
     # Save graph as adjacency list
     graph_data = {
         "nodes": list(nodes),
@@ -165,7 +165,7 @@ def build_wiki_index():
     }
     
     graph_path = GRAPH_STORE_PATH / "graph.json"
-    graph_path.write_text(json.dumps(graph_data, indent=2, ensure_ascii=False))
+    graph_path.write_text(json.dumps(graph_data, indent=2, ensure_ascii=False), encoding="utf-8")
     
     # Generate report
     report = f"""# 📊 Graph Report - {datetime.now().strftime('%Y-%m-%d %H:%M')}
@@ -208,7 +208,7 @@ def build_wiki_index():
 """
     
     report_path = GRAPH_STORE_PATH / "graph_report.md"
-    report_path.write_text(report)
+    report_path.write_text(report, encoding="utf-8")
     
     logger.info(f"✅ Index completado!")
     logger.info(f"  Nodos: {len(nodes)}")

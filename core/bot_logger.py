@@ -13,9 +13,9 @@ import config
 
 class BotLogger:
     """Logger estructurado con emojis, indentación y dual output."""
-    
+
     _instance: Optional['BotLogger'] = None
-    
+
     # Categorías con emojis y colores ANSI
     CATEGORIES = {
         "INCOMING": ("📥", "\033[94m"),   # Azul
@@ -27,36 +27,36 @@ class BotLogger:
         "AGENT": ("🤖", "\033[96m"),      # Cyan
         "ERROR": ("🔴", "\033[91m"),      # Rojo
         "WARN": ("⚠️", "\033[93m"),
-        "DEBUG": ("⚪", "\033[90m"),      # Gris
+        "DEBUG": ("⚪", "\033[90m"),       # Gris
         "INFO": ("ℹ️", "\033[97m"),
         "SUCCESS": ("✅", "\033[92m"),
-        "SPAN": ("  ", "\033[90m"),       # Indentación
+        "SPAN": ("  ", "\033[90m"),        # Indentación
     }
-    
+
     RESET = "\033[0m"
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
-        
+
         self._initialized = True
         self._depth = 0
         self._use_color = sys.stdout.isatty()
         self._show_timestamps = True
         self._show_indent = True
-        
+
         # Logger de archivo
         self._file_logger = logging.getLogger("asubarnipal")
         if not self._file_logger.handlers:
             self._file_logger.setLevel(logging.DEBUG)
             handler = logging.FileHandler(
-                config.LOG_FILE, 
+                config.LOG_FILE,
                 encoding="utf-8"
             )
             handler.setFormatter(logging.Formatter(
@@ -64,7 +64,7 @@ class BotLogger:
                 datefmt="%H:%M:%S"
             ))
             self._file_logger.addHandler(handler)
-        
+
         # Terminal handler
         self._terminal_handler = logging.StreamHandler(sys.stdout)
         self._terminal_handler.setFormatter(logging.Formatter("%(message)s"))
@@ -73,6 +73,19 @@ class BotLogger:
         self._terminal_logger.propagate = False
         if not self._terminal_logger.handlers:
             self._terminal_logger.addHandler(self._terminal_handler)
+
+        # Live activity tracker
+        self._activity_tracker = None
+
+    def _get_tracker(self):
+        """Obtiene el tracker de actividad."""
+        if self._activity_tracker is None:
+            try:
+                from core.live_activity import get_tracker
+                self._activity_tracker = get_tracker()
+            except:
+                pass
+        return self._activity_tracker
     
     def _format(self, category: str, message: str, depth_boost: int = 0) -> str:
         """Formatea mensaje con emoji, timestamp e indentación."""
@@ -99,10 +112,10 @@ class BotLogger:
     def _log(self, category: str, message: str, level: str = "INFO", depth_boost: int = 0):
         """Log a terminal y archivo."""
         formatted = self._format(category, message, depth_boost)
-        
+
         # Terminal
         self._terminal_logger.info(formatted)
-        
+
         # Archivo
         clean_msg = self._strip_ansi(message)
         log_category = category if category in ["ERROR", "WARN", "DEBUG"] else "INFO"
@@ -110,6 +123,29 @@ class BotLogger:
             getattr(logging, level),
             f"[{category}] {clean_msg}"
         )
+
+        # Live activity
+        tracker = self._get_tracker()
+        if tracker:
+            activity_type = {
+                "INCOMING": "ingest" if "ingest" in message.lower() else "query",
+                "OUT": "chat",
+                "LLM": "chat",
+                "RAG": "query",
+                "TOOL": "tool",
+                "ERROR": "error",
+                "WARN": "error",
+                "SUCCESS": "system",
+                "INFO": "system",
+            }.get(category, "system")
+
+            status = "error" if category in ["ERROR"] else "completed"
+
+            tracker.add_entry(
+                type=activity_type,
+                message=clean_msg[:100],
+                status=status
+            )
     
     @staticmethod
     def _strip_ansi(text: str) -> str:
@@ -202,6 +238,10 @@ class BotLogger:
     def warn(self, message: str):
         """⚠️ Warning."""
         self._log("WARN", f"⚠️ {message}", level="WARNING")
+    
+    def warning(self, message: str):
+        """⚠️ Warning (alias for warn)."""
+        self.warn(message)
     
     def debug(self, message: str):
         """⚪ Debug."""

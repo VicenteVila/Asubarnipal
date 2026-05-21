@@ -1,311 +1,316 @@
-"""Enhanced Memory System - Persistent memory with semantic search."""
+"""Research Proposal Memory - Registry for investigation proposals."""
 
 import json
 import logging
-import re
-import time
-from collections import Counter
+import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Dict, List, Optional
 
 import config
 
 logger = logging.getLogger(__name__)
 
 
-class EnhancedMemory:
-    """Memoria persistente mejorada con estructura y búsqueda."""
-    
-    CATEGORIES = [
-        "conversation", "fact", "idea", "task", "preference", 
-        "learning", "error", "plan", "context", "person"
-    ]
-    
-    def __init__(self, max_memories: int = 500):
-        self.memory_file = config.STORAGE_DIR / "memory.json"
-        self.max_memories = max_memories
-        self._load()
-    
-    def _load(self):
-        """Cargar memorias."""
-        self.memories = []
-        if self.memory_file.exists():
+class ProposalMemory:
+    """Registry for research proposals with preference tracking."""
+
+    MEMORY_FILE = config.DATA_DIR / "research_proposals.json"
+    PREFERENCES_FILE = config.DATA_DIR / "research_preferences.json"
+
+    def __init__(self):
+        self.proposals = self._load_proposals()
+        self.preferences = self._load_preferences()
+
+    def _load_proposals(self) -> list:
+        """Load proposals from JSON file."""
+        if self.MEMORY_FILE.exists():
             try:
-                self.memories = json.loads(self.memory_file.read_text())
-            except Exception as e:
-                logger.warning(f"Error loading memory: {e}")
-                self.memories = []
-    
-    def _save(self):
-        """Guardar memorias."""
-        config.STORAGE_DIR.mkdir(exist_ok=True)
-        self._cleanup()
-        self.memory_file.write_text(
-            json.dumps(self.memories, indent=2, ensure_ascii=False)
-        )
-    
-    def _cleanup(self):
-        """Limpiar memorias antiguas si excede el límite."""
-        if len(self.memories) > self.max_memories:
-            sorted_memories = sorted(
-                self.memories, 
-                key=lambda m: (m.get("priority", 0), m.get("timestamp", "")),
-                reverse=True
+                data = json.loads(self.MEMORY_FILE.read_text(encoding="utf-8"))
+                return data if isinstance(data, list) else []
+            except (json.JSONDecodeError, Exception) as e:
+                logger.warning(f"Could not load proposals: {e}")
+                return []
+        return []
+
+    def _save_proposals(self):
+        """Save proposals to JSON file."""
+        try:
+            self.MEMORY_FILE.write_text(
+                json.dumps(self.proposals, ensure_ascii=False, indent=2),
+                encoding="utf-8"
             )
-            self.memories = sorted_memories[:self.max_memories]
-    
-    def add(
-        self, 
-        content: str, 
-        category: str = "general",
-        priority: int = 5,
-        metadata: Optional[dict] = None,
-        importance: str = "normal"
-    ) -> dict:
-        """Añadir memoria."""
-        if category not in self.CATEGORIES:
-            category = "general"
-        
-        memory = {
-            "id": f"mem_{len(self.memories)}_{int(time.time())}",
+        except Exception as e:
+            logger.error(f"Could not save proposals: {e}")
+
+    def _load_preferences(self) -> dict:
+        """Load user preferences from JSON file."""
+        if self.PREFERENCES_FILE.exists():
+            try:
+                return json.loads(self.PREFERENCES_FILE.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, Exception) as e:
+                logger.warning(f"Could not load preferences: {e}")
+                return {}
+        return {}
+
+    def _save_preferences(self):
+        """Save user preferences to JSON file."""
+        try:
+            self.PREFERENCES_FILE.write_text(
+                json.dumps(self.preferences, ensure_ascii=False, indent=2),
+                encoding="utf-8"
+            )
+        except Exception as e:
+            logger.error(f"Could not save preferences: {e}")
+
+    def save(self, pregunta: str, respuesta: str, propuesta: str,
+             modo: str, refs: List[Dict], tags: List[str] = None) -> dict:
+        """
+        Save a new research proposal.
+
+        Args:
+            pregunta: Original user question
+            respuesta: Full answer from the large model
+            propuesta: Research proposal section
+            modo: "estructurada" or "exploratoria"
+            refs: List of reference dicts
+            tags: Optional tags
+
+        Returns:
+            dict with proposal data and ID
+        """
+        proposal_id = str(uuid.uuid4())[:8]
+
+        proposal = {
+            "id": proposal_id,
+            "timestamp": datetime.now().isoformat(),
+            "pregunta_original": pregunta,
+            "respuesta": respuesta,
+            "propuesta": propuesta,
+            "modo": modo,
+            "refs": refs,
+            "tags": tags or [],
+            "status": "active",
+        }
+
+        self.proposals.insert(0, proposal)
+        self._save_proposals()
+
+        logger.info(f"Proposal saved: {proposal_id}")
+        return proposal
+
+    def save_to_standby(self, pregunta: str, respuesta: str, propuesta: str,
+                       modo: str, refs: List[Dict]) -> dict:
+        """Save proposal to standby (not active, for later review)."""
+        proposal_id = str(uuid.uuid4())[:8]
+
+        proposal = {
+            "id": proposal_id,
+            "timestamp": datetime.now().isoformat(),
+            "pregunta_original": pregunta,
+            "respuesta": respuesta,
+            "propuesta": propuesta,
+            "modo": modo,
+            "refs": refs,
+            "tags": ["standby"],
+            "status": "standby",
+        }
+
+        self.proposals.insert(0, proposal)
+        self._save_proposals()
+
+        logger.info(f"Proposal saved to standby: {proposal_id}")
+        return proposal
+
+    def list(self, status: str = "active") -> list:
+        """List proposals by status (active, standby, archived)."""
+        if status == "all":
+            return self.proposals
+        return [p for p in self.proposals if p.get("status") == status]
+
+    def get(self, proposal_id: str) -> Optional[dict]:
+        """Get proposal by ID."""
+        for p in self.proposals:
+            if p.get("id") == proposal_id:
+                return p
+        return None
+
+    def archive(self, proposal_id: str) -> bool:
+        """Archive a proposal (mark as archived, don't delete)."""
+        for p in self.proposals:
+            if p.get("id") == proposal_id:
+                p["status"] = "archived"
+                p["archived_at"] = datetime.now().isoformat()
+                self._save_proposals()
+                return True
+        return False
+
+    def restore(self, proposal_id: str) -> bool:
+        """Restore an archived proposal to active."""
+        for p in self.proposals:
+            if p.get("id") == proposal_id:
+                p["status"] = "active"
+                if "archived_at" in p:
+                    del p["archived_at"]
+                self._save_proposals()
+                return True
+        return False
+
+    def delete(self, proposal_id: str) -> bool:
+        """Permanently delete a proposal."""
+        original_len = len(self.proposals)
+        self.proposals = [p for p in self.proposals if p.get("id") != proposal_id]
+        if len(self.proposals) < original_len:
+            self._save_proposals()
+            return True
+        return False
+
+    def get_preference(self) -> str:
+        """Get preferred mode for proposals."""
+        return self.preferences.get("modo", "estructurada")
+
+    def set_preference(self, modo: str) -> str:
+        """Set preferred mode (estructurada/exploratoria)."""
+        if modo in ("estructurada", "exploratoria"):
+            self.preferences["modo"] = modo
+            self._save_preferences()
+            logger.info(f"Mode preference set: {modo}")
+        return self.preferences.get("modo", "estructurada")
+
+    def stats(self) -> dict:
+        """Get statistics about proposals."""
+        active = len([p for p in self.proposals if p.get("status") == "active"])
+        standby = len([p for p in self.proposals if p.get("status") == "standby"])
+        archived = len([p for p in self.proposals if p.get("status") == "archived"])
+        total = len(self.proposals)
+
+        return {
+            "total": total,
+            "active": active,
+            "standby": standby,
+            "archived": archived,
+            "preferred_modo": self.preferences.get("modo", "estructurada"),
+        }
+
+    def search_proposals(self, query: str, limit: int = 10) -> list:
+        """Search proposals by question or content."""
+        query_lower = query.lower()
+        results = []
+
+        for p in self.proposals:
+            if query_lower in p.get("pregunta_original", "").lower():
+                results.append(p)
+            elif query_lower in p.get("propuesta", "").lower():
+                results.append(p)
+            elif query_lower in p.get("respuesta", "").lower():
+                results.append(p)
+
+        return results[:limit]
+
+
+def get_proposal_memory() -> ProposalMemory:
+    """Get ProposalMemory singleton instance."""
+    if not getattr(get_proposal_memory, "_instance", None):
+        get_proposal_memory._instance = ProposalMemory()
+    return get_proposal_memory._instance
+
+
+class EnhancedMemory:
+    """Persistent memory system with categories and priority (legacy)."""
+
+    MEMORY_FILE = config.DATA_DIR / "memories.json"
+
+    def __init__(self):
+        self.memories = self._load()
+        self._next_id = max([m.get("id", 0) for m in self.memories], default=0) + 1
+
+    def _load(self) -> list:
+        if self.MEMORY_FILE.exists():
+            try:
+                data = json.loads(self.MEMORY_FILE.read_text(encoding="utf-8"))
+                return data if isinstance(data, list) else []
+            except (json.JSONDecodeError, Exception) as e:
+                logger.warning(f"Could not load memories: {e}")
+                return []
+        return []
+
+    def _save(self):
+        try:
+            self.MEMORY_FILE.write_text(
+                json.dumps(self.memories, ensure_ascii=False, indent=2),
+                encoding="utf-8"
+            )
+        except Exception as e:
+            logger.error(f"Could not save memories: {e}")
+
+    def add(self, content: str, category: str = "fact", priority: int = 5,
+            importance: str = "normal", tags: list = None) -> dict:
+        """Add a memory entry."""
+        mem_id = self._next_id
+        self._next_id += 1
+
+        entry = {
+            "id": mem_id,
             "content": content,
             "category": category,
             "priority": priority,
             "importance": importance,
+            "tags": tags or [],
             "timestamp": datetime.now().isoformat(),
-            "last_accessed": datetime.now().isoformat(),
             "access_count": 0,
-            "metadata": metadata or {},
-            "tags": self._extract_tags(content),
         }
-        
-        self.memories.append(memory)
+        self.memories.insert(0, entry)
         self._save()
-        logger.info(f"💾 Memory added: {category} - {content[:50]}")
-        return memory
-    
-    def _extract_tags(self, content: str) -> list:
-        """Extraer tags del contenido."""
-        tags = []
-        words = re.findall(r'#\w+', content)
-        tags.extend([w[1:] for w in words])
-        return list(set(tags))
-    
-    def get(
-        self, 
-        memory_id: str, 
-        access: bool = True
-    ) -> Optional[dict]:
-        """Obtener memoria por ID."""
-        for mem in self.memories:
-            if mem.get("id") == memory_id:
-                if access:
-                    mem["access_count"] = mem.get("access_count", 0) + 1
-                    mem["last_accessed"] = datetime.now().isoformat()
-                    self._save()
-                return mem
-        return None
-    
-    def get_recent(
-        self, 
-        limit: int = 10,
-        category: Optional[str] = None
-    ) -> list:
-        """Obtener memorias recientes."""
-        result = self.memories
-        if category:
-            result = [m for m in result if m.get("category") == category]
-        return result[-limit:]
-    
-    def get_important(
-        self, 
-        limit: int = 10,
-        min_importance: str = "high"
-    ) -> list:
-        """Obtener memorias importantes."""
-        importance_order = ["critical", "high", "normal", "low"]
-        min_idx = importance_order.index(min_importance) if min_importance in importance_order else 2
-        
-        result = [
-            m for m in self.memories 
-            if importance_order.index(m.get("importance", "normal")) >= min_idx
-        ]
-        return sorted(result, key=lambda m: m.get("priority", 0), reverse=True)[:limit]
-    
-    def search(
-        self, 
-        query: str,
-        category: Optional[str] = None,
-        limit: int = 10
-    ) -> list:
-        """Búsqueda en memorias."""
-        query_lower = query.lower()
+        return entry
+
+    def get_stats(self) -> dict:
+        """Get memory statistics."""
+        total = len(self.memories)
+        by_category = {}
+        last_memory = None
+
+        for m in self.memories:
+            cat = m.get("category", "unknown")
+            by_category[cat] = by_category.get(cat, 0) + 1
+
+        if self.memories:
+            last_memory = self.memories[0].get("content", "")
+
+        return {
+            "total": total,
+            "by_category": by_category,
+            "last_memory": last_memory,
+        }
+
+    def search(self, query: str, limit: int = 10) -> list:
+        """Search memories by content."""
+        q = query.lower()
         results = []
-        
-        for mem in self.memories:
-            if category and mem.get("category") != category:
-                continue
-            
-            content = mem.get("content", "").lower()
-            tags = [t.lower() for t in mem.get("tags", [])]
-            
-            if query_lower in content or query_lower in tags:
-                results.append(mem)
-            
-            if len(results) >= limit:
-                break
-        
+        for m in self.memories:
+            if q in m.get("content", "").lower():
+                results.append(m)
+                if len(results) >= limit:
+                    break
         return results
-    
-    def update(
-        self, 
-        memory_id: str, 
-        **kwargs
-    ) -> bool:
-        """Actualizar memoria."""
-        for mem in self.memories:
-            if mem.get("id") == memory_id:
-                mem.update(kwargs)
-                mem["updated_at"] = datetime.now().isoformat()
-                self._save()
-                return True
-        return False
-    
-    def delete(self, memory_id: str) -> bool:
-        """Eliminar memoria."""
-        self.memories = [
-            m for m in self.memories if m.get("id") != memory_id
-        ]
-        self._save()
-        return True
-    
-    def clear(self, before: Optional[str] = None) -> int:
-        """Limpiar memorias."""
-        if not before:
-            count = len(self.memories)
-            self.memories = []
-        else:
-            before_date = datetime.fromisoformat(before)
-            original_count = len(self.memories)
-            self.memories = [
-                m for m in self.memories
-                if datetime.fromisoformat(m.get("timestamp", "2020-01-01")) >= before_date
-            ]
-            count = original_count - len(self.memories)
-        
+
+    def get_recent(self, limit: int = 10, category: str = None) -> list:
+        """Get recent memories, optionally filtered by category."""
+        if category:
+            return [m for m in self.memories if m.get("category") == category][:limit]
+        return self.memories[:limit]
+
+    def clear(self) -> int:
+        """Clear all memories. Returns count deleted."""
+        count = len(self.memories)
+        self.memories = []
         self._save()
         return count
-    
-    def get_stats(self) -> dict:
-        """Estadísticas de memorias."""
-        categories = Counter(m.get("category") for m in self.memories)
-        importance = Counter(m.get("importance") for m in self.memories)
-        
-        return {
-            "total": len(self.memories),
-            "by_category": dict(categories),
-            "by_importance": dict(importance),
-            "most_accessed": sorted(
-                self.memories, 
-                key=lambda m: m.get("access_count", 0),
-                reverse=True
-            )[:5],
-            "first_memory": self.memories[0].get("timestamp") if self.memories else None,
-            "last_memory": self.memories[-1].get("timestamp") if self.memories else None,
-        }
-    
+
     def consolidate(self) -> dict:
-        """Consolidar memorias relacionadas."""
-        consolidated = []
-        seen_content = set()
-        
-        for mem in self.memories:
-            content = mem.get("content", "").lower().strip()
-            if content not in seen_content:
-                consolidated.append(mem)
-                seen_content.add(content)
-        
-        removed = len(self.memories) - len(consolidated)
-        self.memories = consolidated
+        """Remove duplicate memories by content."""
+        seen = set()
+        original_len = len(self.memories)
+        self.memories = [m for m in self.memories if m.get("content") not in seen
+                         and not seen.add(m.get("content", ""))]
         self._save()
-        
-        return {
-            "original": len(self.memories) + removed,
-            "consolidated": len(consolidated),
-            "removed_duplicates": removed,
-        }
-    
-    def export(self, path: Path) -> bool:
-        """Exportar memorias."""
-        try:
-            path.write_text(
-                json.dumps(self.memories, indent=2, ensure_ascii=False)
-            )
-            return True
-        except Exception as e:
-            logger.error(f"Export error: {e}")
-            return False
-    
-    def import_(self, path: Path, merge: bool = True) -> dict:
-        """Importar memorias."""
-        try:
-            imported = json.loads(path.read_text())
-            if not isinstance(imported, list):
-                return {"error": "Invalid format"}
-            
-            if merge:
-                existing_ids = {m.get("id") for m in self.memories}
-                new_memories = [
-                    m for m in imported if m.get("id") not in existing_ids
-                ]
-                self.memories.extend(new_memories)
-                added = len(new_memories)
-            else:
-                self.memories = imported
-                added = len(imported)
-            
-            self._save()
-            return {"added": added, "total": len(self.memories)}
-        except Exception as e:
-            logger.error(f"Import error: {e}")
-            return {"error": str(e)}
-
-
-# Shortcut functions for direct use
-def remember(
-    content: str,
-    category: str = "fact",
-    priority: int = 5
-) -> dict:
-    """Función rápida para recordar algo."""
-    memory = EnhancedMemory()
-    return memory.add(content, category, priority)
-
-
-def recall(
-    query: str,
-    limit: int = 5
-) -> list:
-    """Función rápida para recordar."""
-    memory = EnhancedMemory()
-    return memory.search(query, limit=limit)
-
-
-def what_remembered() -> list:
-    """Obtener últimas memorias."""
-    memory = EnhancedMemory()
-    return memory.get_recent(10)
-
-
-def memory_stats() -> dict:
-    """Estadísticas de memoria."""
-    memory = EnhancedMemory()
-    return memory.get_stats()
-
-
-if __name__ == "__main__":
-    memory = EnhancedMemory()
-    print("💾 Enhanced Memory System")
-    print(f"  Total: {len(memory.memories)} memorias")
-    print(f"  Categorías: {memory.get_stats()['by_category']}")
+        return {"removed_duplicates": original_len - len(self.memories)}

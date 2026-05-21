@@ -32,7 +32,7 @@ class CommandHistory:
     def _save(self):
         """Guardar historial."""
         config.DATA_DIR.mkdir(exist_ok=True)
-        self.history_file.write_text(json.dumps(self.history[-500:], indent=2))
+        self.history_file.write_text(json.dumps(self.history[-500:], indent=2), encoding="utf-8")
     
     def add(self, command: str, user_id: Optional[str] = None):
         """Añadir comando al historial."""

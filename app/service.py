@@ -10,8 +10,7 @@ from core.llm_router import LLMRouter
 from core.skill_registry import SkillRegistry
 from core.background_manager import AgentState
 from index.rag import RAGEngine
-
-logger = logging.getLogger(__name__)
+from core.bot_logger import logger
 
 _agent_state = None
 
@@ -20,6 +19,84 @@ def get_agent_state() -> AgentState:
     if _agent_state is None:
         _agent_state = AgentState()
     return _agent_state
+
+
+class HMemService:
+    """
+    H-Mem enhanced service.
+    Wraps AgentService with hybrid memory capabilities.
+    """
+    
+    def __init__(self):
+        self.hmem = None
+        self.llm = LLMRouter()
+        self.skill_registry = SkillRegistry()
+        self._init_hmem()
+        logger.info("HMemService initialized")
+    
+    def _init_hmem(self):
+        try:
+            from core.hybrid_retriever import get_hmem_manager
+            self.hmem = get_hmem_manager()
+            logger.info("H-Mem manager loaded")
+        except Exception as e:
+            logger.warning(f"H-Mem not available: {e}")
+            self.hmem = None
+    
+    def remember(self, content: str, metadata: dict = None) -> dict:
+        """Add memory to H-Mem system."""
+        if self.hmem:
+            return self.hmem.remember(content, metadata)
+        return {"error": "H-Mem not available"}
+    
+    def recall(self, query: str, time_range: tuple = None) -> dict:
+        """Recall from H-Mem memory."""
+        if self.hmem:
+            return self.hmem.recall(query, time_range)
+        return {"error": "H-Mem not available"}
+    
+    def think(self, query: str, context: str = None) -> str:
+        """Full H-Mem query with answer."""
+        if self.hmem:
+            return self.hmem.think(query, context)
+        return "H-Mem not available"
+    
+    def get_context(self, query: str) -> str:
+        """Get memory context for prompts."""
+        if self.hmem:
+            return self.hmem.get_context(query)
+        return ""
+    
+    def get_stats(self) -> dict:
+        """Get H-Mem system stats."""
+        if self.hmem:
+            return self.hmem.stats()
+        return {"error": "H-Mem not available"}
+    
+    def get_recent_memories(self, limit: int = 10) -> list:
+        """Get recent memories from tree."""
+        if self.hmem:
+            try:
+                tree = self.hmem.retriever.memory_tree
+                if tree:
+                    return tree.get_recent(limit=limit)
+            except:
+                pass
+        return []
+    
+    def get_entity_graph(self) -> dict:
+        """Get entity graph stats and hubs."""
+        if self.hmem:
+            try:
+                graph = self.hmem.retriever.entity_graph
+                if graph:
+                    return {
+                        "stats": graph.get_stats(),
+                        "hubs": graph.get_hubs(limit=10),
+                    }
+            except:
+                pass
+        return {"error": "Entity graph not available"}
 
 
 class AgentService:
@@ -36,10 +113,38 @@ class AgentService:
         start = time.time()
         agent_state = get_agent_state()
         agent_state.mark_alive()
-        
+
         messages = hist_to_pass or []
         messages.append({"role": "user", "content": message})
         
+        logger.incoming(f"🎯 [AGENTE] Recibido: {message[:60]}...")
+
+        # Añadir contexto de feedback si existe
+        try:
+            from skills.default_skills import get_feedback_context
+            fb_context = get_feedback_context()
+            if fb_context.get("success") and fb_context.get("context"):
+                messages.insert(0, {
+                    "role": "system",
+                    "content": f"[FEEDBACK CONTEXT]\n{fb_context['context']}\n[/FEEDBACK CONTEXT]"
+                })
+        except Exception as e:
+            logger.debug(f"Could not add feedback context: {e}")
+
+        # Añadir contexto del último source ingestado
+        try:
+            from core.wiki import Wiki
+            wiki = Wiki()
+            last_source = wiki.get_last_source()
+            if last_source:
+                source_context = f"[ÚLTIMO CONTENIDO INGESTADO]\nTipo: {last_source.get('tipo', 'N/A')}\nTítulo: {last_source.get('name', 'N/A')}\nFuente: {last_source.get('fuente', 'N/A')}\nContenido: {last_source.get('content', '')[:1500]}...\n[/ÚLTIMO CONTENIDO]"
+                messages.insert(0, {
+                    "role": "system",
+                    "content": source_context
+                })
+        except Exception as e:
+            logger.debug(f"Could not add last source context: {e}")
+
         try:
             rag_results = self.rag.search(message, top_k=3)
             if rag_results:
@@ -52,17 +157,36 @@ class AgentService:
                 })
         except Exception as e:
             logger.warning(f"RAG search failed: {e}")
-        
+
         tools = self.skill_registry.get_tools()
-        
+
         try:
+            logger.incoming("🤖 [AGENTE] Procesando con LLM...")
             result = self.llm.call_agent(messages, tools=tools)
             result["time"] = time.time() - start
             agent_state.record_success()
+            
+            # Log de tool calls si las hay
+            tool_calls = result.get("tool_calls", [])
+            if tool_calls:
+                for tc in tool_calls:
+                    logger.incoming(f"🔧 [TOOL CALL] {tc.get('name', 'unknown')}")
+            
+            logger.success(f"✅ [AGENTE] Completado en {result['time']:.2f}s | Tools: {len(tool_calls)}")
+
+            # Guardar última respuesta para feedback
+            try:
+                from skills.default_skills import set_last_response, set_pending_eval
+                set_last_response(message, result.get("response", ""))
+                # Set pending evaluation for sí/no/ms feedback
+                set_pending_eval(message, result.get("response", ""), context="agent_chat")
+            except Exception:
+                pass  # No critical
+
             logger.info(f"Agent chat completed in {result['time']:.2f}s")
             return result
         except Exception as e:
-            logger.error(f"Agent chat error: {e}", exc_info=True)
+            logger.error(f"Agent chat error: {e}", exc=e)
             agent_state.record_failure(str(e))
             return {
                 "response": f"Error: {e}",
@@ -284,7 +408,7 @@ class AsubarnipalService:
             logger.info(f"Agent chat completed in {result['time']:.2f}s")
             return result
         except Exception as e:
-            logger.error(f"Agent chat error: {e}", exc_info=True)
+            logger.error(f"Agent chat error: {e}", exc=e)
             agent_state.record_failure(str(e))
             return {
                 "response": f"Error: {e}",

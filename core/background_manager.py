@@ -17,12 +17,15 @@ logger = logging.getLogger(__name__)
 class BackgroundManager:
     """Background rituals manager for Asubarnipal."""
     
+    HMEM_INTERVAL = 1800
+    
     def __init__(self):
         self.running = False
         self.threads = []
         self.last_heartbeat = None
         self.last_suture = None
         self.last_graph = None
+        self.last_hmem = None
     
     def start(self):
         """Start all background rituals."""
@@ -47,6 +50,11 @@ class BackgroundManager:
         t.start()
         self.threads.append(t)
         logger.info("🕸️ Graph ritual started")
+        
+        t = threading.Thread(target=self._hmem_loop, daemon=True)
+        t.start()
+        self.threads.append(t)
+        logger.info("🌳 H-Mem consolidation ritual started")
     
     def stop(self):
         """Stop all background rituals."""
@@ -83,6 +91,47 @@ class BackgroundManager:
                 logger.error(f"Graph error: {e}")
             time.sleep(config.GRAPH_INTERVAL)
     
+    def _hmem_loop(self):
+        """H-Mem consolidation - runs every 30 minutes."""
+        while self.running:
+            try:
+                self._run_hmem_consolidation()
+            except Exception as e:
+                logger.error(f"H-Mem error: {e}")
+            time.sleep(self.HMEM_INTERVAL)
+    
+    def _run_hmem_consolidation(self):
+        """Consolidate H-Mem tree and update entity graph."""
+        try:
+            from core.hybrid_retriever import get_hmem_manager
+            
+            hmem = get_hmem_manager()
+            
+            if hmem:
+                tree = hmem.retriever.memory_tree
+                graph = hmem.retriever.entity_graph
+                
+                if tree:
+                    tree.force_consolidation()
+                    tree.prune_old_nodes(days=90)
+                    tree_stats = tree.get_stats()
+                    logger.info(f"🌳 H-Mem tree: {tree_stats.get('total_nodes', 0)} nodes")
+                
+                if graph:
+                    graph_stats = graph.get_stats()
+                    logger.info(f"🔗 H-Mem graph: {graph_stats.get('total_entities', 0)} entities, "
+                               f"{graph_stats.get('total_relations', 0)} relations")
+                
+                self.last_hmem = {
+                    "timestamp": datetime.now().isoformat(),
+                    "tree_nodes": tree_stats.get("total_nodes", 0) if tree else 0,
+                    "graph_entities": graph_stats.get("total_entities", 0) if graph else 0,
+                }
+        except ImportError:
+            logger.debug("H-Mem not available for background consolidation")
+        except Exception as e:
+            logger.error(f"H-Mem consolidation error: {e}")
+    
     def _update_heartbeat(self):
         """Update heartbeat.json."""
         import psutil
@@ -95,7 +144,7 @@ class BackgroundManager:
             "uptime": time.time(),
         }
         
-        config.HEARTBEAT_FILE.write_text(json.dumps(heartbeat, indent=2))
+        config.HEARTBEAT_FILE.write_text(json.dumps(heartbeat, indent=2), encoding="utf-8")
         self.last_heartbeat = heartbeat
         logger.debug(f"💓 Heartbeat: CPU {heartbeat['cpu_percent']}%")
     
@@ -133,6 +182,7 @@ class BackgroundManager:
             "last_heartbeat": self.last_heartbeat,
             "last_suture": self.last_suture or {},
             "last_graph": self.last_graph or {},
+            "last_hmem": self.last_hmem or {},
         }
 
 
@@ -166,7 +216,7 @@ class BraveCounter:
         config.BRAVE_COUNTER_FILE.write_text(json.dumps({
             "count": self.count,
             "month": self.month,
-        }, indent=2))
+        }, indent=2), encoding="utf-8")
     
     def can_search(self) -> bool:
         """Check if we can search."""
@@ -203,7 +253,7 @@ class MemorySkill:
     def _save(self):
         """Save memory."""
         config.STORAGE_DIR.mkdir(exist_ok=True)
-        self.memory_file.write_text(json.dumps(self.memories[-100:], indent=2))
+        self.memory_file.write_text(json.dumps(self.memories[-100:], indent=2), encoding="utf-8")
     
     def add(self, memory: str, category: str = "general"):
         """Add a memory."""
@@ -276,7 +326,7 @@ class AgentState:
     
     def _save(self):
         """Save state to file."""
-        config.AGENT_STATE_FILE.write_text(json.dumps(self.state, indent=2))
+        config.AGENT_STATE_FILE.write_text(json.dumps(self.state, indent=2), encoding="utf-8")
     
     def mark_alive(self):
         """Mark agent as alive."""

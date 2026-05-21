@@ -50,12 +50,15 @@ class SkillRegistry:
         if tool_name not in self.skills:
             return {"error": f"Skill {tool_name} not found"}
         
+        logger.incoming(f"⚡ [SKILL] {tool_name} | {arguments}")
+        
         try:
             func = self.skills[tool_name]
             result = func(**arguments)
+            logger.success(f"✅ [SKILL OK] {tool_name}")
             return result
         except Exception as e:
-            logger.error(f"Error executing {tool_name}: {e}", exc_info=True)
+            logger.error(f"❌ [SKILL ERROR] {tool_name}: {e}", exc=e)
             return {"error": str(e)}
     
     def list_skills(self) -> list[str]:
