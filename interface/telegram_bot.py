@@ -92,6 +92,14 @@ from interface.handlers.vision import (
     ocr_cmd,
 )
 
+from interface.handlers.backup import (
+    backup_cmd,
+    backups_cmd,
+    restore_cmd,
+    backup_stats_cmd,
+    backup_clear_cmd,
+)
+
 from core.rate_limiter import get_command_limiter
 
 STATUS = {
@@ -780,6 +788,12 @@ def main() -> None:
 
     app.add_handler(CommandHandler("vision", vision_cmd))
     app.add_handler(CommandHandler("ocr", ocr_cmd))
+
+    app.add_handler(CommandHandler("backup", backup_cmd))
+    app.add_handler(CommandHandler("backups", backups_cmd))
+    app.add_handler(CommandHandler("restore", restore_cmd))
+    app.add_handler(CommandHandler("backup_stats", backup_stats_cmd))
+    app.add_handler(CommandHandler("backup_clear", backup_clear_cmd))
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, handle_voice))
