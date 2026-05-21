@@ -139,7 +139,7 @@ async def _ingest_url(update: Update, url: str) -> None:
 
         else:
             error = result.get("error", "Error desconocido")
-            logger.error(f"Ingest URL falló: {error}")
+            logger.error(f"Ingest URL failed: {error}")
             await update.message.reply_text(f"❌ Error: {error}")
 
     except Exception as e:
@@ -225,7 +225,7 @@ async def _ingest_local_file(update: Update, file_path: str) -> None:
 
         else:
             error = result.get("error", "Error desconocido")
-            logger.error(f"Ingest file falló: {error}")
+            logger.error(f"Ingest file failed: {error}")
             await update.message.reply_text(f"❌ Error: {error}")
 
     except Exception as e:
