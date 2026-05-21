@@ -144,7 +144,7 @@ async def query_vectorial_cmd(update: Update, context: CallbackContext) -> None:
         logger.success(f"Vector search: {len(results)} resultados")
         await update.message.reply_text(text, parse_mode="Markdown")
     except Exception as e:
-        logger.error(f"Query vectorial exception", exc=e)
+        logger.error(f"Query vectorial exception: {e}")
         await update.message.reply_text(f"❌ Error en búsqueda vectorial")
 
 

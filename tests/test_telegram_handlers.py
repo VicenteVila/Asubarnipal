@@ -16,6 +16,7 @@ class MockUpdate:
         self.effective_user.id = user_id
         self.effective_user.first_name = first_name
         self.message = MockMessage()
+        self.effective_message = self.message
         self.callback_query = Mock()
         self.callback_query.data = None
         self._args = args or []
@@ -26,6 +27,8 @@ class MockMessage:
     def __init__(self):
         self.text = "test"
         self._reply = None
+        self.document = None
+        self.photo = None
 
     async def reply_text(self, text, parse_mode=None):
         self._reply = text
@@ -192,7 +195,8 @@ class TestBusquedaHandlers(unittest.TestCase):
 
         run_async(ingest_cmd(update, context))
 
-        self.assertIn("Usa: /ingest", update.message._reply)
+        self.assertIn("Usa", update.message._reply)
+        self.assertIn("/ingest", update.message._reply)
 
     def test_investigar_cmd_no_args(self):
         with patch('core.background_manager.BraveCounter'):

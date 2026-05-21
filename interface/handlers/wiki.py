@@ -160,17 +160,17 @@ Genera AMBOS modos de propuesta. Sé preciso y accionable."""
                 raise ValueError("LLM returned empty or failure")
 
         except Exception as e:
-            logger.error(f"Query error: {e}", exc=e)
-            text = f"🔎 *Resultados para: {query}*\n\n"
+            logger.error(f"Query error: {e}")
+            text = f"*Resultados para: {query}*\n\n"
             for ref in summary_data.get("refs", [])[:8]:
-                text += f"• {ref['name'][:60]} [{ref['tipo']}]\n"
+                text += f"* {ref['name'][:60]} [{ref['tipo']}]\n"
                 if ref.get("content_preview"):
                     text += f"  _{ref['content_preview'][:150]}_...\n\n"
             await update.message.reply_text(text[:4000], parse_mode="Markdown")
 
     except Exception as e:
-        logger.error(f"Query wiki exception", exc=e)
-        await update.message.reply_text(f"❌ Error: {str(e)[:200]}")
+        logger.error(f"Query wiki exception: {e}")
+        await update.message.reply_text(f"Error: {str(e)[:200]}")
 
 
 async def query_callback_handler(update: Update, context: CallbackContext):
@@ -401,5 +401,5 @@ Responde de forma clara y detallada. Indica de qué fuente obtuviste cada inform
             await update.message.reply_text(f"No pude generar respuesta para: {query}")
 
     except Exception as e:
-        logger.error(f"Hybrid query error: {e}", exc=e)
+        logger.error(f"Hybrid query error: {e}: {e}")
         await update.message.reply_text(f"❌ Error en búsqueda híbrida: {str(e)[:200]}")

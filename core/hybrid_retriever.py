@@ -1,10 +1,12 @@
 """H-Mem Hybrid Retriever - Combines tree and graph for memory retrieval."""
 
+from __future__ import annotations
+
 import json
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Optional, Self
+from typing import Optional, Self, Any
 
 import config
 

@@ -58,7 +58,7 @@ class SkillRegistry:
             logger.success(f"✅ [SKILL OK] {tool_name}")
             return result
         except Exception as e:
-            logger.error(f"❌ [SKILL ERROR] {tool_name}: {e}", exc=e)
+            logger.error(f"❌ [SKILL ERROR] {tool_name}: {e}: {e}")
             return {"error": str(e)}
     
     def list_skills(self) -> list[str]:

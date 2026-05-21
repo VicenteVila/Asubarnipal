@@ -376,7 +376,7 @@ async def handle_message(update: Update, context: CallbackContext):
             logger.info(f"Charla mode {charlar_mode} completed. Models tried: {models_tried}")
             
         except Exception as e:
-            logger.error(f"Charla mode error: {e}", exc=e)
+            logger.error(f"Charla mode error: {e}: {e}")
             response = ""
         
         if not response:

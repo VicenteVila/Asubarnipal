@@ -91,7 +91,7 @@ class Librarian:
             }
 
         except Exception as e:
-            logger.error(f"Librarian error: {e}", exc=e)
+            logger.error(f"Librarian error: {e}: {e}")
             return self._fallback_search(pregunta, limit)
 
     def _search_library(self, pregunta: str, limit: int) -> List[Dict]:
