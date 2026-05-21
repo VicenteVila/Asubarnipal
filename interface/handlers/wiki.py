@@ -10,6 +10,7 @@ from telegram.ext import CallbackContext
 
 from core.bot_logger import logger
 from .validators import validate_query
+from .keyboards import build_query_mode_keyboard
 
 
 async def query_cmd(update: Update, context: CallbackContext):
@@ -17,7 +18,8 @@ async def query_cmd(update: Update, context: CallbackContext):
     query = " ".join(context.args)
 
     if not query:
-        await update.message.reply_text("Usa: /query <pregunta>")
+        text = "*Buscar en Wiki*\n\nEnvia tu pregunta o selecciona un modo de busqueda:"
+        await update.message.reply_text(text, parse_mode="Markdown", reply_markup=build_query_mode_keyboard())
         return
 
     query = query.strip().strip('<>').strip()
@@ -30,6 +32,22 @@ async def query_cmd(update: Update, context: CallbackContext):
 
     logger.incoming(f"/query {query}")
 
+    query_mode = context.user_data.get("query_mode", "wiki")
+
+    if query_mode == "vectorial":
+        await _query_vectorial(update, context, query)
+    elif query_mode == "hybrid":
+        await _query_hybrid(update, context, query)
+    elif query_mode == "hmem":
+        await _query_hmem(update, context, query)
+    else:
+        await _query_wiki(update, context, query)
+
+
+async def _query_wiki(update: Update, context: CallbackContext, query: str) -> None:
+    """Query using two-model architecture: small librarian + large analyst."""
+    logger.incoming(f"/query wiki {query}")
+
     try:
         from app.service import AgentService
         from core.librarian import get_librarian
@@ -38,15 +56,15 @@ async def query_cmd(update: Update, context: CallbackContext):
         librarian = get_librarian()
         pm = get_proposal_memory()
 
-        await update.message.reply_text("📚 Consultando biblioteca...")
+        await update.message.reply_text("Consultando biblioteca...")
 
         summary_data = librarian.search_and_summarize(query, limit=8)
 
         if summary_data.get("total_found", 0) == 0:
-            await update.message.reply_text(f"No encontré información sobre: {query}")
+            await update.message.reply_text(f"No encontre informacion sobre: {query}")
             return
 
-        await update.message.reply_text("🧠 Analizando información...")
+        await update.message.reply_text("Analizando informacion...")
 
         service = AgentService()
 
@@ -65,29 +83,29 @@ PREGUNTA ORIGINAL: {query}
 Responde con el siguiente formato EXACTO:
 
 ## RESPUESTA
-[Explicación clara en bullets y numbered steps. Responde directamente a la pregunta.]
+[Explicacion clara en bullets y numbered steps. Responde directamente a la pregunta.]
 
-## PROPUESTA DE INVESTIGACIÓN
+## PROPUESTA DE INVESTIGACION
 
 ### MODO ESTRUCTURADO:
-- **Hallazgo:** [Qué se descubrió]
-- **Gap:** [Qué no está resuelto o necesita más investigación]
-- **Impacto:** [Cómo mejora esto al bot]
+- **Hallazgo:** [Que se descubrio]
+- **Gap:** [Que no esta resuelto o necesita mas investigacion]
+- **Impacto:** [Como mejora esto al bot]
 - **Prioridad:** Alta/Media/Baja
 - **Acciones:** [Lista numerada de pasos concretos a seguir]
   1. [Paso 1]
   2. [Paso 2]
   3. [Paso 3]
-- **Métricas:** [Cómo medimos si funcionó]
+- **Metricas:** [Como medimos si funciono]
 
 ### MODO EXPLORATORIO:
-- **Temas relacionados:** [Conceptos encontrados que podrían explorarse]
-- **Nuevas preguntas:** [3-5 preguntas que surgieron de la investigación]
-- **Conexiones:** [Cómo conecta esto con otros temas del conocimiento]
+- **Temas relacionados:** [Conceptos encontrados que podrian explorarse]
+- **Nuevas preguntas:** [3-5 preguntas que surgieron de la investigacion]
+- **Conexiones:** [Como conecta esto con otros temas del conocimiento]
 
 ---
 
-Genera AMBOS modos de propuesta. Sé preciso y accionable."""
+Genera AMBOS modos de propuesta. Se preciso y accionable."""
 
         try:
             answer = service.llm.generate(prompt)
@@ -173,6 +191,73 @@ Genera AMBOS modos de propuesta. Sé preciso y accionable."""
         await update.message.reply_text(f"Error: {str(e)[:200]}")
 
 
+async def _query_vectorial(update: Update, context: CallbackContext, query: str) -> None:
+    """Query using vector search."""
+    try:
+        from index.rag import get_rag_engine
+        rag = get_rag_engine()
+        results = rag.search(query, top_k=5)
+
+        if not results:
+            await update.message.reply_text(f"No encontre resultados vectoriales para: {query}")
+            return
+
+        text = f"*Resultados vectoriales para: {query}*\n\n"
+        for i, r in enumerate(results[:5], 1):
+            score = r.get("score", 0)
+            content = r.get("content", "")[:200]
+            source = r.get("source", "N/A")
+            text += f"{i}. [{score:.2f}] {source}\n_{content}_\n\n"
+
+        await update.message.reply_text(text[:4000], parse_mode="Markdown")
+
+    except Exception as e:
+        logger.error(f"Vector query error: {e}")
+        await update.message.reply_text(f"Error busqueda vectorial: {str(e)[:200]}")
+
+
+async def _query_hybrid(update: Update, context: CallbackContext, query: str) -> None:
+    """Query using hybrid search (dense + sparse + rerank)."""
+    try:
+        from index.rag import get_rag_engine
+        rag = get_rag_engine()
+        results = rag.search(query, top_k=5, use_hybrid=True)
+
+        if not results:
+            await update.message.reply_text(f"No encontre resultados hibridos para: {query}")
+            return
+
+        text = f"*Resultados hibridos para: {query}*\n\n"
+        for i, r in enumerate(results[:5], 1):
+            score = r.get("score", 0)
+            content = r.get("content", "")[:200]
+            source = r.get("source", "N/A")
+            text += f"{i}. [{score:.2f}] {source}\n_{content}_\n\n"
+
+        await update.message.reply_text(text[:4000], parse_mode="Markdown")
+
+    except Exception as e:
+        logger.error(f"Hybrid query error: {e}")
+        await update.message.reply_text(f"Error busqueda hibrida: {str(e)[:200]}")
+
+
+async def _query_hmem(update: Update, context: CallbackContext, query: str) -> None:
+    """Query using H-Mem system."""
+    try:
+        from core.hybrid_retriever import get_hmem_manager
+        hmem = get_hmem_manager()
+        answer = hmem.think(query)
+
+        if answer:
+            await update.message.reply_text(f"*H-Mem: {query}*\n\n{answer}"[:4000], parse_mode="Markdown")
+        else:
+            await update.message.reply_text(f"H-Mem no tiene informacion sobre: {query}")
+
+    except Exception as e:
+        logger.error(f"H-Mem query error: {e}")
+        await update.message.reply_text(f"Error H-Mem: {str(e)[:200]}")
+
+
 async def query_callback_handler(update: Update, context: CallbackContext):
     """Handle inline button callbacks for query proposals."""
     from core.memory import get_proposal_memory
@@ -227,7 +312,13 @@ async def query_callback_handler(update: Update, context: CallbackContext):
             modo=last_proposal.get("modo", "estructurada"),
             refs=last_proposal.get("refs", []),
         )
-        await query.edit_message_text("⏸️ Propuesta guardada en standby.")
+        await query.edit_message_text("Propuesta guardada en standby.")
+
+    elif data.startswith("query:"):
+        mode = data.split(":")[1]
+        context.user_data["query_mode"] = mode
+        mode_names = {"wiki": "Wiki", "vectorial": "Vectorial", "hybrid": "Hibrido", "hmem": "H-Mem"}
+        await query.edit_message_text(f"Modo {mode_names.get(mode, mode)} seleccionado. Envía /query <pregunta> para buscar.")
 
 
 async def hubs_cmd(update: Update, context: CallbackContext):
