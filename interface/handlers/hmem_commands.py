@@ -1,11 +1,14 @@
 """H-Mem memory commands handlers."""
 
 import json
+from typing import Any
+from telegram import Update
+from telegram.ext import CallbackContext
 from core.hybrid_retriever import get_hmem_manager, get_hybrid_retriever
 from core.bot_logger import logger
 
 
-async def memoria_cmd(update, context):
+async def memoria_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /memoria command - Show H-Mem status."""
     logger.incoming("/memoria")
 
@@ -50,7 +53,7 @@ async def memoria_cmd(update, context):
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
-async def recordar_cmd(update, context):
+async def recordar_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /recordar <texto> - Add memory to H-Mem."""
     logger.incoming("/recordar")
 
@@ -80,7 +83,7 @@ async def recordar_cmd(update, context):
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
-async def pensar_cmd(update, context):
+async def pensar_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /pensar <pregunta> - Query H-Mem with answer."""
     logger.incoming("/pensar")
 
@@ -101,7 +104,7 @@ async def pensar_cmd(update, context):
     await update.message.reply_text(f"🧠 *H-Mem responde:*\n\n{answer}", parse_mode="Markdown")
 
 
-async def contexto_cmd(update, context):
+async def contexto_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /contexto <query> - Get memory context for prompt."""
     logger.incoming("/contexto")
 
@@ -127,7 +130,7 @@ async def contexto_cmd(update, context):
     await update.message.reply_text(f"*Contexto para '{query}':*\n\n{preview}", parse_mode="Markdown")
 
 
-async def entidades_cmd(update, context):
+async def entidades_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /entidades - Show entity graph hubs."""
     logger.incoming("/entidades")
 
@@ -163,7 +166,7 @@ async def entidades_cmd(update, context):
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
-async def recientes_cmd(update, context):
+async def recientes_cmd(update: Update, context: CallbackContext) -> None:
     """Handle /recientes - Show recent memories."""
     logger.incoming("/recientes")
 
@@ -198,7 +201,7 @@ async def recientes_cmd(update, context):
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
-def get_hmem_handlers():
+def get_hmem_handlers() -> dict[str, Any]:
     """Return dict of H-Mem command handlers."""
     return {
         "memoria": memoria_cmd,
