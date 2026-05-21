@@ -68,6 +68,16 @@ from interface.handlers.hmem_commands import (
     recientes_cmd,
 )
 
+from interface.handlers.graphify_handler import (
+    graphify_cmd,
+    graph_update_cmd,
+    graph_query_cmd,
+    graph_stats_cmd,
+    graph_report_cmd,
+    graph_add_cmd,
+    graph_export_cmd,
+)
+
 STATUS = {
     "start": "🟢",
     "ingest": "📥",
@@ -649,6 +659,14 @@ def main():
     app.add_handler(CommandHandler("contexto", contexto_cmd))
     app.add_handler(CommandHandler("entidades", entidades_cmd))
     app.add_handler(CommandHandler("recientes", recientes_cmd))
+
+    app.add_handler(CommandHandler("graphify", graphify_cmd))
+    app.add_handler(CommandHandler("graph_update", graph_update_cmd))
+    app.add_handler(CommandHandler("graph_query", graph_query_cmd))
+    app.add_handler(CommandHandler("graph_stats", graph_stats_cmd))
+    app.add_handler(CommandHandler("graph_report", graph_report_cmd))
+    app.add_handler(CommandHandler("graph_add", graph_add_cmd))
+    app.add_handler(CommandHandler("graph_export", graph_export_cmd))
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(agent_callback))

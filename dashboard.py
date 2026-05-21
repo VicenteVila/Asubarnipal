@@ -1992,20 +1992,132 @@ def main():
         render_raw_table(wiki)
 
     elif selected == 4:
-        st.subheader("🧠 Grafo Vectorial del Wiki")
-        st.caption("Visualización del grafo generado por /indexar_wiki")
+        st.subheader("🧠 Grafo de Conocimiento")
+        st.caption("Grafo vectorial + Graphify knowledge graph")
 
-        graph_view = st.radio(
-            "Modo de visualización:",
-            ["Completo", "Solo métricas"],
+        graph_source = st.radio(
+            "Fuente del grafo:",
+            ["Graphify (Interactivo)", "Graph Store (Métricas)"],
             index=0,
             horizontal=True,
-            key="graph_view_mode"
+            key="graph_source_selector"
         )
 
         st.divider()
 
-        if graph_view == "Solo métricas":
+        if graph_source == "Graphify (Interactivo)":
+            from core.graphify_integration import (
+                get_graph_stats as gf_stats,
+                get_graph_html_path,
+                get_graph_report,
+                build_graph,
+            )
+
+            stats = gf_stats()
+
+            if stats.get("exists"):
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("🕸️ Nodos", stats.get("nodes", 0))
+                with col2:
+                    st.metric("🔗 Conexiones", stats.get("edges", 0))
+                with col3:
+                    st.metric("📊 Comunidades", stats.get("communities", 0))
+                with col4:
+                    st.metric("🕐 Última vez", stats.get("last_built", "N/A"))
+
+                if stats.get("hubs"):
+                    st.subheader("🏛️ Top Hubs")
+                    hub_cols = st.columns(min(5, len(stats["hubs"])))
+                    for i, hub in enumerate(stats["hubs"][:5]):
+                        with hub_cols[i]:
+                            st.metric(hub["name"][:20], hub["connections"])
+
+                st.divider()
+
+                html_path = get_graph_html_path()
+                if html_path:
+                    st.subheader("🕸️ Visualización Interactiva del Grafo")
+                    st.caption("Haz clic en los nodos, filtra por comunidad, busca conceptos")
+
+                    try:
+                        with open(html_path, "r", encoding="utf-8") as f:
+                            html_content = f.read()
+
+                        st.markdown("""
+                        <style>
+                        .graph-container {
+                            width: 100%;
+                            height: 850px;
+                            border: 2px solid #30363d;
+                            border-radius: 12px;
+                            overflow: hidden;
+                            background: #0d1117;
+                        }
+                        .graph-container iframe {
+                            width: 100%;
+                            height: 100%;
+                            border: none;
+                        }
+                        </style>
+                        """, unsafe_allow_html=True)
+
+                        st.components.v1.html(
+                            html_content,
+                            height=850,
+                            scrolling=True
+                        )
+
+                        st.caption(f"📁 Archivo: {html_path} — Ábrelo en tu navegador para pantalla completa")
+
+                    except Exception as e:
+                        st.warning(f"No se pudo cargar graph.html: {e}")
+                        st.info("Abre el archivo manualmente: `graphify-out/graph.html`")
+                else:
+                    st.info("Visualización HTML no disponible. Construye el grafo con `/graphify`.")
+
+                st.divider()
+                st.subheader("📄 Reporte del Grafo")
+                report = get_graph_report()
+                if report:
+                    st.markdown(f"""
+                    <style>
+                    .graph-report {{
+                        background: #161b22;
+                        border: 1px solid #30363d;
+                        border-radius: 8px;
+                        padding: 16px;
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 0.85rem;
+                        line-height: 1.5;
+                        color: #c9d1d9;
+                        max-height: 600px;
+                        overflow-y: auto;
+                    }}
+                    </style>
+                    """, unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="graph-report">{report.replace(chr(10), "<br>")}</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.info("No hay reporte disponible.")
+            else:
+                st.warning("🕸️ No hay grafo de Graphify disponible.")
+                st.info("Construye el grafo con:")
+                st.code("graphify extract /mnt/c/Obsidian/wiki --backend ollama")
+                st.code("# O desde Telegram: /graphify")
+
+                if st.button("🔨 Construir grafo ahora", key="build_graphify_btn"):
+                    with st.spinner("Construyendo grafo con Graphify..."):
+                        result = build_graph(backend="ollama")
+                        if result.get("success"):
+                            st.success(f"✅ Grafo construido: {result.get('stats', {}).get('nodes', 0)} nodos")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Error: {result.get('error', 'Desconocido')}")
+
+        else:
             try:
                 col1, col2, col3, col4 = st.columns(4)
                 graph_store = Path(config.obsidian_path) / "graph_store"
@@ -2041,25 +2153,6 @@ def main():
                             st.metric("Grafo", "No disponible")
             except Exception as e:
                 st.warning(f"Error: {e}")
-        else:
-            graph_store = Path(config.obsidian_path) / "graph_store"
-            meta_path = graph_store / "metadata.json"
-
-            if not meta_path.exists():
-                st.info("🕸️ Grafo no encontrado. Generando automáticamente...")
-                with st.spinner("Construyendo grafo de conocimiento..."):
-                    try:
-                        from core.graph_builder import GraphBuilder
-                        builder = GraphBuilder()
-                        result = builder.build_graph()
-                        st.success(f"✅ Grafo construido: {result.get('nodes', 0)} nodos, {result.get('edges', 0)} conexiones")
-                    except Exception as ge:
-                        st.warning(f"No se pudo construir grafo: {ge}")
-
-            try:
-                render_graph_store_status(config)
-            except Exception as e:
-                st.warning(f"Error cargando estado del grafo: {e}")
 
             st.divider()
 

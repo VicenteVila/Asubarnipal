@@ -26,6 +26,7 @@ class BackgroundManager:
         self.last_suture = None
         self.last_graph = None
         self.last_hmem = None
+        self.last_graphify = None
     
     def start(self):
         """Start all background rituals."""
@@ -55,6 +56,11 @@ class BackgroundManager:
         t.start()
         self.threads.append(t)
         logger.info("🌳 H-Mem consolidation ritual started")
+        
+        t = threading.Thread(target=self._graphify_loop, daemon=True)
+        t.start()
+        self.threads.append(t)
+        logger.info("🕸️ Graphify knowledge graph ritual started")
     
     def stop(self):
         """Stop all background rituals."""
@@ -132,6 +138,40 @@ class BackgroundManager:
         except Exception as e:
             logger.error(f"H-Mem consolidation error: {e}")
     
+    def _graphify_loop(self):
+        """Graphify knowledge graph update - runs every 30 minutes."""
+        while self.running:
+            try:
+                self._update_graphify()
+            except Exception as e:
+                logger.error(f"Graphify error: {e}")
+            time.sleep(config.GRAPH_INTERVAL)
+    
+    def _update_graphify(self):
+        """Update knowledge graph using Graphify."""
+        try:
+            from core.graphify_integration import build_graph, get_graph_stats
+            
+            result = build_graph(backend="ollama", no_viz=False)
+            
+            if result.get("success"):
+                stats = result.get("stats", {})
+                self.last_graphify = {
+                    "timestamp": datetime.now().isoformat(),
+                    "nodes": stats.get("nodes", 0),
+                    "edges": stats.get("edges", 0),
+                    "communities": stats.get("communities", 0),
+                }
+                logger.info(f"🕸️ Graphify: {stats.get('nodes', 0)} nodes, "
+                           f"{stats.get('edges', 0)} edges, "
+                           f"{stats.get('communities', 0)} communities")
+            else:
+                logger.warning(f"Graphify build failed: {result.get('error', 'Unknown')}")
+        except ImportError:
+            logger.debug("Graphify not available")
+        except Exception as e:
+            logger.error(f"Graphify update error: {e}")
+    
     def _update_heartbeat(self):
         """Update heartbeat.json."""
         import psutil
@@ -183,6 +223,7 @@ class BackgroundManager:
             "last_suture": self.last_suture or {},
             "last_graph": self.last_graph or {},
             "last_hmem": self.last_hmem or {},
+            "last_graphify": self.last_graphify or {},
         }
 
 
