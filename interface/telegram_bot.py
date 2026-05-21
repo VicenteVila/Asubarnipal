@@ -92,6 +92,8 @@ from interface.handlers.vision import (
     ocr_cmd,
 )
 
+from core.rate_limiter import get_command_limiter
+
 STATUS = {
     "start": "🟢",
     "ingest": "📥",
@@ -787,7 +789,22 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(query_callback_handler))
     app.add_error_handler(error_handler)
 
-    logger.info("🤖 Application started")
+    limiter = get_command_limiter()
+
+    async def rate_limit_check(update: Update, context: CallbackContext):
+        user_id = update.effective_user.id
+        command = update.message.text.split()[0][1:] if update.message and update.message.text else ""
+        allowed, remaining = limiter.allow(user_id, command)
+        if not allowed:
+            wait = limiter.get_wait_time(user_id, command)
+            await update.message.reply_text(
+                f"Limite de uso alcanzado para /{command}. "
+                f"Espera {int(wait)} segundos antes de reintentar."
+            )
+            return False
+        return True
+
+    logger.info("Application started")
     app.run_polling(poll_interval=2)
 
 
