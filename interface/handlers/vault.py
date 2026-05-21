@@ -322,3 +322,62 @@ async def vault_callback(update: Update, context: CallbackContext):
             await query.edit_message_text("❌ Acción desconocida")
     else:
         await query.edit_message_text("❌ Callback desconocido")
+
+
+async def vault_connect_cmd(update: Update, context: CallbackContext):
+    """Connect to an existing Obsidian vault folder."""
+    args = context.args
+
+    if not args:
+        await update.message.reply_text(
+            "🔗 *Conectar vault existente*\n\n"
+            "Usa: /vault_connect <ruta> [nombre]\n\n"
+            "Ejemplos:\n"
+            "`/vault_connect C:\\Users\\Vicente\\Documentos\\Obsidian\\mi_vault`\n"
+            "`/vault_connect /mnt/c/Obsidian/investigacion investigacion`"
+        )
+        return
+
+    path = args[0]
+    name = " ".join(args[1:]) if len(args) > 1 else None
+
+    logger.incoming(f"/vault_connect {path} {name if name else ''}")
+
+    vm = get_vault_manager()
+    result = vm.connect(path, name, "Vault conectada externamente")
+
+    if result.get("success"):
+        # Auto-activate
+        if result.get("name"):
+            vm.switch(result["name"])
+
+        await update.message.reply_text(
+            f"✅ *Vault conectada*\n\n"
+            f"📛 Nombre: *{result['name']}*\n"
+            f"📂 Path: `{result['path']}`\n\n"
+            f"🟢 Vault activado automáticamente."
+        )
+    else:
+        await update.message.reply_text(f"❌ Error: {result.get('error')}")
+
+
+async def vault_disconnect_cmd(update: Update, context: CallbackContext):
+    """Disconnect a vault."""
+    args = context.args
+
+    name = args[0] if args else None
+
+    logger.incoming(f"/vault_disconnect {name if name else 'active'}")
+
+    vm = get_vault_manager()
+    result = vm.disconnect(name)
+
+    if result.get("success"):
+        text = f"✅ *Vault desconectada*\n\n"
+        text += f"📛 Nombre: *{result['name']}*\n"
+        text += f"📂 Path: `{result['path']}`\n"
+        if result.get("was_active"):
+            text += "\n⚠️ Era el vault activo - ahora no hay ninguno activo."
+        await update.message.reply_text(text, parse_mode="Markdown")
+    else:
+        await update.message.reply_text(f"❌ Error: {result.get('error')}")

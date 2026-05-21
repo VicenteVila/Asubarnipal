@@ -1,8 +1,14 @@
+# =============================================
+# Asubarnipal - .gitignore
+# =============================================
+
+# Python bytecode
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
+*.pyo
+
+# Distribution / packaging
 build/
 develop-eggs/
 dist/
@@ -16,19 +22,35 @@ sdist/
 var/
 wheels/
 *.egg-info/
-.installed.wheel
+.installed.cfg
 *.egg
 MANIFEST
 
+# Virtual environments
+.venv/
 venv/
 venv_*/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Secrets - NEVER commit
 .env
-.venv
+*.key
+*.pem
+secrets/
+credentials.json
+service-account.json
 
-*.log
-*.db
-*.sqlite
-
+# Testing
 .pytest_cache/
 .coverage
 htmlcov/
@@ -36,13 +58,57 @@ htmlcov/
 .dmypy.json
 dmypy.json
 .ruff_cache/
+*.cover
+.tox/
 
+# OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
-index/
-storage/
+# Application runtime data
+*.log
+*.db
+*.sqlite
+*.sqlite3
 *.faiss
+*.index
 *.docs.json
 
+# Application directories (runtime)
+data/*.db
+data/*.sqlite
+data/*.faiss
+data/*.index
+data/*.json
+data/*.log
+!data/manual_agente.md
+!data/vaults_config.json
+index/
+storage/
+temp/
+
+# Raw and wiki content (keep structure, ignore content)
+data/raw/
+data/wiki/
+
+# Node
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.dockerenv
+.docker/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# mypy
+.mypy_cache/

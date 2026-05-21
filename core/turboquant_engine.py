@@ -87,13 +87,13 @@ class TurboQuantEngine:
     def apply_mode(self, mode: str, model: Optional[str] = None) -> Dict[str, Any]:
         """
         Apply TurboQuant settings for a chat mode.
-        Auto-detects model if not provided.
+        Auto-detects model if not provided. Uses mode-specific model from config.
         """
         mode_cfg = get_mode_config(mode)
         if not mode_cfg:
             return {"success": False, "error": f"Unknown mode: {mode}"}
 
-        target_model = model or self.get_active_model()
+        target_model = model or mode_cfg.model or self.get_active_model()
         model_cfg = get_model_config(target_model) if target_model else None
 
         result = {

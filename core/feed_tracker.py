@@ -41,7 +41,7 @@ class FeedTracker:
         self.subscriptions_file.write_text(json.dumps({
             "subscriptions": self.subscriptions,
             "last_entries": self.last_entries,
-        }, indent=2))
+        }, indent=2), encoding="utf-8")
     
     def subscribe(self, url: str, name: str = "") -> bool:
         """Suscribirse a un feed."""
@@ -142,7 +142,7 @@ class FeedTracker:
         } for u in updates])
         
         alerts = alerts[-100:]
-        self.alerts_file.write_text(json.dumps(alerts, indent=2))
+        self.alerts_file.write_text(json.dumps(alerts, indent=2), encoding="utf-8")
     
     def get_subscriptions(self) -> list[dict]:
         """Listar suscripciones."""
@@ -170,7 +170,7 @@ class FeedTracker:
             alerts = json.loads(self.alerts_file.read_text())
             if 0 <= index < len(alerts):
                 alerts[index]["read"] = True
-                self.alerts_file.write_text(json.dumps(alerts, indent=2))
+                self.alerts_file.write_text(json.dumps(alerts, indent=2), encoding="utf-8")
         except:
             pass
     

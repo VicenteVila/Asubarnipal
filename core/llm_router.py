@@ -68,7 +68,7 @@ class LLMRouter:
                 return self._http_chat(target_model, standard_messages, tools or [], start)
                 
         except Exception as e:
-            logger.error(f"Chat error: {e}", exc_info=True)
+            logger.error(f"Chat error: {e}", exc=e)
             raise
     
     def _http_chat(self, model: str, messages: list[dict], tools: list, start: float) -> dict:
@@ -147,38 +147,67 @@ class LLMRouter:
     # =============================================================================
 
     def call_with_turbo(self, messages: list[dict], mode: str = "consultor",
-                        tools: list = None, **kwargs) -> dict:
+                         model: str = None, tools: list = None, **kwargs) -> dict:
         """
         Call LLM with TurboQuant optimizations for a chat mode.
         Auto-detects model and applies optimal settings.
+        Uses mode-specific model if provided.
+        Includes retry logic for robustness.
         """
+        max_retries = 3
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                from core.turboquant_engine import apply_chat_mode, get_engine
+
+                engine = get_engine()
+                apply_result = engine.apply_mode(mode, model=model)
+
+                params = engine.get_optimized_params()
+
+                options = params.get("options", {})
+                options.update(kwargs)
+
+                target_model = model or apply_result.get("model") or self.model
+
+                result = self.chat(messages, model=target_model, tools=tools, **options)
+                result["turbo"] = {
+                    "mode": mode,
+                    "model": target_model,
+                    "context": params["context"],
+                    "cache_k": params["turbo"]["cache_k"],
+                    "cache_v": params["turbo"]["cache_v"],
+                }
+
+                logger.info(f"TQ Turbo success: mode={mode}, model={target_model}, attempt={attempt+1}")
+                return result
+
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"TQ attempt {attempt+1}/{max_retries} failed: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 * (attempt + 1))
+        
+        logger.error(f"TQ all retries failed for mode {mode}. Last error: {last_error}")
+        
         try:
-            from core.turboquant_engine import apply_chat_mode, get_engine
-
-            engine = get_engine()
-            apply_result = engine.apply_mode(mode)
-
-            params = engine.get_optimized_params()
-
-            options = params.get("options", {})
-            options.update(kwargs)
-
-            result = self.chat(messages, tools=tools, **options)
+            fallback_model = self.model
+            result = self.chat(messages, model=fallback_model, tools=tools)
             result["turbo"] = {
                 "mode": mode,
-                "context": params["context"],
-                "cache_k": params["turbo"]["cache_k"],
-                "cache_v": params["turbo"]["cache_v"],
+                "model": fallback_model,
+                "fallback_used": True,
+                "error": last_error
             }
-
             return result
-
-        except ImportError:
-            logger.warning("TurboQuant not available, using standard call")
-            return self.chat(messages, tools=tools, **kwargs)
-        except Exception as e:
-            logger.warning(f"TurboQuant call failed: {e}, falling back to standard")
-            return self.chat(messages, tools=tools, **kwargs)
+        except Exception as final_error:
+            logger.error(f"TQ fallback also failed: {final_error}")
+            return {
+                "response": "",
+                "error": f"LLM failed after {max_retries} retries: {last_error}",
+                "turbo": {"mode": mode, "model": "unknown", "failed": True}
+            }
 
     def get_turbo_status(self) -> dict:
         """Get current TurboQuant status."""

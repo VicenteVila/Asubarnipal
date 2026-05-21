@@ -168,11 +168,17 @@ Responde ahora según este modo."""
     try:
         try:
             from core.turboquant_engine import apply_chat_mode
-            apply_chat_mode(mode)
-            result = service.llm.call_with_turbo([system_msg, user_msg], mode=mode)
+            from core.turboquant_modes import get_mode_config
+            
+            mode_cfg = get_mode_config(mode)
+            target_model = mode_cfg.model if mode_cfg else None
+            
+            apply_chat_mode(mode, model=target_model)
+            result = service.llm.call_with_turbo([system_msg, user_msg], mode=mode, model=target_model)
             turbo_info = result.get("turbo", {})
+            model_name = target_model or service.llm.model
             if turbo_info:
-                logger.info(f"TQ mode {mode} applied: ctx={turbo_info.get('context')}, "
+                logger.info(f"TQ mode {mode} applied: model={model_name}, ctx={turbo_info.get('context')}, "
                             f"cache_k={turbo_info.get('cache_k')}")
         except Exception as tq_err:
             logger.warn(f"TQ fallback for mode {mode}: {tq_err}")
@@ -183,7 +189,7 @@ Responde ahora según este modo."""
         if response:
             tq_note = ""
             if turbo_info:
-                tq_note = f"\n\n⚡ TQ: {turbo_info.get('context', 32)//1024}K ctx | {turbo_info.get('cache_k', '')}"
+                tq_note = f"\n\n⚡ *{model_name}* | {turbo_info.get('context', 32)//1024}K ctx | {turbo_info.get('cache_k', '')}"
 
             await update.message.reply_text(
                 f"💬 *Respuesta ({mode_info['name']}):*{tq_note}\n\n{response}",

@@ -73,6 +73,15 @@ class ModelConfig:
 
 
 MODEL_CONFIGS = {
+    "nemotron-3-nano:4b": ModelConfig(
+        name="nemotron-3-nano:4b",
+        size_gb=2.8,
+        context_max=16_384,
+        recommended_context=8_192,
+        cache_k="turbo4",
+        cache_v="turbo4",
+        priority="speed"
+    ),
     "qwen3.5:4b": ModelConfig(
         name="qwen3.5:4b",
         size_gb=3.4,

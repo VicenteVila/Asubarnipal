@@ -808,6 +808,108 @@ def render_wiki_table(wiki: KarpathyWikiReader):
                      "Palabras": st.column_config.NumberColumn(width="small"),
                  })
 
+    st.divider()
+    st.subheader("💾 Preferencias de Propuesta")
+    try:
+        from core.memory import get_proposal_memory
+        pm = get_proposal_memory()
+        pref = pm.get_preference()
+        stats = pm.stats()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("📊 Activas", stats["active"])
+        with col2:
+            st.metric("⏸️ Standby", stats["standby"])
+        with col3:
+            st.metric("📦 Archivadas", stats["archived"])
+        with col4:
+            st.metric("🎯 Preferido", pref.capitalize())
+        
+        modo_cols = st.columns([1, 1])
+        with modo_cols[0]:
+            if st.button("📊 Estructurada", key="modo_estructurada"):
+                pm.set_preference("estructurada")
+                st.rerun()
+        with modo_cols[1]:
+            if st.button("🧭 Exploratoria", key="modo_exploratoria"):
+                pm.set_preference("exploratoria")
+                st.rerun()
+    except Exception as e:
+        st.warning(f"No se pudo cargar preferencias: {e}")
+    
+    st.divider()
+    st.subheader("📋 Propuestas Guardadas")
+    
+    try:
+        from core.memory import get_proposal_memory
+        pm = get_proposal_memory()
+        
+        tab1, tab2, tab3 = st.tabs(["Activas", "Standby", "Archivadas"])
+        
+        with tab1:
+            active = pm.list("active")
+            if active:
+                for p in active[:10]:
+                    with st.expander(f"📌 [{p['id'][:8]}] {p['pregunta_original'][:60]}"):
+                        modo_emoji = "📊" if p.get("modo") == "estructurada" else "🧭"
+                        st.caption(f"{modo_emoji} {p['modo']} | {p['timestamp'][:10]}")
+                        
+                        propuesta = p.get("propuesta", "") or p.get("respuesta", "")[:500]
+                        st.markdown(f"**Propuesta:**\n{propuesta[:300]}...")
+                        
+                        cols_buttons = st.columns([1, 1, 1])
+                        if cols_buttons[0].button("📦 Archivar", key=f"arch_{p['id']}"):
+                            pm.archive(p["id"])
+                            st.rerun()
+                        if cols_buttons[1].button("📝 Wiki", key=f"wiki_{p['id']}"):
+                            from core.wiki import Wiki
+                            wiki = Wiki()
+                            wiki.save_research_proposal(
+                                pregunta=p.get("pregunta_original", ""),
+                                propuesta=propuesta,
+                                modo=p.get("modo", "estructurada"),
+                                refs=p.get("refs", [])
+                            )
+                            st.info("Guardada en wiki!")
+                        if cols_buttons[2].button("🗑️ Eliminar", key=f"del_{p['id']}"):
+                            pm.delete(p["id"])
+                            st.rerun()
+            else:
+                st.info("No hay propuestas activas")
+        
+        with tab2:
+            standby = pm.list("standby")
+            if standby:
+                for p in standby[:10]:
+                    with st.expander(f"⏸️ [{p['id'][:8]}] {p['pregunta_original'][:60]}"):
+                        st.caption(p.get("timestamp", "")[:10])
+                        st.markdown(p.get("propuesta", "")[:300])
+                        cols_s = st.columns([1, 1])
+                        if cols_s[0].button("✅ Activar", key=f"act_{p['id']}"):
+                            pm.restore(p["id"])
+                            st.rerun()
+                        if cols_s[1].button("🗑️ Eliminar", key=f"dels_{p['id']}"):
+                            pm.delete(p["id"])
+                            st.rerun()
+            else:
+                st.info("No hay propuestas en standby")
+        
+        with tab3:
+            archived = pm.list("archived")
+            if archived:
+                for p in archived[:10]:
+                    with st.expander(f"📦 [{p['id'][:8]}] {p['pregunta_original'][:60]}"):
+                        st.caption(f"Archivada: {p.get('archived_at', p.get('timestamp', ''))[:10]}")
+                        if st.button("✅ Restaurar", key=f"res_{p['id']}"):
+                            pm.restore(p["id"])
+                            st.rerun()
+            else:
+                st.info("No hay propuestas archivadas")
+                
+    except Exception as e:
+        st.warning(f"No se pudieron cargar propuestas: {e}")
+
 def render_raw_table(wiki: KarpathyWikiReader):
     """Tabla de fuentes crudas."""
     if not wiki.raw_sources:
@@ -855,30 +957,38 @@ def render_schema_viewer(wiki: KarpathyWikiReader):
 # =============================================================================
 
 def render_graph_store_status(config: AppConfig):
-    """Muestra el estado del grafo vectorial generado por /indexar_wiki."""
+    """Muestra el estado del grafo vectorial - usa Obsidian graph_store."""
     graph_store = Path(config.obsidian_path) / "graph_store"
+    meta_path = graph_store / "metadata.json"
 
-    if not graph_store.exists():
-        st.warning("🕸️ Grafo vectorial no encontrado. Ejecuta `/indexar_wiki` en el bot.")
-        return
-
-    files = {
-        "🕸️ Grafo": graph_store / "graph.json",
-        "🔢 Embeddings": graph_store / "embeddings.pkl",
-        "📊 Metadatos": graph_store / "metadata.json",
-        "📝 Reporte": graph_store / "graph_report.md",
-    }
-
-    cols = st.columns(4)
-    for i, (label, path) in enumerate(files.items()):
-        exists = path.exists()
-        with cols[i]:
-            st.metric(
-                label=label,
-                value="✅" if exists else "❌",
-                delta=f"{path.stat().st_size / 1024:.1f} KB" if exists else "No existe",
-                delta_color="normal" if exists else "inverse"
-            )
+    if meta_path.exists():
+        try:
+            with open(meta_path, 'r', encoding='utf-8') as f:
+                meta = json.load(f)
+            
+            nodes = meta.get('total_nodos', meta.get('total_nodes', 0))
+            edges = meta.get('total_aristas', meta.get('total_edges', 0))
+            comunidades = meta.get('comunidades', meta.get('communities', {}))
+            num_comunidades = len(set(comunidades.values())) if comunidades else 0
+            hubs = meta.get('hubs', [])
+            
+            st.success(f"📊 Grafo vectorial cargado: **{nodes} nodos**, **{edges} conexiones**")
+            
+            cols = st.columns(4)
+            with cols[0]:
+                st.metric("🕸️ Nodos", nodes)
+            with cols[1]:
+                st.metric("🔗 Conexiones", edges)
+            with cols[2]:
+                st.metric("📊 Comunidades", num_comunidades)
+            with cols[3]:
+                st.metric("🏛️ Hubs", len(hubs))
+            
+            return
+        except Exception as e:
+            st.warning(f"Error leyendo metadata: {e}")
+    
+    st.warning("🕸️ Grafo no encontrado. Ejecuta `/indexar_wiki`.")
 
 def render_graph_report(config: AppConfig):
     """Lee y muestra el reporte del grafo."""
@@ -915,12 +1025,13 @@ def render_graph_report(config: AppConfig):
         st.error(f"Error leyendo reporte: {e}")
 
 def render_communities_and_hubs(config: AppConfig):
-    """Visualiza comunidades y hubs desde metadata.json."""
+    """Visualiza comunidades y hubs desde metadata.json del Obsidian graph_store."""
     meta_path = Path(config.obsidian_path) / "graph_store" / "metadata.json"
+    
     if not meta_path.exists():
-        st.info("No hay metadatos del grafo. Ejecuta `/indexar_wiki`.")
+        st.info("No hay datos del grafo. Ejecuta `/indexar_wiki`.")
         return
-
+    
     try:
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
@@ -933,8 +1044,8 @@ def render_communities_and_hubs(config: AppConfig):
             st.metric("🔗 Aristas", meta.get("total_aristas", 0))
         with cols[2]:
             comunidades = meta.get("comunidades", {})
-            num_communidades = len(set(comunidades.values())) if comunidades else 0
-            st.metric("📊 Comunidades", num_communidades)
+            num_comunidades = len(set(comunidades.values())) if comunidades else 0
+            st.metric("📊 Comunidades", num_comunidades)
         with cols[3]:
             st.metric("🏛️ Hubs", len(meta.get("hubs", [])))
 
@@ -945,12 +1056,11 @@ def render_communities_and_hubs(config: AppConfig):
         if hubs:
             st.subheader("🏛️ Hubs Centrales (Top 10)")
             hub_data = []
-            for i, (node, score) in enumerate(hubs, 1):
+            for i, (node, score) in enumerate(hubs[:10], 1):
                 hub_data.append({
                     "Rank": i,
                     "Nodo": node,
-                    "Score": f"{score:.4f}",
-                    "Visual": "█" * int(score * 50)
+                    "Score": f"{score:.4f}"
                 })
             st.dataframe(pd.DataFrame(hub_data), hide_index=True, width='stretch')
 
@@ -963,16 +1073,16 @@ def render_communities_and_hubs(config: AppConfig):
                 comm_groups[comm_id].append(node)
 
             comm_data = []
-            for comm_id, nodes in sorted(comm_groups.items()):
+            for comm_id, nodes in sorted(comm_groups.items(), key=lambda x: len(x[1]), reverse=True)[:10]:
                 comm_data.append({
-                    "Comunidad": f"Comunidad {comm_id}",
+                    "Comunidad": comm_id,
                     "Nodos": len(nodes),
-                    "Miembros (top 5)": ", ".join(nodes[:5]) + ("..." if len(nodes) > 5 else "")
+                    "Ejemplos": ", ".join(nodes[:3])
                 })
-            st.dataframe(pd.DataFrame(comm_data), hide_index=True, width='stretch')
+            st.dataframe(pd.DataFrame(comm_data), hide_index=True, width="stretch")
 
     except Exception as e:
-        st.error(f"Error cargando metadatos: {e}")
+        st.error(f"Error: {e}")
 
 def render_command_stats(wiki: KarpathyWikiReader):
     """Muestra estadísticas de uso de comandos desde log.md."""
@@ -1086,6 +1196,56 @@ def render_health_dashboard(wiki: KarpathyWikiReader):
                 st.info(f"⏰ [[{note['id']}]]", icon="⏰")
         else:
             st.success("Todo actualizado.")
+
+        st.divider()
+        render_quality_dashboard()
+
+
+def render_quality_dashboard():
+    """Render ingest quality metrics."""
+    st.subheader("📊 Calidad de Ingestas")
+
+    try:
+        from core.wiki import Wiki
+        wiki = Wiki()
+        quality = wiki.get_ingest_quality(20)
+        alerts = wiki.get_quality_alerts()
+    except Exception as e:
+        st.error(f"Error cargando métricas: {e}")
+        return
+
+    cols = st.columns(4)
+    with cols[0]:
+        st.metric("📦 Total", quality.get("total", 0))
+    with cols[1]:
+        st.metric("📈 Score Promedio", f"{quality.get('avg_score', 0):.0f}/100")
+    with cols[2]:
+        st.metric("⚠️ Baja Calidad", quality.get("low_quality_count", 0), 
+                  delta_color="inverse" if quality.get("low_quality_count", 0) > 0 else "normal")
+    with cols[3]:
+        st.metric("🔔 Alertas", len(alerts), delta_color="inverse" if len(alerts) > 0 else "normal")
+
+    if quality.get("by_type"):
+        st.caption("**Por tipo:**")
+        type_cols = st.columns(3)
+        for i, (t, data) in enumerate(quality["by_type"].items()):
+            emoji = {"pdf": "📄", "youtube": "🎬", "url": "🌐"}.get(t, "📦")
+            with type_cols[i % 3]:
+                st.metric(f"{emoji} {t}", f"{data['count']}", delta=f"avg: {data['avg_score']:.0f}")
+
+    if quality.get("recent"):
+        st.caption("**Recientes:**")
+        recent_data = quality["recent"][-10:]
+        for e in recent_data:
+            score = e.get("quality_score", 0)
+            color = "🔴" if score < 50 else ("🟡" if score < 75 else "🟢")
+            name = e.get("name", "N/A")[:40]
+            st.write(f"{color} `{score}/100` - {name}")
+
+    if alerts:
+        st.caption("**⚠️ Alertas de baja calidad:**")
+        for a in alerts[:5]:
+            st.warning(f"• {a.get('name', 'N/A')[:50]} (score: {a.get('quality_score', 0)})")
 
 
 def render_heartbeat_section():
@@ -1672,6 +1832,7 @@ def main():
             ("💓", "Latido", "Tareas programadas"),
             ("📡", "Feeds", "Suscripciones RSS"),
             ("📈", "Analytics", "Estadísticas"),
+            ("🌳", "H-Mem", "Memoria híbrida"),
         ]
         
         st.markdown("### ⌨️ NAVEGACIÓN")
@@ -1679,7 +1840,7 @@ def main():
         for i, (emoji, title, desc) in enumerate(nav_options):
             btn_key = f"nav_btn_{i}"
             label = f"{emoji} {title}"
-            if st.button(label, key=btn_key, use_container_width=True):
+            if st.button(label, key=btn_key, width="stretch"):
                 st.session_state.selected_view = i
                 st.rerun()
         
@@ -1782,7 +1943,12 @@ def main():
     render_kpi_cards(wiki, telemetry)
     st.divider()
 
-    selected = st.session_state.get("selected_view", 0)
+    if "selected_view" not in st.session_state:
+        st.session_state.selected_view = 0
+    else:
+        st.session_state.selected_view = int(st.session_state.selected_view)
+
+    selected = st.session_state.selected_view
 
     if selected == 0:
         col_left, col_right = st.columns([2, 1])
@@ -1819,9 +1985,6 @@ def main():
     elif selected == 2:
         st.subheader("Inventario del Wiki")
         render_wiki_table(wiki)
-        st.divider()
-        st.subheader("Timeline de Conocimiento")
-        render_wiki_timeline(wiki)
 
     elif selected == 3:
         st.subheader("Fuentes Crudas (Inmutables)")
@@ -1830,24 +1993,93 @@ def main():
 
     elif selected == 4:
         st.subheader("🧠 Grafo Vectorial del Wiki")
-        st.caption("Visualización del grafo híbrido generado por /indexar_wiki")
+        st.caption("Visualización del grafo generado por /indexar_wiki")
 
-        render_graph_store_status(config)
+        graph_view = st.radio(
+            "Modo de visualización:",
+            ["Completo", "Solo métricas"],
+            index=0,
+            horizontal=True,
+            key="graph_view_mode"
+        )
+
         st.divider()
 
-        col_g1, col_g2 = st.columns([1, 1])
+        if graph_view == "Solo métricas":
+            try:
+                col1, col2, col3, col4 = st.columns(4)
+                graph_store = Path(config.obsidian_path) / "graph_store"
+                meta_path = graph_store / "metadata.json"
 
-        with col_g1:
-            render_communities_and_hubs(config)
+                if not meta_path.exists():
+                    st.info("🕸️ Grafo no encontrado. Generando automáticamente...")
+                    with st.spinner("Construyendo grafo de conocimiento..."):
+                        try:
+                            from core.graph_builder import GraphBuilder
+                            builder = GraphBuilder()
+                            result = builder.build_graph()
+                            st.success(f"✅ Grafo construido: {result.get('nodes', 0)} nodos, {result.get('edges', 0)} conexiones")
+                        except Exception as ge:
+                            st.warning(f"No se pudo construir grafo: {ge}")
 
-        with col_g2:
-            render_embeddings_status(config)
+                if meta_path.exists():
+                    import json as _json
+                    with open(meta_path, "r", encoding="utf-8") as f:
+                        meta = _json.load(f)
+                    with col1:
+                        st.metric("🕸️ Nodos", meta.get("total_nodos", 0))
+                    with col2:
+                        st.metric("🔗 Conexiones", meta.get("total_aristas", 0))
+                    comunidades = meta.get("comunidades", {})
+                    with col3:
+                        st.metric("📊 Comunidades", len(set(comunidades.values())) if comunidades else 0)
+                    with col4:
+                        st.metric("🏛️ Hubs", len(meta.get("hubs", [])))
+                else:
+                    for c in [col1, col2, col3, col4]:
+                        with c:
+                            st.metric("Grafo", "No disponible")
+            except Exception as e:
+                st.warning(f"Error: {e}")
+        else:
+            graph_store = Path(config.obsidian_path) / "graph_store"
+            meta_path = graph_store / "metadata.json"
+
+            if not meta_path.exists():
+                st.info("🕸️ Grafo no encontrado. Generando automáticamente...")
+                with st.spinner("Construyendo grafo de conocimiento..."):
+                    try:
+                        from core.graph_builder import GraphBuilder
+                        builder = GraphBuilder()
+                        result = builder.build_graph()
+                        st.success(f"✅ Grafo construido: {result.get('nodes', 0)} nodos, {result.get('edges', 0)} conexiones")
+                    except Exception as ge:
+                        st.warning(f"No se pudo construir grafo: {ge}")
+
+            try:
+                render_graph_store_status(config)
+            except Exception as e:
+                st.warning(f"Error cargando estado del grafo: {e}")
+
             st.divider()
-            render_command_stats(wiki)
 
-        st.divider()
-        st.subheader("📄 Reporte del Grafo")
-        render_graph_report(config)
+            try:
+                col_g1, col_g2 = st.columns([1, 1])
+                with col_g1:
+                    render_communities_and_hubs(config)
+                with col_g2:
+                    emb_path = Path(config.obsidian_path) / "graph_store" / "embeddings.pkl"
+                    if emb_path.exists():
+                        size_mb = emb_path.stat().st_size / 1024 / 1024
+                        st.metric("🧠 Embeddings", f"{size_mb:.1f} MB", delta="Persistidos", delta_color="normal")
+                    else:
+                        st.metric("🧠 Embeddings", "No generados", delta="Ejecuta /indexar_wiki", delta_color="off")
+            except Exception as e:
+                st.warning(f"Error cargando comunidades: {e}")
+
+            st.divider()
+            st.subheader("📄 Reporte del Grafo")
+            render_graph_report(config)
 
     elif selected == 5:
         st.subheader("Flujo de Conciencia del Agente")
@@ -1871,6 +2103,62 @@ def main():
     elif selected == 10:
         render_analytics_section()
 
+    elif selected == 11:
+        def render_hmem_section():
+            try:
+                from core.hybrid_retriever import get_hmem_manager
+                hmem = get_hmem_manager()
+                stats = hmem.stats()
+            except ImportError:
+                st.error("H-Mem no disponible.")
+                return
+            except Exception as e:
+                st.error(f"Error H-Mem: {e}")
+                return
+            tree_stats = stats.get("tree", {})
+            graph_stats = stats.get("graph", {})
+            cols = st.columns(4)
+            with cols[0]: st.metric("📦 Nodos", tree_stats.get("total_nodes", 0))
+            with cols[1]: st.metric("🔗 Entidades", graph_stats.get("total_entities", 0))
+            with cols[2]: st.metric("🔀 Relaciones", graph_stats.get("total_relations", 0))
+            with cols[3]:
+                last = tree_stats.get("last_insert", "Nunca")
+                if last and last != "Nunca": last = last[:16]
+                st.metric("⏰ Último", last)
+            st.divider()
+            col_q, col_r = st.columns(2)
+            with col_q:
+                st.markdown("### 🔍 Probar Retrieval")
+                query = st.text_input("Buscar en memoria:", placeholder="Ej: ¿Qué sé sobre...")
+                if query and st.button("🔎 Buscar"):
+                    with st.spinner("Consultando H-Mem..."):
+                        try:
+                            result = hmem.recall(query)
+                            evidence = result.get("ranked_evidence", [])
+                            if evidence:
+                                st.success(f"Encontrados {len(evidence)} resultados")
+                                for i, ev in enumerate(evidence[:5]):
+                                    node = ev.get("node", {})
+                                    content = (node.get("summary") or node.get("content", ""))[:200]
+                                    level = node.get("level", 0)
+                                    score = ev.get("combined_score", 0)
+                                    ts = node.get("timestamp", "")[:10]
+                                    st.markdown(f"**{i+1}. [{ts}] L{level}** (score: {score:.2f})\n> {content}...")
+                            else:
+                                st.info("No se encontraron resultados")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+            with col_r:
+                st.markdown("### 💾 Añadir Memoria")
+                new_memory = st.text_area("Nueva memoria:", placeholder="Escribe algo para recordar...")
+                if st.button("💾 Guardar") and new_memory:
+                    try:
+                        result = hmem.remember(new_memory, metadata={"source": "dashboard"})
+                        st.success(f"Guardada en L{result.get('tree_level', 0)}")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+        render_hmem_section()
+
     st.divider()
     st.caption(f"🛰️ Última sincronización: {datetime.now().strftime('%H:%M:%S')} | "
                f"Wiki: {stats['total_wiki']} notas | Raw: {stats['total_raw']} fuentes | "
@@ -1878,3 +2166,149 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# =============================================================================
+# H-MEM SECTION
+# =============================================================================
+
+def render_hmem_section():
+    """Render H-Mem memory system dashboard tab."""
+    st.subheader("🌳 H-Mem: Sistema de Memoria Híbrida")
+    st.caption("Memoria temporal-semántica con grafo de entidades (basado en arXiv:2605.15701)")
+    
+    try:
+        from core.hybrid_retriever import get_hmem_manager
+        hmem = get_hmem_manager()
+        stats = hmem.stats()
+    except ImportError:
+        st.error("H-Mem no disponible. Asegúrate de que los módulos están instalados.")
+        return
+    except Exception as e:
+        st.error(f"Error inicializando H-Mem: {e}")
+        return
+    
+    tree_stats = stats.get("tree", {})
+    graph_stats = stats.get("graph", {})
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("📦 Nodos Total", tree_stats.get("total_nodes", 0))
+    with col2:
+        st.metric("🔗 Entidades", graph_stats.get("total_entities", 0))
+    with col3:
+        st.metric("🔀 Relaciones", graph_stats.get("total_relations", 0))
+    with col4:
+        last = tree_stats.get("last_insert", "Nunca")
+        if last and last != "Nunca":
+            last = last[:16]
+        st.metric("⏰ Último Nodo", last)
+    
+    st.divider()
+    
+    col_t, col_g = st.columns(2)
+    
+    with col_t:
+        st.markdown("### 🌲 Árbol Temporal-Semántico")
+        levels = tree_stats.get("by_level", {})
+        
+        if levels:
+            level_data = []
+            for k, v in levels.items():
+                parts = k.split("_", 1)
+                if len(parts) == 2:
+                    level_data.append({"Nivel": parts[0], "Nombre": parts[1], "Nodos": v})
+            
+            if level_data:
+                df_levels = pd.DataFrame(level_data)
+                fig = px.bar(
+                    df_levels, x="Nombre", y="Nodos", 
+                    title="Nodos por Nivel del Árbol",
+                    color="Nodos", color_continuous_scale="Blues"
+                )
+                fig.update_layout(
+                    paper_bgcolor="#161b22",
+                    plot_bgcolor="#161b22",
+                    font_color="#c9d1d9",
+                )
+                st.plotly_chart(fig, width="stretch")
+        else:
+            st.info("No hay nodos en el árbol. Usa /recordar para añadir memorias.")
+        
+        with st.expander("📊 Detalle de Niveles"):
+            st.json(tree_stats)
+    
+    with col_g:
+        st.markdown("### 🔗 Grafo de Entidades")
+        entities_by_type = graph_stats.get("by_type", {})
+        
+        if entities_by_type:
+            type_data = [{"Tipo": k, "Cantidad": v} for k, v in entities_by_type.items()]
+            df_types = pd.DataFrame(type_data)
+            fig = px.pie(
+                df_types, values="Cantidad", names="Tipo",
+                title="Entidades por Tipo",
+                hole=0.4, color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            fig.update_layout(
+                paper_bgcolor="#161b22",
+                font_color="#c9d1d9",
+            )
+            st.plotly_chart(fig, width="stretch")
+        else:
+            st.info("No hay entidades. Las memorias se extraen automáticamente.")
+        
+        with st.expander("📊 Detalle del Grafo"):
+            st.json(graph_stats)
+    
+    st.divider()
+    
+    with st.expander("⚙️ Pesos de Ranking"):
+        weights = stats.get("weights", {})
+        st.json(weights)
+        st.caption("""
+        - **θ₁ (Semántico)**: Importancia de la similaridad de contenido
+        - **θ₂ (Temporal)**: Importancia de la relevancia temporal
+        - **θ₃ (Robustez)**: Importancia del factor Ebbinghaus (memorias recientes/recurrentes)
+        """)
+    
+    col_q, col_r = st.columns(2)
+    
+    with col_q:
+        st.markdown("### 🔍 Probar Retrieval")
+        query = st.text_input("Buscar en memoria:", placeholder="Ej: ¿Qué sé sobre...")
+        
+        if query and st.button("🔎 Buscar"):
+            with st.spinner("Consultando H-Mem..."):
+                try:
+                    result = hmem.recall(query)
+                    evidence = result.get("ranked_evidence", [])
+                    
+                    if evidence:
+                        st.success(f"Encontrados {len(evidence)} resultados")
+                        for i, ev in enumerate(evidence[:5]):
+                            node = ev.get("node", {})
+                            content = (node.get("summary") or node.get("content", ""))[:200]
+                            level = node.get("level", 0)
+                            score = ev.get("combined_score", 0)
+                            ts = node.get("timestamp", "")[:10]
+                            
+                            st.markdown(f"""
+                            **{i+1}. [{ts}] L{level}** (score: {score:.2f})
+                            > {content}...
+                            """)
+                    else:
+                        st.info("No se encontraron resultados")
+                except Exception as e:
+                    st.error(f"Error en búsqueda: {e}")
+    
+    with col_r:
+        st.markdown("### 💾 Añadir Memoria")
+        new_memory = st.text_area("Nueva memoria:", placeholder="Escribe algo para recordar...")
+        
+        if st.button("💾 Guardar") and new_memory:
+            try:
+                result = hmem.remember(new_memory, metadata={"source": "dashboard"})
+                st.success(f"Guardada en L{result.get('tree_level', 0)}: {result.get('tree_node_id', '')[:30]}...")
+            except Exception as e:
+                st.error(f"Error: {e}")

@@ -1,0 +1,12 @@
+{
+  "active_vault": null,
+  "vaults": {
+    "principal": {
+      "path": "c:\\Asubarnipal\\obsidian_vault",
+      "db_path": "c:\\Asubarnipal\\data\\wiki_principal.db",
+      "index_path": "c:\\Asubarnipal\\data\\index_principal.faiss",
+      "description": "Vault principal de conocimiento",
+      "created": "2026-05-15"
+    }
+  }
+}

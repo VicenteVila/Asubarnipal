@@ -15,17 +15,19 @@ class ChatModeConfig:
     cache_v: str
     priority: str  # "speed", "balanced", "quality"
     description: str
+    model: str = ""  # Ollama model for this mode
 
 
 CHAT_MODE_TURBO: Dict[str, ChatModeConfig] = {
     "libre": ChatModeConfig(
         name="Charla Libre",
         emoji="💬",
-        context=32_768,
-        cache_k="turbo2",
-        cache_v="turbo3",
+        context=8_192,
+        cache_k="turbo4",
+        cache_v="turbo4",
         priority="speed",
-        description="Conversación natural - velocidad óptima"
+        description="Conversación natural - velocidad óptima",
+        model="nemotron-3-nano:4b"
     ),
     "consultor": ChatModeConfig(
         name="Consultor",
@@ -34,7 +36,8 @@ CHAT_MODE_TURBO: Dict[str, ChatModeConfig] = {
         cache_k="q8_0",
         cache_v="turbo4",
         priority="balanced",
-        description="Análisis en 3 fases - balance calidad/velocidad"
+        description="Análisis en 3 fases - balance calidad/velocidad",
+        model="qwen3:8b"
     ),
     "devil": ChatModeConfig(
         name="Devil's Advocate",
@@ -43,7 +46,8 @@ CHAT_MODE_TURBO: Dict[str, ChatModeConfig] = {
         cache_k="q8_0",
         cache_v="q8_0",
         priority="quality",
-        description="Crítica implacable - máxima calidad"
+        description="Crítica implacable - máxima calidad",
+        model="gemma4:e4b"
     ),
     "socratico": ChatModeConfig(
         name="Maestro Socrático",
@@ -52,7 +56,8 @@ CHAT_MODE_TURBO: Dict[str, ChatModeConfig] = {
         cache_k="turbo4",
         cache_v="turbo3",
         priority="balanced",
-        description="Preguntas socráticas - balance velocidad/contexto"
+        description="Preguntas socráticas - balance velocidad/contexto",
+        model="qwen3.5:4b"
     ),
     "lateral": ChatModeConfig(
         name="Pensamiento Lateral",
@@ -61,7 +66,8 @@ CHAT_MODE_TURBO: Dict[str, ChatModeConfig] = {
         cache_k="turbo3",
         cache_v="turbo4",
         priority="speed",
-        description="Perspectivas alternativas - velocidad alta"
+        description="Perspectivas alternativas - velocidad alta",
+        model="qwen3.5:9b"
     ),
 }
 
@@ -90,6 +96,7 @@ def format_mode_summary(mode: str) -> str:
 
     return (
         f"{cfg.emoji} *{cfg.name}*\n"
+        f"   🤖 Modelo: `{cfg.model}`\n"
         f"   📏 Contexto: {cfg.context // 1024}K tokens\n"
         f"   💾 Cache K: {cfg.cache_k} ({k_ratio:.1f}x compr.)\n"
         f"   💾 Cache V: {cfg.cache_v} ({v_ratio:.1f}x compr.)\n"

@@ -433,6 +433,124 @@ class VaultManager:
             logger.error(f"Import failed: {e}")
             return {"success": False, "error": str(e)}
 
+    def connect(self, path: str, name: str = None, description: str = "") -> Dict[str, Any]:
+        """
+        Connect to an existing Obsidian vault folder.
+
+        Args:
+            path: Path to existing Obsidian vault folder
+            name: Optional name (defaults to folder name)
+            description: Optional description
+
+        Returns:
+            Dict with success status and vault info
+        """
+        vault_path = Path(path)
+
+        if not vault_path.exists():
+            return {"success": False, "error": f"La carpeta '{path}' no existe"}
+
+        if not vault_path.is_dir():
+            return {"success": False, "error": f"'{path}' no es una carpeta"}
+
+        # Use folder name as default
+        if not name:
+            name = vault_path.name.lower().replace(" ", "_")
+
+        # Check if already connected
+        vaults = self._config.get("vaults", {})
+        if name in vaults:
+            return {"success": False, "error": f"El vault '{name}' ya está conectado"}
+
+        # Create vault config
+        db_path = self._get_db_path(name)
+        index_path = self._get_index_path(name)
+
+        vaults[name] = {
+            "path": str(vault_path),
+            "db_path": str(db_path),
+            "index_path": str(index_path),
+            "description": description or f"Vault conectada desde {path}",
+            "created": datetime.now().isoformat(),
+            "connected": True,  # Mark as connected (external)
+        }
+
+        self._config["vaults"] = vaults
+        self._save_config()
+
+        logger.info(f"Connected to vault: {name} at {path}")
+        return {
+            "success": True,
+            "name": name,
+            "path": str(vault_path),
+            "db_path": str(db_path),
+            "description": vaults[name]["description"],
+        }
+
+    def disconnect(self, name: str = None) -> Dict[str, Any]:
+        """
+        Disconnect a vault (remove from config, optionally keep data).
+
+        Args:
+            name: Vault name to disconnect. If None, disconnects active vault.
+
+        Returns:
+            Dict with success status
+        """
+        vaults = self._config.get("vaults", {})
+
+        # Use active vault if not specified
+        if not name:
+            name = self._config.get("active_vault")
+            if not name:
+                return {"success": False, "error": "No hay vault activo para desconectar"}
+
+        if name not in vaults:
+            return {"success": False, "error": f"El vault '{name}' no existe"}
+
+        # Cannot disconnect default vault
+        if name == self.DEFAULT_VAULT_NAME:
+            return {"success": False, "error": "No se puede desconectar el vault principal"}
+
+        info = vaults[name]
+        was_active = self._config.get("active_vault") == name
+
+        # Remove from config
+        del vaults[name]
+        self._config["vaults"] = vaults
+
+        # If was active, clear active_vault
+        if was_active:
+            self._config["active_vault"] = None
+
+        self._save_config()
+
+        logger.info(f"Disconnected vault: {name}")
+        return {
+            "success": True,
+            "name": name,
+            "path": info.get("path"),
+            "was_active": was_active,
+        }
+
+    def get_vault_notes_count(self, name: str = None) -> int:
+        """Get count of .md files in vault."""
+        if not name:
+            name = self._config.get("active_vault")
+            if not name:
+                return 0
+
+        vaults = self._config.get("vaults", {})
+        if name not in vaults:
+            return 0
+
+        vault_path = Path(vaults[name].get("path", ""))
+        if not vault_path.exists():
+            return 0
+
+        md_files = list(vault_path.rglob("*.md"))
+        return len(md_files)
+
 
 def get_vault_manager() -> VaultManager:
     """Get singleton VaultManager instance."""

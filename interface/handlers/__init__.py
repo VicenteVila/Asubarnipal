@@ -12,6 +12,9 @@ from .wiki import (
     clusters_cmd,
     lint_cmd,
     sync_obsidian_cmd,
+    quality_cmd,
+    queryhybrid_cmd,
+    query_callback_handler,
 )
 from .busqueda import (
     ingest_cmd,
@@ -23,6 +26,7 @@ from .agente import (
     model_cmd,
     query_vectorial_cmd,
     rate_cmd,
+    calidad_cmd,
 )
 from .validators import (
     validate_url,
@@ -39,6 +43,8 @@ from .vault import (
     vault_delete_cmd,
     vault_export_cmd,
     vault_import_cmd,
+    vault_connect_cmd,
+    vault_disconnect_cmd,
     vault_callback,
 )
 
@@ -52,6 +58,9 @@ __all__ = [
     "clusters_cmd",
     "lint_cmd",
     "sync_obsidian_cmd",
+    "quality_cmd",
+    "queryhybrid_cmd",
+    "query_callback_handler",
     "ingest_cmd",
     "investigar_cmd",
     "charlar_cmd",
@@ -59,6 +68,7 @@ __all__ = [
     "model_cmd",
     "query_vectorial_cmd",
     "rate_cmd",
+    "calidad_cmd",
     "validate_url",
     "validate_task",
     "validate_query",
@@ -71,5 +81,7 @@ __all__ = [
     "vault_delete_cmd",
     "vault_export_cmd",
     "vault_import_cmd",
+    "vault_connect_cmd",
+    "vault_disconnect_cmd",
     "vault_callback",
 ]
