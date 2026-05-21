@@ -70,6 +70,13 @@ from interface.handlers.hmem_commands import (
     recientes_cmd,
 )
 
+from interface.handlers.scheduled_research import (
+    schedule_research_cmd,
+    list_schedules_cmd,
+    cancel_schedule_cmd,
+    toggle_schedule_cmd,
+)
+
 from interface.handlers.graphify_handler import (
     graphify_cmd,
     graph_update_cmd,
@@ -652,6 +659,11 @@ def main() -> None:
     bg_manager = BackgroundManager()
     bg_manager.start()
 
+    from core.research_scheduler import get_scheduler
+    scheduler = get_scheduler()
+    scheduler.start()
+    logger.info("Research scheduler started")
+
     agent_state = AgentState()
     agent_state.mark_alive()
     logger.info("🤖 Agent marked as alive")
@@ -709,6 +721,11 @@ def main() -> None:
     app.add_handler(CommandHandler("graph_report", graph_report_cmd))
     app.add_handler(CommandHandler("graph_add", graph_add_cmd))
     app.add_handler(CommandHandler("graph_export", graph_export_cmd))
+
+    app.add_handler(CommandHandler("schedule", schedule_research_cmd))
+    app.add_handler(CommandHandler("schedules", list_schedules_cmd))
+    app.add_handler(CommandHandler("cancel_schedule", cancel_schedule_cmd))
+    app.add_handler(CommandHandler("toggle_schedule", toggle_schedule_cmd))
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, handle_voice))
