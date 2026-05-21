@@ -4,7 +4,7 @@ import json
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Self
 from dataclasses import dataclass, asdict
 from collections import deque
 

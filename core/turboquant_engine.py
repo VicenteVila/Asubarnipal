@@ -3,7 +3,7 @@
 import os
 import time
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Self
 from dataclasses import dataclass, field
 
 import config
