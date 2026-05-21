@@ -123,7 +123,11 @@ data/*.json
 data/*.log
 !data/manual_agente.md
 !data/vaults_config.json
-index/
+index/*.faiss
+index/*.docs.json
+index/*.chunks.json
+index/*.bm25.json
+index/__pycache__/
 storage/
 temp/
 
