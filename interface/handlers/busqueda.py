@@ -7,6 +7,7 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from core.bot_logger import logger
+from .error_handler import handle_errors
 
 
 def is_url(text: str) -> bool:
@@ -34,6 +35,7 @@ def extract_url_from_text(text: str) -> str:
     return text if is_url(text) else ""
 
 
+@handle_errors("Ingestion failed. Please check the URL and try again.")
 async def ingest_cmd(update: Update, context: CallbackContext) -> None:
     """Ingest URL, local file, or Telegram document to wiki."""
     from core.wiki import Wiki
@@ -351,9 +353,10 @@ async def _ingest_telegram_photo(update: Update, context: CallbackContext) -> No
 
     except Exception as e:
         logger.error(f"Ingest photo exception: {e}")
-        await update.message.reply_text(f"❌ Error: {str(e)}")
+        await update.message.reply_text(f"Error: {str(e)}")
 
 
+@handle_errors("Research failed. Please try again.")
 async def investigar_cmd(update: Update, context: CallbackContext) -> None:
     """Research a topic deeply."""
     topic = " ".join(context.args)
