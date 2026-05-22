@@ -139,6 +139,8 @@ def build_graph(
             args.append("--update")
         if backend:
             args += ["--backend", backend]
+        if config.OLLAMA_MODEL:
+            args += ["--model", config.OLLAMA_MODEL]
         if mode == "deep":
             args += ["--mode", "deep"]
         if no_viz:
