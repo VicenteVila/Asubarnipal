@@ -16,7 +16,7 @@ class WikiIngestMixin:
     """Mixin class with all ingestion methods for the Wiki class."""
 
     def ingest_url(self, url: str) -> dict:
-        """Ingest content from URL (legacy simple version)."""
+        """Ingest content from URL (legacy simple version). Also saves to Obsidian wiki/."""
         import requests
         from bs4 import BeautifulSoup
 
@@ -27,9 +27,17 @@ class WikiIngestMixin:
             title = soup.title.string if soup.title else url
             text = soup.get_text()[:20000]
 
-            return self.add_entity(
+            result = self.add_entity(
                 name=title, content=text, tipo="source", fuente=url, estado="final"
             )
+
+            if result.get("success"):
+                self.save_to_obsidian(
+                    name=title, content=text, tipo="source", fuente=url,
+                    tags=["ingested", "url"]
+                )
+
+            return result
         except Exception as e:
             return {"error": str(e)}
 

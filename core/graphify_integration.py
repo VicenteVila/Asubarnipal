@@ -125,6 +125,7 @@ def build_graph(
         Dict with success status, node count, edge count, paths
     """
     path = target_path or str(config.OBSIDIAN_PATH / "wiki")
+    raw_path = str(config.RAW_DIR) if config.RAW_DIR.exists() else None
 
     if not _check_graphify():
         return {
@@ -132,21 +133,29 @@ def build_graph(
             "error": "graphify CLI not found. Install: pip install graphifyy",
         }
 
-    args = ["extract", path]
-    if backend:
-        args += ["--backend", backend]
+    def _extract(source_path: str, update: bool = False) -> dict:
+        args = ["extract", source_path]
+        if update:
+            args.append("--update")
+        if backend:
+            args += ["--backend", backend]
+        if mode == "deep":
+            args += ["--mode", "deep"]
+        if no_viz:
+            args.append("--no-viz")
+        if force:
+            args.append("--force")
+        return _run_graphify(args)
 
-    if mode == "deep":
-        args.append("--mode")
-        args.append("deep")
+    result = _extract(path)
 
-    if no_viz:
-        args.append("--no-viz")
-
-    if force:
-        args.append("--force")
-
-    result = _run_graphify(args)
+    if result["success"] and raw_path and Path(raw_path).is_dir():
+        logger.info(f"Also extracting raw/ content from: {raw_path}")
+        raw_result = _extract(raw_path, update=True)
+        if raw_result["success"]:
+            logger.info("raw/ extraction merged successfully")
+        else:
+            logger.warning(f"raw/ extraction skipped: {raw_result.get('stderr', '')}")
 
     if result["success"]:
         stats = get_graph_stats()
