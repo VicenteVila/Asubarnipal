@@ -97,6 +97,47 @@ relacionados: {relacionados_formatted}
             logger.error(f"Error saving to Obsidian: {e}")
             return {"error": str(e)}
 
+    def save_raw_source(self, name: str, content: str, source_type: str = "url",
+                        fuente: str = "") -> dict[str, Any]:
+        """Save original raw source to Obsidian raw/ folder (immutable)."""
+        import re
+        try:
+            raw_dir = Path(config.OBSIDIAN_PATH) / "raw"
+            raw_dir.mkdir(exist_ok=True, parents=True)
+
+            safe_name = re.sub(r'[<>:"/\\|?*]', '_', name)[:200]
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{source_type}_{safe_name}_{timestamp}.md"
+            filepath = raw_dir / filename
+
+            if filepath.exists():
+                logger.debug(f"Raw source already exists: {filepath}")
+                return {"success": True, "path": str(filepath), "is_new": False}
+
+            now = datetime.now().isoformat()
+            body = f"""---
+tipo: raw_source
+tipo_fuente: {source_type}
+titulo: {name}
+fuente_original: {fuente}
+fecha_ingesta: {now}
+estado: inmutable
+---
+
+# {name}
+
+> Fuente original: {fuente}
+
+{content[:50000]}
+"""
+            filepath.write_text(body, encoding="utf-8")
+            logger.info(f"Raw source saved: {filepath}")
+            return {"success": True, "path": str(filepath), "is_new": True}
+
+        except Exception as e:
+            logger.error(f"Error saving raw source: {e}")
+            return {"error": str(e)}
+
     def _update_graph_add_node(self, node_id: str, tipo: str = "source",
                                tags: Optional[list[str]] = None, relacionados: Optional[list[str]] = None) -> None:
         """Add a node to graph.json and update metadata."""

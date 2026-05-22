@@ -16,7 +16,7 @@ class WikiIngestMixin:
     """Mixin class with all ingestion methods for the Wiki class."""
 
     def ingest_url(self, url: str) -> dict:
-        """Ingest content from URL (legacy simple version). Also saves to Obsidian wiki/."""
+        """Ingest content from URL (legacy simple version). Also saves to Obsidian wiki/.raw/."""
         import requests
         from bs4 import BeautifulSoup
 
@@ -26,6 +26,9 @@ class WikiIngestMixin:
 
             title = soup.title.string if soup.title else url
             text = soup.get_text()[:20000]
+
+            self.save_raw_source(name=title, content=resp.text[:50000],
+                                 source_type="url", fuente=url)
 
             result = self.add_entity(
                 name=title, content=text, tipo="source", fuente=url, estado="final"
@@ -340,6 +343,10 @@ class WikiIngestMixin:
 
             entity_tags = concepts[:10] + ["youtube", "video"]
 
+            raw_content = f"# {title}\n\n## Transcripcion\n{transcript}\n\n## Metadata\n- Uploader: {uploader}\n- Duration: {dur_min}:{str(dur_sec).zfill(2)}\n- Views: {views:,}\n- Tags: {', '.join(tags[:15]) if tags else 'N/A'}\n"
+            self.save_raw_source(name=title, content=raw_content,
+                                 source_type="youtube", fuente=url)
+
             self.add_entity(
                 name=title, content=content_full, tipo="video", fuente=url,
                 estado="final", tags=entity_tags, relacionados=[]
@@ -451,6 +458,9 @@ class WikiIngestMixin:
 
             activity.ingest_step("Guardando fuente", 90)
             relacionados = [{"name": rel["name"], "relation": "related"} for rel in related]
+
+            self.save_raw_source(name=title, content=resp.text[:50000],
+                                 source_type="url", fuente=url)
 
             self.add_entity(
                 name=title, content=translated_content[:30000], tipo="source", fuente=url,
@@ -866,6 +876,8 @@ CONCEPTOS:"""
                 logger.warning(f"Could not extract PDF title: {e}")
 
             content_limit = 500000
+            self.save_raw_source(name=name, content=full_text[:50000],
+                                 source_type="pdf", fuente=file_path)
             result = self.add_entity(
                 name=name, content=full_text[:content_limit], tipo="source",
                 fuente=file_path, estado="final",
