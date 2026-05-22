@@ -15,6 +15,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Self, Dict, List, Optional
@@ -23,36 +24,71 @@ import config
 
 logger = logging.getLogger(__name__)
 
-GRAPHIFY_OUTPUT_DIR = config.OBSIDIAN_PATH / "graphify-out"
-GRAPH_JSON = GRAPHIFY_OUTPUT_DIR / "graph.json"
-GRAPH_HTML = GRAPHIFY_OUTPUT_DIR / "graph.html"
-GRAPH_REPORT = GRAPHIFY_OUTPUT_DIR / "GRAPH_REPORT.md"
+
+def _get_graph_dir() -> Path:
+    return Path(str(config.OBSIDIAN_PATH)) / "graphify-out"
+
+
+def _graph_json() -> Path:
+    return _get_graph_dir() / "graph.json"
+
+
+def _graph_html() -> Path:
+    return _get_graph_dir() / "graph.html"
+
+
+def _graph_report() -> Path:
+    return _get_graph_dir() / "GRAPH_REPORT.md"
+
+
+def _get_graphify_bin() -> Optional[str]:
+    """Resolve full path to graphify binary, checking PATH and venv bin.
+    
+    Tries multiple extensions (.exe, .cmd, .bat) for Windows compatibility.
+    """
+    resolved = shutil.which("graphify")
+    if resolved:
+        return resolved
+    bin_dir = os.path.dirname(sys.executable)
+    for name in ["graphify", "graphify.exe", "graphify.cmd", "graphify.bat"]:
+        candidate = os.path.join(bin_dir, name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
 
 
 def _check_graphify() -> bool:
-    """Check if graphify CLI is available."""
-    try:
-        result = subprocess.run(
-            ["graphify", "--version"],
-            capture_output=True, text=True, timeout=10
-        )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+    """Check if graphify CLI is available (binary exists and is executable)."""
+    graphify_bin = _get_graphify_bin()
+    if not graphify_bin:
         return False
+    return os.access(graphify_bin, os.X_OK)
 
 
 def _run_graphify(args: List[str], timeout: int = 600) -> Dict[str, Any]:
     """Run graphify CLI command and return result."""
-    cmd = ["graphify"] + args
+    graphify_bin = _get_graphify_bin()
+    if not graphify_bin:
+        return {
+            "success": False,
+            "stdout": "",
+            "stderr": "graphify CLI not found",
+            "returncode": -1,
+        }
+    cmd = [graphify_bin] + args
     logger.info(f"Running: {' '.join(cmd)}")
 
     try:
+        env = os.environ.copy()
+        if "OLLAMA_API_KEY" not in env:
+            env["OLLAMA_API_KEY"] = env.get("OLLAMA_BASE_URL", "ollama")
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             timeout=timeout,
-            cwd=str(config.OBSIDIAN_PATH)
+            cwd=str(config.OBSIDIAN_PATH),
+            env=env,
         )
 
         return {
@@ -96,7 +132,9 @@ def build_graph(
             "error": "graphify CLI not found. Install: pip install graphifyy",
         }
 
-    args = ["extract", path, "--backend", backend]
+    args = ["extract", path]
+    if backend:
+        args += ["--backend", backend]
 
     if mode == "deep":
         args.append("--mode")
@@ -116,9 +154,9 @@ def build_graph(
             "success": True,
             "message": "Graph built successfully",
             "stats": stats,
-            "graph_json": str(GRAPH_JSON),
-            "graph_html": str(GRAPH_HTML),
-            "graph_report": str(GRAPH_REPORT),
+            "graph_json": str(_graph_json()),
+            "graph_html": str(_graph_html()),
+            "graph_report": str(_graph_report()),
         }
     else:
         return {
@@ -138,9 +176,9 @@ def query_graph(question: str, graph_path: Optional[str] = None) -> Dict[str, An
     Returns:
         Dict with answer and related nodes
     """
-    gpath = graph_path or str(GRAPH_JSON)
+    gpath = graph_path or str(_graph_json())
 
-    if not GRAPH_JSON.exists():
+    if not _graph_json().exists():
         return {"success": False, "error": "No graph available. Run /graphify first."}
 
     if not _check_graphify():
@@ -163,9 +201,9 @@ def get_graph_stats() -> Dict[str, Any]:
         Dict with nodes, edges, communities, hubs, file sizes
     """
     stats = {
-        "exists": GRAPH_JSON.exists(),
-        "html_exists": GRAPH_HTML.exists(),
-        "report_exists": GRAPH_REPORT.exists(),
+        "exists": _graph_json().exists(),
+        "html_exists": _graph_html().exists(),
+        "report_exists": _graph_report().exists(),
         "nodes": 0,
         "edges": 0,
         "communities": 0,
@@ -174,11 +212,12 @@ def get_graph_stats() -> Dict[str, Any]:
         "last_built": None,
     }
 
-    if not GRAPH_JSON.exists():
+    gj = _graph_json()
+    if not gj.exists():
         return stats
 
     try:
-        with open(GRAPH_JSON, "r", encoding="utf-8") as f:
+        with open(gj, "r", encoding="utf-8") as f:
             graph = json.load(f)
 
         nodes = graph.get("nodes", [])
@@ -186,9 +225,9 @@ def get_graph_stats() -> Dict[str, Any]:
 
         stats["nodes"] = len(nodes)
         stats["edges"] = len(edges)
-        stats["file_size_kb"] = GRAPH_JSON.stat().st_size / 1024
+        stats["file_size_kb"] = gj.stat().st_size / 1024
 
-        mtime = GRAPH_JSON.stat().st_mtime
+        mtime = gj.stat().st_mtime
         stats["last_built"] = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
 
         # Count communities
@@ -223,11 +262,12 @@ def get_graph_report() -> str:
     Returns:
         Report content as string
     """
-    if not GRAPH_REPORT.exists():
+    gr = _graph_report()
+    if not gr.exists():
         return ""
 
     try:
-        return GRAPH_REPORT.read_text(encoding="utf-8", errors="ignore")
+        return gr.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
         logger.error(f"Error reading graph report: {e}")
         return ""
@@ -239,8 +279,9 @@ def get_graph_html_path() -> Optional[str]:
     Returns:
         Path to graph.html or None
     """
-    if GRAPH_HTML.exists():
-        return str(GRAPH_HTML)
+    gh = _graph_html()
+    if gh.exists():
+        return str(gh)
     return None
 
 
@@ -250,12 +291,13 @@ def copy_graph_to_dashboard() -> Optional[str]:
     Returns:
         Path to copied file or None
     """
-    if not GRAPH_HTML.exists():
+    gh = _graph_html()
+    if not gh.exists():
         return None
 
     dashboard_graph = config.DATA_DIR / "graph.html"
     try:
-        shutil.copy2(GRAPH_HTML, dashboard_graph)
+        shutil.copy2(gh, dashboard_graph)
         return str(dashboard_graph)
     except Exception as e:
         logger.error(f"Error copying graph to dashboard: {e}")
@@ -288,11 +330,13 @@ def add_url_to_graph(url: str, author: str = None) -> Dict[str, Any]:
     }
 
 
-def update_graph(target_path: Optional[str] = None) -> Dict[str, Any]:
+def update_graph(target_path: Optional[str] = None, backend: str = "", no_viz: bool = False) -> Dict[str, Any]:
     """Update graph with changed files only (faster than full rebuild).
 
     Args:
         target_path: Directory to scan
+        backend: LLM backend (ollama, gemini, openai) — empty = auto-detect
+        no_viz: Skip HTML visualization
 
     Returns:
         Dict with success status
@@ -302,7 +346,12 @@ def update_graph(target_path: Optional[str] = None) -> Dict[str, Any]:
     if not _check_graphify():
         return {"success": False, "error": "graphify CLI not found."}
 
-    args = ["extract", path, "--update", "--backend", "ollama"]
+    args = ["extract", path, "--update"]
+    if backend:
+        args += ["--backend", backend]
+    if no_viz:
+        args.append("--no-viz")
+
     result = _run_graphify(args)
 
     if result["success"]:
@@ -327,7 +376,7 @@ def export_graph(format: str = "html") -> Dict[str, Any]:
     Returns:
         Dict with success status and output path
     """
-    if not GRAPH_JSON.exists():
+    if not _graph_json().exists():
         return {"success": False, "error": "No graph available."}
 
     if not _check_graphify():

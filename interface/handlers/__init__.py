@@ -20,10 +20,11 @@ from .busqueda import (
     ingest_cmd,
     investigar_cmd,
 )
-from .chat import charlar_cmd
+from .chat import charlar_cmd, charlar_callback
 from .agente import (
     agente_cmd,
     model_cmd,
+    model_callback,
     query_vectorial_cmd,
     rate_cmd,
     calidad_cmd,

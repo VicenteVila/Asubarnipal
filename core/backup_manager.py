@@ -32,14 +32,17 @@ class BackupManager:
         self._load_history()
 
     def _load_history(self) -> None:
-        if BACKUP_META_FILE.exists():
+        meta_path = self.backup_dir / "backup_history.json"
+        if meta_path.exists():
             try:
-                self._history = json.loads(BACKUP_META_FILE.read_text())
+                self._history = json.loads(meta_path.read_text())
             except Exception:
                 self._history = []
 
     def _save_history(self) -> None:
-        BACKUP_META_FILE.write_text(json.dumps(self._history, indent=2))
+        meta_path = self.backup_dir / "backup_history.json"
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        meta_path.write_text(json.dumps(self._history, indent=2))
 
     def backup_vault(self, vault_name: Optional[str] = None) -> dict:
         """Create a backup of a vault or all data."""

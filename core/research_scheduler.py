@@ -22,11 +22,18 @@ class ResearchScheduler:
         self._thread: Optional[threading.Thread] = None
         self._load_schedules()
 
+    def _get_schedules_file(self) -> Path:
+        """Get schedules file path, preferring instance-level config path."""
+        if hasattr(self, "_config_path") and self._config_path:
+            return self._config_path
+        return SCHEDULES_FILE
+
     def _load_schedules(self) -> None:
         """Load schedules from disk."""
-        if SCHEDULES_FILE.exists():
+        sched_file = self._get_schedules_file()
+        if sched_file.exists():
             try:
-                self.schedules = json.loads(SCHEDULES_FILE.read_text())
+                self.schedules = json.loads(sched_file.read_text())
                 logger.info(f"Loaded {len(self.schedules)} research schedules")
             except Exception as e:
                 logger.error(f"Failed to load schedules: {e}")
@@ -37,7 +44,9 @@ class ResearchScheduler:
     def _save_schedules(self) -> None:
         """Save schedules to disk."""
         try:
-            SCHEDULES_FILE.write_text(json.dumps(self.schedules, indent=2))
+            sched_file = self._get_schedules_file()
+            sched_file.parent.mkdir(parents=True, exist_ok=True)
+            sched_file.write_text(json.dumps(self.schedules, indent=2))
         except Exception as e:
             logger.error(f"Failed to save schedules: {e}")
 
