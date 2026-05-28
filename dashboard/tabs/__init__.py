@@ -12,6 +12,7 @@ from dashboard.tabs.tab_latido import render_tab_latido
 from dashboard.tabs.tab_feeds import render_tab_feeds
 from dashboard.tabs.tab_analytics import render_tab_analytics
 from dashboard.tabs.tab_hmem import render_tab_hmem
+from dashboard.tabs.tab_harness import render_tab_harness
 
 __all__ = [
     "render_tab_dashboard",
@@ -26,4 +27,5 @@ __all__ = [
     "render_tab_feeds",
     "render_tab_analytics",
     "render_tab_hmem",
+    "render_tab_harness",
 ]

@@ -36,7 +36,7 @@ class TurboQuantEngine:
     _instance: Optional['TurboQuantEngine'] = None
     _initialized: bool = False
 
-    def __new__(cls) -> Self:
+    def __new__(cls) -> 'TurboQuantEngine':
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -82,7 +82,7 @@ class TurboQuantEngine:
 
         configured = getattr(config, "OLLAMA_MODEL", None)
         if configured:
-            return configured
+            return str(configured)
 
         return self._gguf_models[0] if self._gguf_models else None
 

@@ -51,11 +51,11 @@ class CPUConfig:
         """Get available memory in GB."""
         try:
             import psutil
-            return psutil.virtual_memory().available / (1024**3)
+            return float(psutil.virtual_memory().available) / (1024**3)
         except ImportError:
             try:
                 import shutil
-                return shutil.disk_usage('/').total / (1024**3)
+                return float(shutil.disk_usage('/').total) / (1024**3)
             except Exception:
                 return 8.0  # fallback
 

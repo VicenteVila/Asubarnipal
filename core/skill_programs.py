@@ -277,6 +277,36 @@ class SkillProgramRegistry:
             ],
         }
 
+    def list_pfs(self) -> list[dict[str, Any]]:
+        """List all registered Program Functions with details."""
+        result = []
+        for pf in self._pfs.values():
+            result.append({
+                "name": pf.name,
+                "description": pf.description,
+                "preconditions": pf.preconditions,
+                "priority": pf.priority,
+                "invocations": pf.invocation_count,
+                "success_count": pf.success_count,
+            })
+        return result
+
+    def execute_pf(self, name: str, state: dict[str, Any]) -> Optional[dict[str, Any]]:
+        """Execute a specific Program Function by name."""
+        pf = self._pfs.get(name)
+        if pf is None:
+            return None
+        if not pf.matches(state):
+            return None
+        try:
+            result = pf.execute(state, None)
+            pf.record_outcome(result.get("status") != "error")
+            return result
+        except Exception as e:
+            logger.error(f"PF execution error for {name}: {e}")
+            pf.record_outcome(False)
+            return {"error": str(e)}
+
 
 _registry: Optional[SkillProgramRegistry] = None
 

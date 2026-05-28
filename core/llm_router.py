@@ -111,11 +111,11 @@ class LLMRouter:
             "time": time.time() - start,
         }
     
-    def _prepare_messages(self, messages: list[MessageDict]) -> list[MessageDict]:
+    def _prepare_messages(self, messages: list[Any]) -> list[MessageDict]:
         prepared: list[MessageDict] = []
         for msg in messages:
             if isinstance(msg, dict):
-                prepared.append(msg)
+                prepared.append(msg)  # type: ignore[arg-type]
             elif hasattr(msg, "role") and hasattr(msg, "content"):
                 prepared.append({"role": msg.role, "content": msg.content})
         return prepared
@@ -191,7 +191,7 @@ class LLMRouter:
                         [{"role": "user", "content": prompt}],
                         **kwargs,
                     )
-                    return result.get("response", "")
+                    return str(result.get("response", ""))
                 except CircuitBreakerError as e:
                     logger.warning(f"⚠️ Ollama circuit breaker OPEN: {e}")
                 except Exception as e:
@@ -201,7 +201,7 @@ class LLMRouter:
                 try:
                     key = self.gemini_keys[self.current_key_index % len(self.gemini_keys)]
                     result = self._gemini_cb.call(self._gemini_chat, prompt, key)
-                    return result.get("response", "")
+                    return str(result.get("response", ""))
                 except CircuitBreakerError as e:
                     logger.warning(f"⚠️ Gemini circuit breaker OPEN: {e}")
                 except Exception as e:
@@ -371,7 +371,7 @@ class BraveRouter:
             "Accept": "application/json",
             "X-Subscription-Token": self.api_key,
         }
-        params = {"q": query, "count": num_results}
+        params: dict[str, str | int] = {"q": query, "count": num_results}
         
         resp = requests.get(url, headers=headers, params=params, timeout=30)
         resp.raise_for_status()

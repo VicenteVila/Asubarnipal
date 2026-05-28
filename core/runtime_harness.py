@@ -519,6 +519,18 @@ class RuntimeHarness:
             "trajectory_layer": self.trajectory_layer.get_stats(),
         }
 
+    def reset_stats(self) -> None:
+        """Reset all statistics counters."""
+        self._total_interventions = 0
+        self.contract_layer._correction_count = 0
+        self.contract_layer._contract_cache.clear()
+        self.skill_layer._failure_history.clear()
+        self.action_layer._validations_passed = 0
+        self.action_layer._validations_failed = 0
+        self.action_layer._corrections_applied = 0
+        self.trajectory_layer._recoveries_triggered = 0
+        self.trajectory_layer._trajectories.clear()
+
 
 _harness: Optional[RuntimeHarness] = None
 

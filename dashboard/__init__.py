@@ -21,6 +21,7 @@ from dashboard.tabs import (
     render_tab_dashboard,
     render_tab_feeds,
     render_tab_grafico,
+    render_tab_harness,
     render_tab_hmem,
     render_tab_latido,
     render_tab_logs,
@@ -45,6 +46,7 @@ TAB_NAMES = [
     "Feeds",
     "Analytics",
     "H-Mem",
+    "Harness",
 ]
 
 
@@ -324,6 +326,8 @@ def main() -> None:
         render_tab_analytics(cfg)
     elif selected == 11:
         render_tab_hmem()
+    elif selected == 12:
+        render_tab_harness()
 
     st.divider()
     st.caption(

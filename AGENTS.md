@@ -66,7 +66,7 @@ Asubarnipal/
 │   ├── vault_skills.py           # 8 vault management skills
 │   └── optimize_llm.py           # 5 TurboQuant skills
 ├── index/rag.py                  # FAISS + sentence-transformers
-├── tests/                        # 296+ passing across 17 test files + 30 evaluation scenarios
+├── tests/                        # 328+ passing across 18 test files + 30 evaluation scenarios
 └── data/                         # SQLite, FAISS index, logs
 ```
 
@@ -85,7 +85,7 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 
 **Required**: `TELEGRAM_TOKEN`, `OLLAMA_BASE_URL`. Others optional.
 
-## Telegram Bot Commands (49 total)
+## Telegram Bot Commands (53 total)
 
 ### Basic & System Commands (5)
 | Command | Description |
@@ -175,6 +175,14 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/vault_info` | Show active vault details |
 | `/vault_delete <nombre>` | Delete a vault (with backup) |
 | `/vault_export [nombre]` | Export vault to JSON |
+
+### Harness Commands (4)
+| Command | Description |
+|---------|-------------|
+| `/harness` | Show LIFE-HARNESS runtime statistics (4 layers) |
+| `/pfs` | List all registered Program Functions |
+| `/pf_run <name> [state_json]` | Execute a specific Program Function |
+| `/harness_reset` | Reset all harness statistics |
 
 Also handles plain text messages (passes to agent with RAG context).
 
@@ -361,7 +369,7 @@ registry.evolve_from_failures(failure_patterns)
 
 ---
 
-## Dashboard Tabs (12)
+## Dashboard Tabs (13)
 
 1. **Dashboard** - System telemetry, activity heatmap
 2. **Skills** - 50+ available functions
@@ -375,6 +383,7 @@ registry.evolve_from_failures(failure_patterns)
 10. **Feeds** - RSS subscriptions with alerts
 11. **Analytics** - Command history + memory usage
 12. **H-Mem** - H-Mem temporal-semantic tree and entity graph viewer
+13. **Harness** - LIFE-HARNESS 4-layer stats + HASP Program Functions viewer
 
 ---
 
