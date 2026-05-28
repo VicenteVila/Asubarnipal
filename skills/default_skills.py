@@ -1025,7 +1025,88 @@ def get_audio_summary(url: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+# =============================================================================
+# LIFE-HARNESS & HASP SKILLS
+# =============================================================================
+
+HARNESS_AVAILABLE = False
+try:
+    from core.runtime_harness import get_harness
+    from core.skill_programs import get_pf_registry
+    HARNESS_AVAILABLE = True
+except ImportError:
+    pass
+
+
+def harness_calibrate_tools(tools_json: str = "[]") -> dict:
+    """Calibrate tool definitions using LIFE-HARNESS Environment Contract Layer."""
+    if not HARNESS_AVAILABLE:
+        return {"success": False, "error": "Harness not available"}
+    try:
+        harness = get_harness()
+        tools = json.loads(tools_json) if isinstance(tools_json, str) else tools_json
+        calibrated = harness.process_tools(tools)
+        return {"success": True, "original_count": len(tools), "calibrated_count": len(calibrated)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def harness_stats() -> dict:
+    """Get LIFE-HARNESS runtime statistics."""
+    if not HARNESS_AVAILABLE:
+        return {"success": False, "error": "Harness not available"}
+    try:
+        harness = get_harness()
+        return {"success": True, "stats": harness.get_stats()}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def list_pfs() -> dict:
+    """List all registered HASP Program Functions."""
+    if not HARNESS_AVAILABLE:
+        return {"success": False, "error": "Harness not available"}
+    try:
+        registry = get_pf_registry()
+        stats = registry.get_stats()
+        return {"success": True, "program_functions": stats.get("pfs", []), "total": stats.get("total_pfs", 0)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def run_pf(pf_name: str, state_json: str = "{}") -> dict:
+    """Execute a specific Program Function with given state."""
+    if not HARNESS_AVAILABLE:
+        return {"success": False, "error": "Harness not available"}
+    try:
+        registry = get_pf_registry()
+        state = json.loads(state_json) if isinstance(state_json, str) else state_json
+        pf = registry._pfs.get(pf_name)
+        if not pf:
+            return {"success": False, "error": f"PF not found: {pf_name}"}
+        result = pf.execute(state, None)
+        pf.record_outcome(result.get("status") != "error")
+        return {"success": True, "pf": pf_name, "result": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def record_harness_failure(task: str, error: str, trajectory_json: str = "[]") -> dict:
+    """Record a failure for HASP auto-evolution."""
+    if not HARNESS_AVAILABLE:
+        return {"success": False, "error": "Harness not available"}
+    try:
+        harness = get_harness()
+        trajectory = json.loads(trajectory_json) if isinstance(trajectory_json, str) else trajectory_json
+        harness.record_failure(task, error, trajectory)
+        return {"success": True, "task": task[:100]}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+# =============================================================================
 # Import datetime for create_wiki_note
+# =============================================================================
 from datetime import datetime
 
 

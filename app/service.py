@@ -100,12 +100,19 @@ class HMemService:
 
 
 class AgentService:
-    def __init__(self) -> None:
+    def __init__(self, use_harness: bool = False) -> None:
         self.llm = LLMRouter()
         self.skill_registry = SkillRegistry()
         self.rag = RAGEngine(config.INDEX_DIR / "index.faiss")
         self.wiki_db = None
         self.graph_store = {}
+        self.use_harness = use_harness
+        if use_harness:
+            from core.runtime_harness import get_harness
+            from core.skill_programs import get_pf_registry
+            get_harness()
+            get_pf_registry()
+            logger.info("LIFE-HARNESS & HASP initialized in AgentService")
         logger.info("AgentService initialized")
     
     def agent_chat(self, message: str, hist_to_pass: list = None) -> dict:
@@ -162,7 +169,11 @@ class AgentService:
 
         try:
             logger.incoming("🤖 [AGENTE] Procesando con LLM...")
-            result = self.llm.call_agent(messages, tools=tools)
+            result = self.llm.call_agent(
+                messages, tools=tools,
+                use_harness=self.use_harness,
+                session_id=f"agent_{message[:32]}",
+            )
             result["time"] = time.time() - start
             agent_state.record_success()
             
@@ -217,11 +228,18 @@ class AgentService:
 class AsubarnipalService:
     """Extended service with wiki, research, and graph features."""
     
-    def __init__(self) -> None:
+    def __init__(self, use_harness: bool = False) -> None:
         self.llm = LLMRouter()
         self.skill_registry = SkillRegistry()
         self.rag = RAGEngine(config.INDEX_DIR / "index.faiss")
         self._init_wiki()
+        self.use_harness = use_harness
+        if use_harness:
+            from core.runtime_harness import get_harness
+            from core.skill_programs import get_pf_registry
+            get_harness()
+            get_pf_registry()
+            logger.info("LIFE-HARNESS & HASP initialized in AsubarnipalService")
         logger.info("AsubarnipalService initialized")
     
     def _init_wiki(self) -> None:
@@ -402,7 +420,11 @@ class AsubarnipalService:
         tools = self.skill_registry.get_tools()
         
         try:
-            result = self.llm.call_agent(messages, tools=tools)
+            result = self.llm.call_agent(
+                messages, tools=tools,
+                use_harness=self.use_harness,
+                session_id=f"asub_{message[:32]}",
+            )
             result["time"] = time.time() - start
             agent_state.record_success()
             logger.info(f"Agent chat completed in {result['time']:.2f}s")

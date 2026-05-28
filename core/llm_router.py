@@ -10,6 +10,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 import config
 from core.type_defs import MessageDict, LLMResponse, ToolCallDict
 from core.circuit_breaker import get_circuit_breaker, CircuitBreakerError
+from core.runtime_harness import get_harness, RuntimeHarness
+from core.skill_programs import get_pf_registry, SkillProgramRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -122,8 +124,60 @@ class LLMRouter:
         self,
         messages: list[MessageDict],
         tools: Optional[list[dict[str, Any]]] = None,
+        use_harness: bool = False,
+        session_id: Optional[str] = None,
     ) -> LLMResponse:
+        if use_harness:
+            return self.call_with_harness(messages, tools=tools, session_id=session_id)
         return self.chat(messages, tools=tools)
+
+    def call_with_harness(
+        self,
+        messages: list[MessageDict],
+        tools: Optional[list[dict[str, Any]]] = None,
+        session_id: Optional[str] = None,
+    ) -> LLMResponse:
+        """Call LLM with all 4 LIFE-HARNESS layers active."""
+        harness = get_harness()
+        pf_registry = get_pf_registry()
+        sid = session_id or f"session_{time.time_ns()}"
+
+        # Layer 1: Calibrate tool definitions
+        calibrated_tools = harness.process_tools(tools or [])
+
+        # Layer 2: Inject procedural skills
+        task = messages[-1].get("content", "") if messages else ""
+        state = {"last_error": "", "attempt_count": 0}
+        enriched_messages = harness.inject_skills(task, state, list(messages))
+
+        # Execute matching Program Functions
+        pf_state = {
+            "last_action.status": "",
+            "task.complexity": "normal",
+            "task.type": task[:50] if task else "",
+            "error_count": 0,
+            "attempt_count": 0,
+        }
+        pf_results = pf_registry.execute_matching(pf_state, None)
+        for pf_result in pf_results:
+            if pf_result.get("action") in ("retry", "validate"):
+                enriched_messages.append({
+                    "role": "system",
+                    "content": f"[HASP INTERVENTION] {pf_result.get('message', '')}",
+                })
+
+        result = self.chat(enriched_messages, tools=calibrated_tools)
+
+        tool_calls = result.get("tool_calls", [])
+        for tc in tool_calls:
+            harness.record_action(sid, tc)
+
+        # Layer 4: Check trajectory health
+        interventions = harness.check_trajectory(sid)
+        result["harness_interventions"] = interventions
+
+        harness.cleanup_session(sid)
+        return result
     
     def generate(self, prompt: str, **kwargs: Any) -> str:
         """Generate with fallback: Ollama → Gemini with exponential backoff."""

@@ -44,7 +44,9 @@ Asubarnipal/
 │   ├── live_activity.py          # Live activity tracker
 │   ├── logging_config.py         # JSON structured logging
 │   ├── research_scheduler.py     # Scheduled research jobs
-│   └── dashboard_logic.py        # Metrics
+│   ├── dashboard_logic.py        # Metrics
+│   ├── runtime_harness.py        # LIFE-HARNESS 4-layer runtime harness (arXiv:2605.22166)
+│   └── skill_programs.py         # HASP Program Functions (arXiv:2605.22306)
 ├── interface/
 │   ├── telegram_bot.py           # Bot entrypoint
 │   └── handlers/                 # Modular command handlers
@@ -60,11 +62,11 @@ Asubarnipal/
 │       ├── backup.py             # Backup and restore handlers (5 commands)
 │       └── vault.py              # Vault management (9 commands)
 ├── skills/
-│   ├── default_skills.py         # 39 operational skills
+│   ├── default_skills.py         # 44 operational skills (39 + 5 LIFE-HARNESS/HASP)
 │   ├── vault_skills.py           # 8 vault management skills
 │   └── optimize_llm.py           # 5 TurboQuant skills
 ├── index/rag.py                  # FAISS + sentence-transformers
-├── tests/                        # pytest (179 passing across 15 files + 30 evaluation scenarios)
+├── tests/                        # 296+ passing across 17 test files + 30 evaluation scenarios
 └── data/                         # SQLite, FAISS index, logs
 ```
 
@@ -287,6 +289,60 @@ stats = hmem.stats()
 
 ---
 
+## LIFE-HARNESS & HASP (Runtime Harness + Skill Programs)
+
+Two research paper implementations that wrap the LLM agent for deterministic behavior:
+
+### LIFE-HARNESS (arXiv:2605.22166)
+4-layer runtime harness that adapts the model-environment interface:
+```python
+from core.runtime_harness import get_harness, RuntimeHarness
+
+harness = get_harness()  # Singleton
+
+# Layer 1: Calibrate tool definitions before sending to LLM
+calibrated_tools = harness.process_tools(tools)
+
+# Layer 2: Inject procedural skills from past trajectories
+context = harness.inject_skills(task, state, messages)
+
+# Layer 3: Validate tool calls before execution
+result = harness.validate_tool_call(tool_call, available_tools)
+
+# Layer 4: Check trajectory health (loops, retries, budget)
+interventions = harness.check_trajectory(session_id)
+
+# Record failures for auto-evolution
+harness.record_failure(task, error, trajectory)
+```
+
+**Integration**: `LLMRouter.call_with_harness()` wraps `chat()` with all 4 layers. `AgentService(use_harness=True)` enables it at service level.
+
+### HASP (arXiv:2605.22306)
+Program Functions that activate on failure-prone states:
+```python
+from core.skill_programs import get_pf_registry, RetryPF, DecomposePF, FallbackPF, ValidateBeforeActPF
+
+registry = get_pf_registry()  # Singleton, 4 built-in PFs
+
+# Find matching PFs for current state
+matched = registry.find_matching(state)
+
+# Execute all matching PFs
+results = registry.execute_matching(state, context)
+
+# Auto-evolve from failures
+registry.evolve_from_failures(failure_patterns)
+```
+
+**Built-in PFs**: `retry_on_failure`, `decompose_complex_task`, `fallback_on_exhaustion`, `validate_before_act`
+
+**Auto-evolution**: When 3+ repeated failures occur, new PFs are automatically generated and registered. H-Mem memory feeds failure pattern detection.
+
+**Usage**: Call via `LLMRouter.call_agent(messages, tools, use_harness=True)` or wrap manually using `call_with_harness()`.
+
+---
+
 ## Operational Skills (52 total)
 
 - **Archivo**: run_command, read_file, write_file, list_files, search_in_files
@@ -301,6 +357,7 @@ stats = hmem.stats()
 - **Research**: search_arxiv, get_audio_summary
 - **Vault**: list_vaults, create_vault, switch_vault, delete_vault, export_vault, import_vault, get_active_vault, get_vault_stats
 - **TurboQuant**: optimize_llm, show_turbo_status, benchmark_llm, get_recommended_context, list_available_modes
+- **LIFE-HARNESS/HASP**: harness_calibrate_tools, harness_stats, list_pfs, run_pf, record_harness_failure
 
 ---
 
@@ -328,7 +385,9 @@ stats = hmem.stats()
 - `core/llm_router.py` - Multi-model LLM routing (Ollama/Gemini/Brave)
 - `core/vault_manager.py` - Multiple vault management
 - `core/turboquant_engine.py` - TurboQuant LLM optimization
-- `skills/default_skills.py` - 39 skill definitions
+- `core/runtime_harness.py` - LIFE-HARNESS 4-layer harness
+- `core/skill_programs.py` - HASP Program Function registry
+- `skills/default_skills.py` - 44 skill definitions (39 + 5 harness)
 - `skills/vault_skills.py` - 8 vault management skills
 - `skills/optimize_llm.py` - 5 TurboQuant skills
 - `index/rag.py` - Vector search engine (vault-aware)
