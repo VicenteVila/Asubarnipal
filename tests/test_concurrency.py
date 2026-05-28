@@ -6,6 +6,8 @@ import unittest
 import asyncio
 import threading
 import time
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -81,17 +83,15 @@ class TestConcurrency(unittest.TestCase):
 
     def test_concurrent_vault_switching(self):
         """Test concurrent vault switching is safe."""
-        import tempfile
-        from pathlib import Path
-
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_path = Path(tmpdir)
 
             with patch("config.DATA_DIR", temp_path):
                 from core.vault_manager import VaultManager
 
+                VaultManager._instance = None
                 vm = VaultManager()
-                vm.vaults_file = temp_path / "vaults_test.json"
+                vm._config = {"active_vault": None, "vaults": {}}
 
                 vm.create("vault_a", str(temp_path / "a"))
                 vm.create("vault_b", str(temp_path / "b"))
@@ -100,8 +100,10 @@ class TestConcurrency(unittest.TestCase):
 
                 def switch_vault(vault_name):
                     try:
-                        vm.switch(vault_name)
-                        return vm.get_active()["name"]
+                        result = vm.switch(vault_name)
+                        if result.get("success"):
+                            return vault_name
+                        return "error"
                     except Exception:
                         return "error"
 
@@ -117,32 +119,35 @@ class TestConcurrency(unittest.TestCase):
                 self.assertEqual(len(results), 10)
                 self.assertTrue(all(r in ["vault_a", "vault_b", "error"] for r in results))
 
+                VaultManager._instance = None
+
     def test_concurrent_cache_access(self):
         """Test concurrent cache access."""
         from core.cache import QueryCache
 
-        cache = QueryCache(default_ttl=60, max_size=100)
-        cache.cache_dir = Path(self.temp_dir.name) / "cache"
-        cache.cache_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache = QueryCache(default_ttl=60, max_size=100)
+            cache.cache_dir = Path(tmpdir) / "cache"
+            cache.cache_dir.mkdir(exist_ok=True)
 
-        def write_read(key, value):
-            cache.set(key, value)
-            return cache.get(key)
+            def write_read(key, value):
+                cache.set(key, value)
+                return cache.get(key)
 
-        results = []
+            results = []
 
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            futures = []
-            for i in range(20):
-                futures.append(executor.submit(write_read, f"key_{i}", f"value_{i}"))
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                futures = []
+                for i in range(20):
+                    futures.append(executor.submit(write_read, f"key_{i}", f"value_{i}"))
 
-            for future in as_completed(futures):
-                try:
-                    results.append(future.result())
-                except Exception:
-                    results.append(None)
+                for future in as_completed(futures):
+                    try:
+                        results.append(future.result())
+                    except Exception:
+                        results.append(None)
 
-        self.assertEqual(len(results), 20)
+            self.assertEqual(len(results), 20)
 
 
 class TestAsyncConcurrency(unittest.TestCase):

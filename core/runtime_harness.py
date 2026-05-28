@@ -33,10 +33,10 @@ class EnvironmentContractLayer:
     """
 
     def __init__(self) -> None:
-        self._contract_cache: dict[str, dict] = {}
+        self._contract_cache: dict[str, dict[str, Any]] = {}
         self._correction_count: int = 0
 
-    def calibrate_tools(self, tools: list[dict]) -> list[dict]:
+    def calibrate_tools(self, tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Calibrate tool definitions before sending to LLM."""
         calibrated = []
         for tool in tools:
@@ -58,7 +58,7 @@ class EnvironmentContractLayer:
 
         return calibrated
 
-    def _calibrate_tool(self, tool: dict) -> dict:
+    def _calibrate_tool(self, tool: dict[str, Any]) -> dict[str, Any]:
         """Apply calibrations to a single tool definition."""
         func = tool.get("function", {})
         params = func.get("parameters", {})
@@ -70,7 +70,7 @@ class EnvironmentContractLayer:
 
         return tool
 
-    def _ensure_required(self, params: dict) -> None:
+    def _ensure_required(self, params: dict[str, Any]) -> None:
         """Ensure required fields are properly marked."""
         required = params.get("required", [])
         props = params.get("properties", {})
@@ -79,7 +79,7 @@ class EnvironmentContractLayer:
                 required.append(name)
                 self._correction_count += 1
 
-    def _add_type_hints(self, params: dict) -> None:
+    def _add_type_hints(self, params: dict[str, Any]) -> None:
         """Add missing type hints to parameters."""
         props = params.get("properties", {})
         for name, prop in props.items():
@@ -313,7 +313,7 @@ class TrajectoryState:
         self.actions: list[dict] = []
         self.action_count: int = 0
         self.repeated_actions: list[str] = []
-        self.last_action_hash: Optional[str] = None
+        self.last_action_hash: Optional[int] = None
         self.stagnation_count: int = 0
         self.invalid_retry_count: int = 0
         self.budget_exhausted: bool = False

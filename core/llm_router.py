@@ -170,11 +170,10 @@ class LLMRouter:
 
         tool_calls = result.get("tool_calls", [])
         for tc in tool_calls:
-            harness.record_action(sid, tc)
+            harness.record_action(sid, dict(tc))
 
-        # Layer 4: Check trajectory health
         interventions = harness.check_trajectory(sid)
-        result["harness_interventions"] = interventions
+        result["harness_interventions"] = interventions  # type: ignore[typeddict-unknown-key]
 
         harness.cleanup_session(sid)
         return result

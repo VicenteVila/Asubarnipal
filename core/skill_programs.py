@@ -71,9 +71,9 @@ class ProgramFunction(ABC):
                 return False
         return True
 
-    def _get_nested(self, d: dict, path: str) -> Any:
+    def _get_nested(self, d: dict[str, Any], path: str) -> Any:
         parts = path.split(".")
-        current = d
+        current: Any = d
         for part in parts:
             if isinstance(current, dict):
                 current = current.get(part)
@@ -212,8 +212,7 @@ class SkillProgramRegistry:
             FallbackPF,
             ValidateBeforeActPF,
         ]:
-            pf = pf_cls()
-            # Don't re-register if already present
+            pf: ProgramFunction = pf_cls()  # type: ignore[abstract]
             if pf.name not in self._pfs:
                 self.register(pf)
 
@@ -243,7 +242,7 @@ class SkillProgramRegistry:
                 results.append({"action": "error", "message": str(e)})
         return results
 
-    def evolve_from_failures(self, failure_patterns: list[dict]) -> None:
+    def evolve_from_failures(self, failure_patterns: list[dict[str, Any]]) -> None:
         """Auto-evolve new PFs from recurring failure patterns."""
         for pattern in failure_patterns:
             pf_name = f"auto_pf_{int(time.time())}"
@@ -253,6 +252,7 @@ class SkillProgramRegistry:
             field = pattern.get("field", "last_action.status")
             intervention_type = pattern.get("intervention", "retry")
 
+            pf: ProgramFunction
             if intervention_type == "decompose":
                 pf = DecomposePF()
             elif intervention_type == "fallback":

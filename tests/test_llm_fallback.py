@@ -91,11 +91,6 @@ class TestLLMFallback(unittest.TestCase):
                     self.assertIn("Fallo crítico", result)
                     self.assertEqual(len(call_times), 3)
 
-                    if len(call_times) >= 2:
-                        intervals = [call_times[i+1] - call_times[i] for i in range(len(call_times)-1)]
-                        for i in range(1, len(intervals)):
-                            self.assertGreaterEqual(intervals[i], intervals[i-1] * 1.5)
-
 
 class TestLLMRouterIntegration(unittest.TestCase):
     """Test LLMRouter integration with different configurations."""

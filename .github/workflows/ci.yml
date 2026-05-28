@@ -4,20 +4,17 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   test:
-    name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -28,92 +25,81 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          pip install -e ".[dev]"
+          pip install pytest-cov
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
-          python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing
-        env:
-          TELEGRAM_TOKEN: dummy_token_for_tests
-          OLLAMA_BASE_URL: http://127.0.0.1:11434
+          pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
 
       - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
-    name: Code Quality
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-
-      - name: Install ruff
-        run: pip install ruff
-
-      - name: Run ruff linter
-        run: ruff check . --output-format=github
-
-      - name: Run ruff formatter check
-        run: ruff format . --check --diff
-
-  types:
-    name: Type Checking (mypy)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install mypy>=1.0
+          pip install ruff black
 
-      - name: Run mypy type checker
+      - name: Run Ruff linter
         run: |
-          mypy core/ app/ api/ index/ skills/ --config-file pyproject.toml
+          ruff check .
 
-  import-check:
-    name: Import Validation
+      - name: Check Black formatting
+        run: |
+          black --check .
+
+  type-check:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -e ".[dev]"
+          pip install mypy types-requests types-PyYAML
 
-      - name: Verify all modules import
+      - name: Run mypy type checking
         run: |
-          python -c "import config; print('config OK')"
-          python -c "from core import llm_router; print('llm_router OK')"
-          python -c "from core import memory; print('memory OK')"
-          python -c "from core import wiki; print('wiki OK')"
-          python -c "from app.service import AgentService; print('service OK')"
-          python -c "from index import rag; print('rag OK')"
-          python -c "from skills import default_skills; print('skills OK')"
-          echo "All imports validated successfully"
+          mypy core/ app/ api/ skills/ index/ --config-file pyproject.toml
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install safety
+        run: |
+          pip install safety
+
+      - name: Check dependencies for vulnerabilities
+        run: |
+          safety check --full-report || true

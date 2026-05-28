@@ -17,98 +17,109 @@ class TestVaultIntegration(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_path = Path(self.temp_dir.name)
+        from core.vault_manager import VaultManager
+        VaultManager._instance = None
 
     def tearDown(self):
         self.temp_dir.cleanup()
+        from core.vault_manager import VaultManager
+        VaultManager._instance = None
 
     def test_create_and_list_vaults(self):
         """Test creating vaults and listing them."""
         from core.vault_manager import VaultManager
 
-        vm = VaultManager()
-        vm.vaults_file = self.temp_path / "vaults.json"
+        with patch("config.DATA_DIR", self.temp_path):
+            vm = VaultManager()
+            vm._config = {"active_vault": None, "vaults": {}}
 
-        result_a = vm.create("vault_a", str(self.temp_path / "vault_a"))
-        self.assertTrue(result_a["success"])
+            result_a = vm.create("vault_a", str(self.temp_path / "vault_a"))
+            self.assertTrue(result_a["success"])
 
-        result_b = vm.create("vault_b", str(self.temp_path / "vault_b"))
-        self.assertTrue(result_b["success"])
+            result_b = vm.create("vault_b", str(self.temp_path / "vault_b"))
+            self.assertTrue(result_b["success"])
 
-        vaults = vm.list_vaults()
-        self.assertGreaterEqual(len(vaults), 2)
+            vaults = vm.list_vaults()
+            self.assertGreaterEqual(vaults["total"], 2)
 
     def test_switch_vault(self):
         """Test switching between vaults."""
         from core.vault_manager import VaultManager
 
-        vm = VaultManager()
-        vm.vaults_file = self.temp_path / "vaults.json"
+        with patch("config.DATA_DIR", self.temp_path):
+            vm = VaultManager()
+            vm._config = {"active_vault": None, "vaults": {}}
 
-        vm.create("vault_a", str(self.temp_path / "vault_a"))
-        vm.create("vault_b", str(self.temp_path / "vault_b"))
+            vm.create("vault_a", str(self.temp_path / "vault_a"))
+            vm.create("vault_b", str(self.temp_path / "vault_b"))
 
-        switch_a = vm.switch("vault_a")
-        self.assertTrue(switch_a["success"])
+            switch_a = vm.switch("vault_a")
+            self.assertTrue(switch_a["success"])
 
-        active = vm.get_active()
-        self.assertEqual(active["name"], "vault_a")
+            active = vm.get_active()
+            self.assertEqual(active["name"], "vault_a")
 
-        switch_b = vm.switch("vault_b")
-        self.assertTrue(switch_b["success"])
+            switch_b = vm.switch("vault_b")
+            self.assertTrue(switch_b["success"])
 
-        active = vm.get_active()
-        self.assertEqual(active["name"], "vault_b")
+            active = vm.get_active()
+            self.assertEqual(active["name"], "vault_b")
 
     def test_vault_isolation(self):
         """Test that vaults are isolated from each other."""
         from core.vault_manager import VaultManager
 
-        vm = VaultManager()
-        vm.vaults_file = self.temp_path / "vaults.json"
+        with patch("config.DATA_DIR", self.temp_path):
+            vm = VaultManager()
+            vm._config = {"active_vault": None, "vaults": {}}
 
-        vm.create("isolated_a", str(self.temp_path / "isolated_a"))
-        vm.create("isolated_b", str(self.temp_path / "isolated_b"))
+            vm.create("isolated_a", str(self.temp_path / "isolated_a"))
+            vm.create("isolated_b", str(self.temp_path / "isolated_b"))
 
-        vm.switch("isolated_a")
-        path_a = vm.get_active()["path"]
+            vm.switch("isolated_a")
+            path_a = vm.get_active()["path"]
 
-        vm.switch("isolated_b")
-        path_b = vm.get_active()["path"]
+            vm.switch("isolated_b")
+            path_b = vm.get_active()["path"]
 
-        self.assertNotEqual(path_a, path_b)
+            self.assertNotEqual(path_a, path_b)
 
     def test_delete_vault(self):
         """Test deleting a vault."""
         from core.vault_manager import VaultManager
 
-        vm = VaultManager()
-        vm.vaults_file = self.temp_path / "vaults.json"
+        with patch("config.DATA_DIR", self.temp_path):
+            vm = VaultManager()
+            vm._config = {"active_vault": None, "vaults": {}}
 
-        vm.create("to_delete", str(self.temp_path / "to_delete"))
+            vm.create("to_delete", str(self.temp_path / "to_delete"))
 
-        vaults_before = vm.list_vaults()
+            vaults_before = vm.list_vaults()
 
-        result = vm.delete("to_delete")
-        self.assertTrue(result["success"])
+            result = vm.delete("to_delete")
+            self.assertTrue(result["success"])
 
-        vaults_after = vm.list_vaults()
-        self.assertLess(len(vaults_after), len(vaults_before))
+            vaults_after = vm.list_vaults()
+            self.assertLess(vaults_after["total"], vaults_before["total"])
 
     def test_vault_persistence(self):
         """Test vault configuration persists across instances."""
         from core.vault_manager import VaultManager
 
-        vm1 = VaultManager()
-        vm1.vaults_file = self.temp_path / "vaults_persist.json"
+        with patch("config.DATA_DIR", self.temp_path):
+            with patch.object(VaultManager, "CONFIG_FILE", self.temp_path / "vaults_persist.json"):
+                VaultManager._instance = None
+                vm1 = VaultManager()
+                vm1._config = {"active_vault": None, "vaults": {}}
 
-        vm1.create("persistent", str(self.temp_path / "persistent"))
+                vm1.create("persistent", str(self.temp_path / "persistent"))
 
-        vm2 = VaultManager()
-        vm2.vaults_file = self.temp_path / "vaults_persist.json"
+                VaultManager._instance = None
+                vm2 = VaultManager()
 
-        vaults = vm2.list_vaults()
-        vault_names = [v["name"] for v in vaults]
-        self.assertIn("persistent", vault_names)
+                vaults = vm2.list_vaults()
+                vault_names = [v["name"] for v in vaults["vaults"]]
+                self.assertIn("persistent", vault_names)
 
 
 class TestVaultMemoryTreeIsolation(unittest.TestCase):

@@ -54,21 +54,20 @@ class TestBackgroundIntegration(unittest.TestCase):
         """Test agent state save and load."""
         from core.background_manager import AgentState
 
-        state = AgentState()
-        state.mode = "consultor"
-        state.model = "qwen3.5:4b"
-        state.messages_count = 10
-        state.tokens_used = 5000
+        with patch("config.AGENT_STATE_FILE", self.temp_path / "agent_state.json"):
+            state = AgentState()
+            state.state["mode"] = "consultor"
+            state.state["model"] = "qwen3.5:4b"
+            state.state["messages_count"] = 10
+            state.state["tokens_used"] = 5000
+            state._save()
 
-        state_file = self.temp_path / "agent_state.json"
-        state._save(str(state_file))
+            loaded = AgentState()
+            loaded._load()
 
-        loaded = AgentState()
-        loaded._load(str(state_file))
-
-        self.assertEqual(loaded.mode, "consultor")
-        self.assertEqual(loaded.model, "qwen3.5:4b")
-        self.assertEqual(loaded.messages_count, 10)
+            self.assertEqual(loaded.state.get("mode"), "consultor")
+            self.assertEqual(loaded.state.get("model"), "qwen3.5:4b")
+            self.assertEqual(loaded.state.get("messages_count"), 10)
 
     def test_brave_counter_persistence(self):
         """Test Brave API counter persists across restarts."""
@@ -76,19 +75,17 @@ class TestBackgroundIntegration(unittest.TestCase):
 
         counter_file = self.temp_path / "brave_counter.json"
 
-        counter = BraveCounter()
-        counter.file_path = str(counter_file)
+        with patch("config.BRAVE_COUNTER_FILE", counter_file):
+            counter = BraveCounter()
+            counter.count = 0
+            for _ in range(10):
+                counter.count += 1
+            counter._save()
 
-        for _ in range(10):
-            counter.increment()
+            new_counter = BraveCounter()
+            new_counter._load()
 
-        counter._save()
-
-        new_counter = BraveCounter()
-        new_counter.file_path = str(counter_file)
-        new_counter._load()
-
-        self.assertEqual(new_counter.count, 10)
+            self.assertEqual(new_counter.count, 10)
 
     def test_background_manager_initialization(self):
         """Test background manager initializes correctly."""
@@ -154,9 +151,9 @@ class TestBackgroundRituals(unittest.TestCase):
 
             manager = BackgroundManager()
 
-            with patch.object(manager, "_rebuild_graph") as mock_graph:
+            with patch.object(manager, "_update_graph") as mock_graph:
                 mock_graph.return_value = {"nodes": 10, "edges": 25}
-                result = manager._rebuild_graph()
+                result = manager._update_graph()
                 self.assertIn("nodes", result)
 
 

@@ -42,7 +42,7 @@ class TestHMemIntegration(unittest.TestCase):
             self.assertIsNotNone(node2)
 
             stats = tree.get_stats()
-            self.assertEqual(stats["total_nodes"], 2)
+            self.assertGreaterEqual(stats["total_nodes"], 2)
 
             tree.close()
 

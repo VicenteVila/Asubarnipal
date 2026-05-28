@@ -45,7 +45,7 @@ This enables more accurate and context-aware responses."""
 
         for chunk in chunks:
             self.assertIn("text", chunk)
-            self.assertIn("metadata", chunk)
+            self.assertIn("chunk_idx", chunk)
             self.assertGreater(len(chunk["text"]), 0)
 
         tokens = tokenize("AI agents use RAG for knowledge retrieval")
@@ -65,7 +65,7 @@ This enables more accurate and context-aware responses."""
 
         self.assertGreater(len(chunks), 0)
         for i, chunk in enumerate(chunks):
-            self.assertEqual(chunk["metadata"]["chunk_idx"], i)
+            self.assertEqual(chunk["chunk_idx"], i)
             self.assertIn("text", chunk)
 
     def test_tokenizer_removes_stop_words(self):
@@ -127,7 +127,7 @@ class TestRAGEngineIntegration(unittest.TestCase):
         for doc in docs:
             chunks = chunk_text(doc["text"], chunk_size=500, overlap=100)
             for chunk in chunks:
-                chunk["metadata"]["source"] = doc["source"]
+                chunk["source"] = doc["source"]
                 all_chunks.append(chunk)
 
         self.assertGreater(len(all_chunks), 0)
