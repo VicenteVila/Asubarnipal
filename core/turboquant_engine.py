@@ -3,10 +3,12 @@
 import os
 import time
 import logging
-from typing import Optional, Dict, Any, List, Self
+from typing import Optional, Any
+from typing_extensions import Self
 from dataclasses import dataclass, field
 
 import config
+from core.type_defs import TurboStateDict
 from .turboquant_config import (
     ModelConfig, get_model_config, get_default_cpu_config,
     COMPRESSION_FORMATS
@@ -32,11 +34,11 @@ class TurboQuantEngine:
     """Engine for managing TurboQuant settings auto-detection."""
 
     _instance: Optional['TurboQuantEngine'] = None
+    _initialized: bool = False
 
     def __new__(cls) -> Self:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
         return cls._instance
 
     def __init__(self) -> None:
@@ -44,9 +46,9 @@ class TurboQuantEngine:
             return
 
         self._initialized = True
-        self.state = TurboState()
-        self._ollama_available = self._check_ollama()
-        self._gguf_models = self._detect_gguf_models()
+        self.state: TurboState = TurboState()
+        self._ollama_available: bool = self._check_ollama()
+        self._gguf_models: list[str] = self._detect_gguf_models()
 
     def _check_ollama(self) -> bool:
         """Check if Ollama is available."""
@@ -57,7 +59,7 @@ class TurboQuantEngine:
         except Exception:
             return False
 
-    def _detect_gguf_models(self) -> List[str]:
+    def _detect_gguf_models(self) -> list[str]:
         """Detect models that support GGUF/llama.cpp optimizations."""
         if not self._ollama_available:
             return []
@@ -84,7 +86,7 @@ class TurboQuantEngine:
 
         return self._gguf_models[0] if self._gguf_models else None
 
-    def apply_mode(self, mode: str, model: Optional[str] = None) -> Dict[str, Any]:
+    def apply_mode(self, mode: str, model: Optional[str] = None) -> dict[str, Any]:
         """
         Apply TurboQuant settings for a chat mode.
         Auto-detects model if not provided. Uses mode-specific model from config.
@@ -96,7 +98,7 @@ class TurboQuantEngine:
         target_model = model or mode_cfg.model or self.get_active_model()
         model_cfg = get_model_config(target_model) if target_model else None
 
-        result = {
+        result: dict[str, Any] = {
             "success": True,
             "mode": mode,
             "model": target_model,
@@ -131,7 +133,7 @@ class TurboQuantEngine:
 
         return result
 
-    def apply_by_priority(self, priority: str, model: Optional[str] = None) -> Dict[str, Any]:
+    def apply_by_priority(self, priority: str, model: Optional[str] = None) -> dict[str, Any]:
         """Apply settings based on priority (speed/balanced/quality)."""
         priority_modes = {
             "speed": "libre",
@@ -141,7 +143,7 @@ class TurboQuantEngine:
         mode = priority_modes.get(priority, "consultor")
         return self.apply_mode(mode, model)
 
-    def get_current_settings(self) -> Dict[str, Any]:
+    def get_current_settings(self) -> dict[str, Any]:
         """Get current TurboQuant settings."""
         return {
             "mode": self.state.mode,
@@ -155,7 +157,7 @@ class TurboQuantEngine:
             "gguf_models": self._gguf_models,
         }
 
-    def get_optimized_params(self, mode: Optional[str] = None) -> Dict[str, Any]:
+    def get_optimized_params(self, mode: Optional[str] = None) -> dict[str, Any]:
         """
         Get optimized parameters for LLM call.
         Returns dict with context, options, etc.
@@ -189,7 +191,7 @@ class TurboQuantEngine:
             }
         }
 
-    def benchmark(self) -> Dict[str, Any]:
+    def benchmark(self) -> dict[str, Any]:
         """Run basic benchmark of current settings."""
         if not self._ollama_available:
             return {"success": False, "error": "Ollama not available"}
@@ -231,16 +233,16 @@ def get_engine() -> TurboQuantEngine:
     return TurboQuantEngine()
 
 
-def apply_chat_mode(mode: str, model: Optional[str] = None) -> Dict[str, Any]:
+def apply_chat_mode(mode: str, model: Optional[str] = None) -> dict[str, Any]:
     """Convenience function to apply settings for a chat mode."""
     return get_engine().apply_mode(mode, model)
 
 
-def get_turbo_params(mode: Optional[str] = None) -> Dict[str, Any]:
+def get_turbo_params(mode: Optional[str] = None) -> dict[str, Any]:
     """Convenience function to get optimized params."""
     return get_engine().get_optimized_params(mode)
 
 
-def get_turbo_status() -> Dict[str, Any]:
+def get_turbo_status() -> dict[str, Any]:
     """Convenience function to get current status."""
     return get_engine().get_current_settings()

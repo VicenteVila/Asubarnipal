@@ -7,9 +7,11 @@ import sqlite3
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, Self, Any
+from typing import Optional, Any
+from typing_extensions import Self
 
 import config
+from core.type_defs import RetrievalResult
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ class MemoryTree:
     - Bottom-up retrieval by time scope
     """
     
-    DEFAULT_LEVELS = {
+    DEFAULT_LEVELS: dict[int, dict[str, Any]] = {
         0: {"alpha": 0.75, "beta_days": 1, "name": "events"},
         1: {"alpha": 0.65, "beta_days": 7, "name": "daily"},
         2: {"alpha": 0.55, "beta_days": 30, "name": "weekly"},
@@ -38,15 +40,21 @@ class MemoryTree:
     }
     
     # Ebbinghaus parameters
-    TAU = 30.0
-    ETA = 0.5
+    TAU: float = 30.0
+    ETA: float = 0.5
     
-    def __init__(self, vault_name: Optional[str] = None, levels: Optional[dict[str, Any]] = None) -> None:
-        self.vault_name = vault_name or self._get_active_vault_name()
-        self.levels_config = levels or self.DEFAULT_LEVELS.copy()
-        self.db_path = self._get_db_path()
-        self.llm_router = None
-        self.embeddings_model = None
+    def __init__(
+        self,
+        vault_name: Optional[str] = None,
+        levels: Optional[dict[str, Any]] = None,
+    ) -> None:
+        self.vault_name: Optional[str] = vault_name or self._get_active_vault_name()
+        self.levels_config: dict[int, dict[str, Any]] = levels or self.DEFAULT_LEVELS.copy()
+        self.db_path: Path = self._get_db_path()
+        self.llm_router: Any = None
+        self.embeddings_model: Any = None
+        self.conn: sqlite3.Connection = None  # type: ignore[assignment]
+        self.cursor: sqlite3.Cursor = None  # type: ignore[assignment]
         self._init_db()
     
     def _get_active_vault_name(self) -> Optional[str]:
@@ -109,6 +117,21 @@ class MemoryTree:
         self.cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_time_window ON memory_nodes(time_window_start, time_window_end)
         """)
+        self.cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_node_id ON memory_nodes(node_id)
+        """)
+        self.cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_parent_id ON memory_nodes(parent_id)
+        """)
+        self.cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_node_type ON memory_nodes(node_type)
+        """)
+        self.cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_embedding_id ON memory_nodes(embedding_id)
+        """)
+        self.cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_embeddings_node ON embeddings(node_id)
+        """)
         
         self.conn.commit()
         logger.info(f"MemoryTree initialized at {self.db_path}")
@@ -133,7 +156,7 @@ class MemoryTree:
     def _generate_node_id(self, level: int, timestamp: str) -> str:
         return f"node_{level}_{timestamp}_{int(time.time() * 1000) % 1000000}"
     
-    def _get_time_window(self, timestamp: str, level: int) -> tuple:
+    def _get_time_window(self, timestamp: str, level: int) -> tuple[str, str]:
         dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00").replace("+00:00", ""))
         if "+" in timestamp:
             dt = datetime.fromisoformat(timestamp.split("+")[0])
@@ -186,7 +209,7 @@ RESUMEN:"""
             logger.warning(f"Summary generation failed: {e}")
             return contents[0][:500]
     
-    def _memory_robustness(self, node: dict, query_time: datetime = None) -> float:
+    def _memory_robustness(self, node: dict[str, Any], query_time: Optional[datetime] = None) -> float:
         if query_time is None:
             query_time = datetime.now()
         
@@ -215,9 +238,9 @@ RESUMEN:"""
     def insert(
         self,
         content: str,
-        timestamp: str = None,
-        metadata: dict = None
-    ) -> dict:
+        timestamp: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """Insert a memory fragment into the tree."""
         if timestamp is None:
             timestamp = datetime.now().isoformat()
@@ -225,7 +248,7 @@ RESUMEN:"""
         node_id = self._generate_node_id(0, timestamp)
         window_start, window_end = self._get_time_window(timestamp, 0)
         
-        node = {
+        node: dict[str, Any] = {
             "node_id": node_id,
             "level": 0,
             "content": content,
@@ -412,10 +435,10 @@ RESUMEN:"""
     def query(
         self,
         query: str,
-        time_range: tuple = None,
+        time_range: Optional[tuple[str, str]] = None,
         scope: str = "mixed",
-        limit: int = 10
-    ) -> list[dict]:
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
         """
         Query the tree for relevant memory evidence.
         
@@ -428,7 +451,7 @@ RESUMEN:"""
         Returns:
             List of memory nodes with scores
         """
-        results = []
+        results: list[dict[str, Any]] = []
         now = datetime.now()
         
         if scope in ["short", "mixed"]:
@@ -443,7 +466,14 @@ RESUMEN:"""
         
         return results[:limit]
     
-    def _query_level(self, query: str, level: int, time_range: tuple, limit: int, query_time: datetime) -> list[dict]:
+    def _query_level(
+        self,
+        query: str,
+        level: int,
+        time_range: Optional[tuple[str, str]],
+        limit: int,
+        query_time: datetime,
+    ) -> list[dict[str, Any]]:
         """Query a specific level of the tree."""
         if time_range:
             start, end = time_range
@@ -485,7 +515,7 @@ RESUMEN:"""
         
         return scored
     
-    def _temporal_relevance(self, node: dict, time_range: tuple) -> float:
+    def _temporal_relevance(self, node: dict[str, Any], time_range: tuple[str, str]) -> float:
         """Calculate temporal relevance based on overlap and distance."""
         node_start = node.get("time_window_start", "")
         node_end = node.get("time_window_end", "")
@@ -526,7 +556,7 @@ RESUMEN:"""
             logger.warning(f"Temporal relevance calculation failed: {e}")
             return 0.5
     
-    def _rank_results(self, results: list[dict], query: str, query_time: datetime) -> list[dict]:
+    def _rank_results(self, results: list[dict[str, Any]], query: str, query_time: datetime) -> list[dict[str, Any]]:
         """Rank results by combined score."""
         seen_ids = set()
         unique = []
@@ -539,12 +569,12 @@ RESUMEN:"""
         
         return sorted(unique, key=lambda x: x["score"], reverse=True)
     
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get tree statistics."""
         self.cursor.execute("SELECT COUNT(*) as total FROM memory_nodes")
         total = self.cursor.fetchone()[0]
         
-        stats = {"total_nodes": total, "by_level": {}}
+        stats: dict[str, Any] = {"total_nodes": total, "by_level": {}}
         
         for level in self.levels_config.keys():
             self.cursor.execute("SELECT COUNT(*) FROM memory_nodes WHERE level = ?", (level,))
@@ -557,7 +587,11 @@ RESUMEN:"""
         
         return stats
     
-    def get_recent(self, limit: int = 20, level: int = None) -> list[dict]:
+    def get_recent(
+        self,
+        limit: int = 20,
+        level: Optional[int] = None,
+    ) -> list[dict[str, Any]]:
         """Get recent nodes, optionally filtered by level."""
         if level is not None:
             self.cursor.execute("""
@@ -611,5 +645,5 @@ RESUMEN:"""
         self.conn.close()
 
 
-def get_memory_tree(vault_name: str = None) -> MemoryTree:
+def get_memory_tree(vault_name: Optional[str] = None) -> MemoryTree:
     return MemoryTree(vault_name=vault_name)

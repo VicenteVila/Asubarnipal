@@ -111,6 +111,40 @@ class MetricsMiddleware:
             "timestamp": datetime.now().isoformat(),
         }
 
+    def get_prometheus_metrics(self) -> str:
+        """Export metrics in Prometheus exposition format."""
+        times = self._metrics["response_times"]
+        avg_time = sum(times) / max(1, len(times))
+        p95_time = sorted(times)[int(len(times) * 0.95)] if times else 0
+        error_rate = self._metrics["total_errors"] / max(1, self._metrics["total_requests"])
+
+        lines = [
+            "# HELP asubarnipal_http_requests_total Total HTTP requests",
+            "# TYPE asubarnipal_http_requests_total counter",
+            f'asubarnipal_http_requests_total{{status="total"}} {self._metrics["total_requests"]}',
+            f'asubarnipal_http_requests_total{{status="errors"}} {self._metrics["total_errors"]}',
+            "",
+            "# HELP asubarnipal_http_request_duration_seconds Request duration",
+            "# TYPE asubarnipal_http_request_duration_seconds summary",
+            f"asubarnipal_http_request_duration_seconds{{quantile=\"0.5\"}} {avg_time:.4f}",
+            f"asubarnipal_http_request_duration_seconds{{quantile=\"0.95\"}} {p95_time:.4f}",
+            f"asubarnipal_http_request_duration_seconds_count {len(times)}",
+            f"asubarnipal_http_request_duration_seconds_sum {sum(times):.4f}",
+            "",
+            "# HELP asubarnipal_http_error_rate Error rate",
+            "# TYPE asubarnipal_http_error_rate gauge",
+            f"asubarnipal_http_error_rate {error_rate:.4f}",
+            "",
+        ]
+
+        for endpoint, count in self._metrics["requests_by_endpoint"].items():
+            safe_endpoint = endpoint.replace("/", "_").strip("_")
+            lines.append(
+                f'asubarnipal_http_requests_by_endpoint{{endpoint="{safe_endpoint}"}} {count}'
+            )
+
+        return "\n".join(lines)
+
 
 _metrics: MetricsMiddleware | None = None
 

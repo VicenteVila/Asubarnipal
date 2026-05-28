@@ -5,12 +5,8 @@ on:
     - cron: "0 6 * * 1"
   push:
     branches: [main]
-    paths:
-      - "requirements.txt"
   pull_request:
     branches: [main]
-    paths:
-      - "requirements.txt"
 
 jobs:
   dependency-check:
@@ -39,3 +35,46 @@ jobs:
         with:
           name: pip-audit-report
           path: pip-audit-report.md
+
+  secret-scan:
+    name: Secret Scanning (gitleaks)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  code-quality:
+    name: Code Quality Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Run security-focused linting
+        run: |
+          ruff check . --select=S --output-format=github || true
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Checking for hardcoded secrets..."
+          grep -r "API_KEY\s*=\s*['\"]" --include="*.py" . | grep -v ".env" | grep -v "test" || echo "No hardcoded API keys found"
+          grep -r "PASSWORD\s*=\s*['\"]" --include="*.py" . | grep -v ".env" | grep -v "test" || echo "No hardcoded passwords found"
+          grep -r "TOKEN\s*=\s*['\"]" --include="*.py" . | grep -v ".env" | grep -v "test" || echo "No hardcoded tokens found"

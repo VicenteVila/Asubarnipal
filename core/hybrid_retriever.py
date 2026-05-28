@@ -6,9 +6,16 @@ import json
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Optional, Self, Any
+from typing import Optional, Any
+from typing_extensions import Self
 
 import config
+from core.type_defs import (
+    RetrievalResult,
+    QueryPlan,
+    MemoryEvidence,
+    EntityDict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +30,7 @@ class HybridRetriever:
     3. Ranking - Combine semantic, temporal, and robustness scores
     """
     
-    DEFAULT_WEIGHTS = {
+    DEFAULT_WEIGHTS: dict[str, float] = {
         "theta1_semantic": 0.4,
         "theta2_temporal": 0.3,
         "theta3_robustness": 0.3,
@@ -31,11 +38,11 @@ class HybridRetriever:
     }
     
     def __init__(self, vault_name: Optional[str] = None) -> None:
-        self.vault_name = vault_name
-        self.memory_tree = None
-        self.entity_graph = None
-        self.llm_router = None
-        self.weights = self.DEFAULT_WEIGHTS.copy()
+        self.vault_name: Optional[str] = vault_name
+        self.memory_tree: Any = None
+        self.entity_graph: Any = None
+        self.llm_router: Any = None
+        self.weights: dict[str, float] = self.DEFAULT_WEIGHTS.copy()
     
     def _get_tree(self) -> Any:
         if self.memory_tree is None:
@@ -58,10 +65,10 @@ class HybridRetriever:
     def retrieve(
         self,
         query: str,
-        time_range: tuple = None,
+        time_range: Optional[tuple[str, str]] = None,
         scope: str = "mixed",
-        max_results: int = 10
-    ) -> dict:
+        max_results: int = 10,
+    ) -> dict[str, Any]:
         """
         Main retrieval method following H-Mem 3-step approach.
         
@@ -73,8 +80,8 @@ class HybridRetriever:
         """
         plan = self._plan_retrieval(query)
         
-        tree_results = []
-        graph_entities = []
+        tree_results: list[dict[str, Any]] = []
+        graph_entities: list[dict[str, Any]] = []
         
         for sq in plan["sub_queries"]:
             sq_scope = sq.get("scope", scope)
@@ -106,7 +113,7 @@ class HybridRetriever:
             "query_time": datetime.now().isoformat(),
         }
     
-    def _plan_retrieval(self, query: str) -> dict:
+    def _plan_retrieval(self, query: str) -> QueryPlan:
         """Step 1: Decompose query and generate retrieval plan."""
         llm = self._get_llm()
         
@@ -145,12 +152,12 @@ Solo devuelve JSON válido:"""
                 if result.endswith("```"):
                     result = result[:-3]
             
-            plan = json.loads(result)
+            plan: QueryPlan = json.loads(result)
             
             if "sub_queries" not in plan:
                 plan["sub_queries"] = [{
                     "query": query,
-                    "scope": scope if "scope" in dir() else "mixed",
+                    "scope": "mixed",
                     "time_range": None,
                     "entities": []
                 }]
@@ -186,9 +193,9 @@ Solo devuelve JSON válido:"""
         self,
         query: str,
         scope: str,
-        time_range: tuple,
-        limit: int
-    ) -> list[dict]:
+        time_range: Optional[tuple[str, str]],
+        limit: int,
+    ) -> list[dict[str, Any]]:
         """Step 2: Retrieve from tree structure."""
         tree = self._get_tree()
         
@@ -209,7 +216,11 @@ Solo devuelve JSON válido:"""
             
             return tree.query(query, time_range=(start, end), scope=scope, limit=limit)
     
-    def _rank_evidence(self, results: list[dict], query: str) -> list[dict]:
+    def _rank_evidence(
+        self,
+        results: list[dict[str, Any]],
+        query: str,
+    ) -> list[dict[str, Any]]:
         """Step 3: Rank evidence by combined scores."""
         theta1 = self.weights["theta1_semantic"]
         theta2 = self.weights["theta2_temporal"]
@@ -226,8 +237,8 @@ Solo devuelve JSON válido:"""
                 theta3 * robustness
             )
         
-        seen = set()
-        unique = []
+        seen: set[str] = set()
+        unique: list[dict[str, Any]] = []
         for r in results:
             node_id = r.get("node", {}).get("node_id", "")
             if node_id and node_id not in seen:
@@ -239,9 +250,9 @@ Solo devuelve JSON válido:"""
     def answer(
         self,
         query: str,
-        context: str = None,
-        max_context_len: int = 4000
-    ) -> dict:
+        context: Optional[str] = None,
+        max_context_len: int = 4000,
+    ) -> dict[str, Any]:
         """
         Full retrieval + answer generation.
         
@@ -255,8 +266,8 @@ Solo devuelve JSON válido:"""
         """
         retrieval = self.retrieve(query, max_results=10)
         
-        evidence_texts = []
-        sources = []
+        evidence_texts: list[str] = []
+        sources: list[dict[str, Any]] = []
         
         for ev in retrieval["ranked_evidence"][:5]:
             node = ev.get("node", {})
@@ -315,9 +326,9 @@ RESPUESTA:"""
     def ingest_memory(
         self,
         content: str,
-        metadata: dict = None,
-        auto_extract_entities: bool = True
-    ) -> dict:
+        metadata: Optional[dict[str, Any]] = None,
+        auto_extract_entities: bool = True,
+    ) -> dict[str, Any]:
         """
         Ingest new memory fragment into the hybrid system.
         
@@ -328,7 +339,7 @@ RESPUESTA:"""
         
         node = tree.insert(content, metadata=metadata)
         
-        graph_result = {"entities_extracted": 0}
+        graph_result: dict[str, Any] = {"entities_extracted": 0}
         
         if auto_extract_entities and len(content) > 100:
             graph = self._get_graph()
@@ -351,7 +362,7 @@ RESPUESTA:"""
         """
         retrieval = self.retrieve(query, max_results=5)
         
-        contexts = []
+        contexts: list[str] = []
         
         for ev in retrieval["ranked_evidence"][:3]:
             node = ev.get("node", {})
@@ -368,7 +379,7 @@ RESPUESTA:"""
         
         return "\n".join(contexts)[:max_len]
     
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get combined stats from tree and graph."""
         tree = self._get_tree()
         graph = self._get_graph()
@@ -394,30 +405,34 @@ class HMemManager:
     """
     
     _instance: Optional[HMemManager] = None
+    _initialized: bool = False
     
     def __new__(cls, vault_name: Optional[str] = None) -> HMemManager:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
         return cls._instance
     
     def __init__(self, vault_name: Optional[str] = None) -> None:
         if self._initialized:
             return
         
-        self.vault_name = vault_name
-        self.retriever = HybridRetriever(vault_name=vault_name)
+        self.vault_name: Optional[str] = vault_name
+        self.retriever: HybridRetriever = HybridRetriever(vault_name=vault_name)
         self._initialized = True
     
-    def remember(self, content: str, metadata: dict = None) -> dict:
+    def remember(self, content: str, metadata: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """Add a memory to the system."""
         return self.retriever.ingest_memory(content, metadata)
     
-    def recall(self, query: str, time_range: tuple = None) -> dict:
+    def recall(
+        self,
+        query: str,
+        time_range: Optional[tuple[str, str]] = None,
+    ) -> dict[str, Any]:
         """Recall memories matching query."""
         return self.retriever.retrieve(query, time_range=time_range, max_results=10)
     
-    def think(self, query: str, context: str = None) -> str:
+    def think(self, query: str, context: Optional[str] = None) -> str:
         """Full retrieval + answer for a query."""
         result = self.retriever.answer(query, context)
         return result.get("answer", "")
@@ -426,11 +441,11 @@ class HMemManager:
         """Get memory context for prompts."""
         return self.retriever.get_memory_context(query)
     
-    def stats(self) -> dict:
+    def stats(self) -> dict[str, Any]:
         """Get system statistics."""
         return self.retriever.get_stats()
     
-    def get_recent_memories(self, limit: int = 10) -> list:
+    def get_recent_memories(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get recent memories from the tree."""
         return self.retriever.memory_tree.get_recent(limit=limit)
     
@@ -439,9 +454,9 @@ class HMemManager:
         self.retriever.close()
 
 
-def get_hmem_manager(vault_name: str = None) -> HMemManager:
+def get_hmem_manager(vault_name: Optional[str] = None) -> HMemManager:
     return HMemManager(vault_name=vault_name)
 
 
-def get_hybrid_retriever(vault_name: str = None) -> HybridRetriever:
+def get_hybrid_retriever(vault_name: Optional[str] = None) -> HybridRetriever:
     return HybridRetriever(vault_name=vault_name)

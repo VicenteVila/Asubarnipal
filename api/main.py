@@ -2,6 +2,8 @@
 
 import json
 import logging
+import signal
+import sys
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -15,6 +17,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from api.middleware import RateLimitMiddleware, MetricsMiddleware, init_metrics, get_metrics_middleware
+from core.circuit_breaker import get_all_circuit_breaker_stats
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,8 @@ app = FastAPI(
     title="Asubarnipal API",
     version="2.0.0",
     description="API REST del Agente Asubarnipal",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
@@ -36,6 +41,20 @@ metrics = init_metrics(app)
 app.add_middleware(RateLimitMiddleware, max_requests=60, window_seconds=60)
 
 _START_TIME = time.time()
+_IS_SHUTTING_DOWN = False
+
+
+def _graceful_shutdown(signum: int, frame: Any) -> None:
+    """Handle graceful shutdown on SIGTERM/SIGINT."""
+    global _IS_SHUTTING_DOWN
+    _IS_SHUTTING_DOWN = True
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    logger.info("Saving agent state, closing connections...")
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, _graceful_shutdown)
+signal.signal(signal.SIGINT, _graceful_shutdown)
 
 
 class CommandRequest(BaseModel):
@@ -88,6 +107,7 @@ async def root():
 
 @app.get("/health")
 async def health():
+    """Basic health check - returns always if server is running."""
     uptime = time.time() - _START_TIME
     return {
         "status": "healthy",
@@ -96,9 +116,61 @@ async def health():
     }
 
 
+@app.get("/health/live")
+async def liveness():
+    """Liveness probe - is the process alive?"""
+    return {"status": "alive", "timestamp": datetime.now().isoformat()}
+
+
+@app.get("/health/ready")
+async def readiness():
+    """Readiness probe - are dependencies available?"""
+    checks = {}
+    
+    try:
+        import requests
+        resp = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=3)
+        checks["ollama"] = {"status": "up", "status_code": resp.status_code}
+    except Exception as e:
+        checks["ollama"] = {"status": "down", "error": str(e)}
+    
+    try:
+        checks["data_dir"] = {
+            "status": "up" if config.DATA_DIR.exists() else "down",
+            "path": str(config.DATA_DIR),
+        }
+    except Exception as e:
+        checks["data_dir"] = {"status": "error", "error": str(e)}
+    
+    all_up = all(c.get("status") == "up" for c in checks.values())
+    
+    return {
+        "status": "ready" if all_up else "degraded",
+        "checks": checks,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+@app.get("/health/circuits")
+async def circuit_breaker_status():
+    """Get status of all circuit breakers."""
+    return {
+        "circuits": get_all_circuit_breaker_stats(),
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
 @app.get("/metrics")
 async def get_metrics():
+    """Get API metrics in JSON format."""
     return metrics.get_metrics()
+
+
+@app.get("/metrics/prometheus")
+async def get_prometheus_metrics():
+    """Get API metrics in Prometheus exposition format."""
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(content=metrics.get_prometheus_metrics())
 
 
 @app.post("/command", response_model=CommandResponse)

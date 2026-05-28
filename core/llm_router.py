@@ -1,23 +1,29 @@
 import logging
 import os
 import time
-from typing import Any, Self, Optional
+from typing import Any, Optional
+from typing_extensions import Self
 
 import requests
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 import config
+from core.type_defs import MessageDict, LLMResponse, ToolCallDict
+from core.circuit_breaker import get_circuit_breaker, CircuitBreakerError
 
 logger = logging.getLogger(__name__)
 
 
 class LLMRouter:
     def __init__(self) -> None:
-        self.base_url = config.OLLAMA_BASE_URL
-        self.model = config.OLLAMA_MODEL
-        self.ollama_client = None
-        self.use_ollama = self._check_ollama()
-        self.gemini_keys = config.GEMINI_KEYS or []
-        self.current_key_index = 0
+        self.base_url: str = config.OLLAMA_BASE_URL
+        self.model: str = config.OLLAMA_MODEL
+        self.ollama_client: Any = None
+        self.use_ollama: bool = self._check_ollama()
+        self.gemini_keys: list[str] = config.GEMINI_KEYS or []
+        self.current_key_index: int = 0
+        self._ollama_cb = get_circuit_breaker("ollama", failure_threshold=5, recovery_timeout=30.0)
+        self._gemini_cb = get_circuit_breaker("gemini", failure_threshold=3, recovery_timeout=60.0)
         self._init_ollama()
     
     def _check_ollama(self) -> bool:
@@ -43,7 +49,13 @@ class LLMRouter:
         except Exception as e:
             logger.warning(f"Could not connect to Ollama: {e}")
     
-    def chat(self, messages: list[dict], model: str = None, tools: list = None, **kwargs) -> dict:
+    def chat(
+        self,
+        messages: list[MessageDict],
+        model: Optional[str] = None,
+        tools: Optional[list[dict[str, Any]]] = None,
+        **kwargs: Any,
+    ) -> LLMResponse:
         start = time.time()
         target_model = model or self.model
         
@@ -56,7 +68,7 @@ class LLMRouter:
                     messages=standard_messages,
                     tools=tools,
                 )
-                result = {
+                result: LLMResponse = {
                     "response": resp.message.content,
                     "tool_calls": getattr(resp.message, "tool_calls", None) or [],
                     "model": target_model,
@@ -71,9 +83,15 @@ class LLMRouter:
             logger.error(f"Chat error: {e}: {e}")
             raise
     
-    def _http_chat(self, model: str, messages: list[dict], tools: list, start: float) -> dict:
+    def _http_chat(
+        self,
+        model: str,
+        messages: list[MessageDict],
+        tools: list[dict[str, Any]],
+        start: float,
+    ) -> LLMResponse:
         url = f"{self.base_url}/api/chat"
-        payload = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": messages,
             "tools": tools if tools else None,
@@ -91,8 +109,8 @@ class LLMRouter:
             "time": time.time() - start,
         }
     
-    def _prepare_messages(self, messages: list[dict]) -> list[dict]:
-        prepared = []
+    def _prepare_messages(self, messages: list[MessageDict]) -> list[MessageDict]:
+        prepared: list[MessageDict] = []
         for msg in messages:
             if isinstance(msg, dict):
                 prepared.append(msg)
@@ -100,27 +118,39 @@ class LLMRouter:
                 prepared.append({"role": msg.role, "content": msg.content})
         return prepared
     
-    def call_agent(self, messages: list[dict], tools: list = None) -> dict:
+    def call_agent(
+        self,
+        messages: list[MessageDict],
+        tools: Optional[list[dict[str, Any]]] = None,
+    ) -> LLMResponse:
         return self.chat(messages, tools=tools)
     
-    def generate(self, prompt: str, **kwargs) -> str:
-        """Generate with fallback: Ollama → Gemini."""
+    def generate(self, prompt: str, **kwargs: Any) -> str:
+        """Generate with fallback: Ollama → Gemini with exponential backoff."""
         max_retries = 3
         delay = 2
         
         for attempt in range(max_retries):
             if self.use_ollama:
                 try:
-                    result = self.chat([{"role": "user", "content": prompt}], **kwargs)
+                    result = self._ollama_cb.call(
+                        self.chat,
+                        [{"role": "user", "content": prompt}],
+                        **kwargs,
+                    )
                     return result.get("response", "")
+                except CircuitBreakerError as e:
+                    logger.warning(f"⚠️ Ollama circuit breaker OPEN: {e}")
                 except Exception as e:
                     logger.warning(f"⚠️ Ollama retry {attempt+1}: {e}")
             
             if self.gemini_keys:
                 try:
                     key = self.gemini_keys[self.current_key_index % len(self.gemini_keys)]
-                    result = self._gemini_chat(prompt, key)
+                    result = self._gemini_cb.call(self._gemini_chat, prompt, key)
                     return result.get("response", "")
+                except CircuitBreakerError as e:
+                    logger.warning(f"⚠️ Gemini circuit breaker OPEN: {e}")
                 except Exception as e:
                     logger.warning(f"⚠️ Gemini retry {attempt+1}: {e}")
                     self.rotate_gemini()
@@ -129,7 +159,7 @@ class LLMRouter:
         
         return "⚠️ Fallo crítico en el razonamiento."
     
-    def _gemini_chat(self, prompt: str, key: str) -> dict:
+    def _gemini_chat(self, prompt: str, key: str) -> LLMResponse:
         """Chat using Gemini API."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}"
 
@@ -146,8 +176,14 @@ class LLMRouter:
     # TurboQuant Integration
     # =============================================================================
 
-    def call_with_turbo(self, messages: list[dict[str, Any]], mode: str = "consultor",
-                         model: Optional[str] = None, tools: Optional[list[dict[str, Any]]] = None, **kwargs) -> dict[str, Any]:
+    def call_with_turbo(
+        self,
+        messages: list[MessageDict],
+        mode: str = "consultor",
+        model: Optional[str] = None,
+        tools: Optional[list[dict[str, Any]]] = None,
+        **kwargs: Any,
+    ) -> LLMResponse:
         """
         Call LLM with TurboQuant optimizations for a chat mode.
         Auto-detects model and applies optimal settings.
@@ -155,7 +191,7 @@ class LLMRouter:
         Includes retry logic for robustness.
         """
         max_retries = 3
-        last_error = None
+        last_error: Optional[str] = None
         
         for attempt in range(max_retries):
             try:
@@ -209,7 +245,7 @@ class LLMRouter:
                 "turbo": {"mode": mode, "model": "unknown", "failed": True}
             }
 
-    def get_turbo_status(self) -> dict:
+    def get_turbo_status(self) -> dict[str, Any]:
         """Get current TurboQuant status."""
         try:
             from core.turboquant_engine import get_turbo_status as tq_status
@@ -217,7 +253,7 @@ class LLMRouter:
         except ImportError:
             return {"success": False, "error": "TurboQuant not available"}
 
-    def apply_turbo_mode(self, mode: str) -> dict:
+    def apply_turbo_mode(self, mode: str) -> dict[str, Any]:
         """Apply a specific TurboQuant mode."""
         try:
             from core.turboquant_engine import apply_chat_mode
@@ -228,10 +264,15 @@ class LLMRouter:
 
 class GeminiRouter:
     def __init__(self) -> None:
-        self.keys = config.GEMINI_KEYS
-        self.current_key = 0
+        self.keys: list[str] = config.GEMINI_KEYS
+        self.current_key: int = 0
     
-    def chat(self, messages: list[dict], model: str = "gemini-2.0-flash", **kwargs) -> dict:
+    def chat(
+        self,
+        messages: list[MessageDict],
+        model: str = "gemini-2.0-flash",
+        **kwargs: Any,
+    ) -> LLMResponse:
         if not self.keys:
             raise ValueError("No Gemini keys configured")
         
@@ -240,7 +281,7 @@ class GeminiRouter:
         
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
         
-        contents = []
+        contents: list[dict[str, Any]] = []
         for msg in messages:
             contents.append({
                 "role": msg["role"],
@@ -257,17 +298,21 @@ class GeminiRouter:
         
         return {"response": text, "model": model}
     
-    def call_agent(self, messages: list[dict], **kwargs) -> dict:
+    def call_agent(
+        self,
+        messages: list[MessageDict],
+        **kwargs: Any,
+    ) -> LLMResponse:
         return self.chat(messages, **kwargs)
 
 
 class BraveRouter:
     def __init__(self) -> None:
-        self.api_key = config.BRAVE_API_KEY
+        self.api_key: str = config.BRAVE_API_KEY
         if not self.api_key:
             raise ValueError("BRAVE_API_KEY not configured")
     
-    def search(self, query: str, num_results: int = 10) -> list[dict]:
+    def search(self, query: str, num_results: int = 10) -> list[dict[str, str]]:
         url = "https://api.search.brave.com/res/v1/web/search"
         headers = {
             "Accept": "application/json",
@@ -279,7 +324,7 @@ class BraveRouter:
         resp.raise_for_status()
         data = resp.json()
         
-        results = []
+        results: list[dict[str, str]] = []
         for item in data.get("web", {}).get("results", []):
             results.append({
                 "title": item.get("title", ""),
@@ -292,7 +337,7 @@ class BraveRouter:
 
 class BraveCounter:
     def __init__(self) -> None:
-        self.count = 0
+        self.count: int = 0
     
     def get_left(self) -> int:
         return 100 - self.count
