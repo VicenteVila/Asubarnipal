@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml/badge.svg)](https://github.com/VicenteVila/Asubarnipal/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-179%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-358%20passing-brightgreen.svg)](tests/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-blue.svg)](https://core.telegram.org/bots)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -17,7 +17,7 @@
 
 ## Features
 
-- **Telegram Bot** - 40+ commands with inline keyboards for interaction, research, and knowledge management
+- **Telegram Bot** - 59 commands with inline keyboards for interaction, research, and knowledge management
 - **RAG Engine** - Hybrid search (FAISS + BM25) with cross-encoder re-ranking and smart chunking
 - **H-Mem** - Hybrid temporal-semantic tree + entity knowledge graph memory
 - **Graphify** - Interactive knowledge graph visualization + natural language queries
@@ -30,12 +30,12 @@
 - **API Auth** - API key authentication for REST endpoints
 - **Structured Logging** - JSON log formatter with timed operation context
 - **Multi-LLM** - Ollama (local), Google Gemini, Brave Search routing
-- **Streamlit Dashboard** - 12 tabs with interactive graph visualization (850px window)
+- **Streamlit Dashboard** - 13 tabs with interactive graph visualization (850px window)
 - **REST API** - FastAPI server with 16+ endpoints, CORS, metrics, rate limiting
 - **Multi-Vault** - Isolated knowledge bases with separate databases and indices
 - **Docker** - Full docker-compose setup (bot, dashboard, api)
 - **Background Rituals** - Heartbeat, wiki repair, graph rebuilding, Graphify auto-update
-- **50+ Skills** - File operations, memory, wiki, system, research, translation
+- **57 Skills** - File operations, memory, wiki, system, research, translation, vault, TurboQuant, LIFE-HARNESS
 
 ---
 
@@ -45,7 +45,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                        TELEGRAM BOT                              │
 │                   (interface/telegram_bot.py)                     │
-│          21 commands: /start /query /agente /charlar...          │
+│          59 commands: /start /query /agente /charlar...          │
 └────────────────────────────┬────────────────────────────────────┘
                              │
                              ▼
@@ -66,7 +66,7 @@
 │                        (app/service.py)                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
 │  │  LLMRouter   │  │SkillRegistry │  │    RAG Engine        │   │
-│  │ Ollama/Gemini│  │   50+ skills │  │  FAISS + SQLite      │   │
+│  │ Ollama/Gemini│  │   57 skills  │  │  FAISS + SQLite      │   │
 │  │ + Brave      │  │              │  │                      │   │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘   │
 └────────────────────────────┬────────────────────────────────────┘
@@ -76,7 +76,7 @@
          ┌─────────┐   ┌─────────┐    ┌─────────────┐
          │  Core   │   │  Wiki   │    │  Dashboard  │
          │ Memory  │   │ SQLite  │    │  Streamlit  │
-         │ H-Mem   │   │ FAISS   │    │   12 tabs   │
+         │ H-Mem   │   │ FAISS   │    │   13 tabs   │
          │Background│   │ Index   │    │             │
          │ Manager  │   │         │    │             │
          └─────────┘   └─────────┘    └─────────────┘
@@ -254,6 +254,8 @@ Services available at:
 | `/vault_delete <name>` | Delete a vault (with backup) |
 | `/vault_export [name]` | Export vault to JSON |
 | `/vault_import <name> <file>` | Import vault from JSON |
+| `/vault_connect <name> <path>` | Connect external folder as vault |
+| `/vault_disconnect <name>` | Disconnect vault (keeps data) |
 
 ### Backup & Recovery
 
@@ -264,6 +266,15 @@ Services available at:
 | `/restore <name>` | Restore from a backup |
 | `/backup_stats` | Show backup statistics |
 | `/backup_clear` | Clear all backups |
+
+### LIFE-HARNESS / HASP
+
+| Command | Description |
+|---------|-------------|
+| `/harness` | Show LIFE-HARNESS runtime statistics (4 layers) |
+| `/pfs` | List all registered Program Functions |
+| `/pf_run <name> [state_json]` | Execute a specific Program Function |
+| `/harness_reset` | Reset all harness statistics |
 
 ---
 
@@ -324,7 +335,7 @@ Access at `http://localhost:8501` after running `streamlit run dashboard.py`.
 | Tab | Description |
 |-----|-------------|
 | **Dashboard** | System telemetry, activity heatmap |
-| **Skills** | 50+ available functions |
+| **Skills** | 57 available functions |
 | **Wiki** | Note inventory, timeline |
 | **Raw** | Raw sources table |
 | **Grafo** | Vector graph visualization, communities, hubs |
@@ -335,6 +346,7 @@ Access at `http://localhost:8501` after running `streamlit run dashboard.py`.
 | **Feeds** | RSS subscriptions with alerts |
 | **Analytics** | Command history + Memory |
 | **H-Mem** | Hybrid memory system visualization |
+| **Harness** | LIFE-HARNESS 4-layer stats + HASP Program Functions |
 
 ---
 
@@ -383,7 +395,7 @@ Access at `http://localhost:8000/docs` for Swagger UI.
 
 ---
 
-## Skills (50+)
+## Skills (57)
 
 | Category | Skills |
 |----------|--------|
@@ -396,8 +408,11 @@ Access at `http://localhost:8000/docs` for Swagger UI.
 | **GitHub** | `clone_repo` |
 | **Translation** | `translate`, `detect_language` |
 | **Research** | `search_arxiv`, `get_audio_summary` |
-| **Vault** | `list_vaults`, `create_vault`, `switch_vault`, `delete_vault`, `export_vault`, `import_vault` |
-| **TurboQuant** | `optimize_llm`, `show_turbo_status`, `benchmark_llm`, `get_recommended_context` |
+| **H-Mem** | `hmem_remember`, `hmem_recall`, `hmem_think`, `hmem_get_context`, `hmem_get_stats`, `hmem_get_recent` |
+| **Evaluation** | `record_feedback`, `record_eval_feedback`, `set_pending_eval`, `get_eval_stats`, `get_feedback_context`, `set_last_response`, `get_last_response` |
+| **Vault** | `list_vaults`, `create_vault`, `switch_vault`, `delete_vault`, `export_vault`, `import_vault`, `get_active_vault`, `get_vault_stats` |
+| **TurboQuant** | `optimize_llm`, `show_turbo_status`, `benchmark_llm`, `get_recommended_context`, `list_available_modes` |
+| **LIFE-HARNESS** | `harness_calibrate_tools`, `harness_stats`, `list_pfs`, `run_pf`, `record_harness_failure` |
 
 ---
 
@@ -414,7 +429,7 @@ python -m pytest tests/test_llm_router.py -v
 python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-**Test Coverage**: 179 passing tests across 15 test modules (100%).
+**Test Coverage**: 358 tests across 29 test files + 30 end-to-end evaluation scenarios.
 
 ---
 
@@ -436,7 +451,7 @@ Asubarnipal/
 │   ├── background_manager.py   # Heartbeat, Suture, Graph rituals
 │   ├── vault_manager.py        # Multi-vault management
 │   ├── turboquant_engine.py    # LLM optimization
-│   ├── wiki.py                 # Wiki SQLite operations
+│   ├── wiki/                   # Wiki package (base, ingest, obsidian, reader, search)
 │   ├── wiki_healer.py          # Orphan detection/repair
 │   ├── graph_builder.py        # Vector relationships
 │   ├── dashboard_logic.py      # Metrics and analytics
@@ -457,23 +472,27 @@ Asubarnipal/
 │       ├── busqueda.py         # /ingest, /investigar
 │       ├── chat.py             # /charlar (5 modes)
 │       ├── agente.py           # /agente, /model, /query_vectorial
-│       ├── hmem_commands.py    # H-Mem commands
-│       ├── vault.py            # Vault management commands
+│       ├── hmem_commands.py    # H-Mem commands (6)
+│       ├── graphify_handler.py # Graphify knowledge graph (7)
+│       ├── vault.py            # Vault management (9 commands)
+│       ├── harness_commands.py # LIFE-HARNESS/HASP (4 commands)
 │       ├── keyboards.py        # Inline keyboard builders
 │       ├── vision.py           # /vision, /ocr commands
-│       ├── scheduled_research.py # /schedule commands
-│       ├── backup.py           # /backup, /restore commands
+│       ├── scheduled_research.py # /schedule commands (4)
+│       ├── backup.py           # /backup, /restore commands (5)
+│       ├── error_handler.py    # Centralized error handling
 │       └── validators.py       # Input validators
 ├── skills/
-│   ├── default_skills.py       # 45+ operational skills
+│   ├── default_skills.py       # 44 operational skills (39 + 5 LIFE-HARNESS/HASP)
 │   ├── vault_skills.py         # Vault management skills
 │   └── optimize_llm.py         # TurboQuant optimization skills
 ├── index/
 │   └── rag.py                  # FAISS + sentence-transformers
-├── dashboard.py                # Streamlit dashboard (12 tabs)
+├── dashboard.py                # Streamlit entry point
+├── dashboard/                  # Modular dashboard (13 tabs)
 ├── config.py                   # Configuration
 ├── requirements.txt            # Python dependencies
-├── tests/                      # Unit tests (179 passing)
+├── tests/                      # 358 tests across 29 test files + 30 eval scenarios
 ├── examples/                   # Usage examples
 └── data/                       # SQLite, FAISS index, logs
 ```

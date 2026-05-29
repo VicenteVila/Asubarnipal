@@ -1,7 +1,7 @@
 """
 Asubarnipal Command Center - Entry Point
 
-Modular dashboard with 12 tabs. Each tab is a separate module in dashboard/tabs/.
+Modular dashboard with 13 tabs. Each tab is a separate module in dashboard/tabs/.
 """
 
 import sys

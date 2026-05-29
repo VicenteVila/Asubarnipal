@@ -20,8 +20,29 @@ python -m api.main                 # REST API (port 8000)
 ```
 Asubarnipal/
 ├── config.py                     # Configuration + paths
-├── dashboard.py                  # Streamlit (12 tabs)
-├── api/main.py                   # FastAPI (port 8000)
+├── dashboard.py                  # Streamlit entry point
+├── dashboard/                    # Modular dashboard (13 tabs)
+│   ├── __init__.py               # Main app + tab routing
+│   ├── app_config.py             # Dashboard-specific config
+│   ├── components/               # Shared UI components (avatar, header)
+│   └── tabs/                     # 13 tab modules
+│       ├── tab_dashboard.py      # System telemetry, activity heatmap
+│       ├── tab_skills.py         # 57 available functions
+│       ├── tab_wiki.py           # Note inventory, timeline, research proposals
+│       ├── tab_raw.py            # Raw sources (immutable truth layer)
+│       ├── tab_grafico.py        # Vector graph, communities, hubs
+│       ├── tab_logs.py           # Real-time filtered agent logs
+│       ├── tab_salud.py          # Wiki health diagnostics
+│       ├── tab_schema.py         # CLAUDE.md viewer
+│       ├── tab_latido.py         # Cron background jobs (editable)
+│       ├── tab_feeds.py          # RSS subscriptions with alerts
+│       ├── tab_analytics.py      # Command history + memory usage
+│       ├── tab_hmem.py           # H-Mem tree and entity graph viewer
+│       └── tab_harness.py        # LIFE-HARNESS 4-layer stats + HASP PFs
+├── api/
+│   ├── main.py                   # FastAPI (port 8000)
+│   ├── auth.py                   # API key authentication
+│   └── middleware.py             # CORS, rate limiting, metrics middleware
 ├── app/service.py                # Agent orchestration
 ├── core/
 │   ├── llm_router.py             # Ollama/Gemini/Brave routers
@@ -29,44 +50,70 @@ Asubarnipal/
 │   ├── memory_tree.py            # H-Mem temporal-semantic tree (L0-L3)
 │   ├── entity_graph.py           # H-Mem entity knowledge graph
 │   ├── hybrid_retriever.py       # H-Mem hybrid retrieval (tree + graph)
+│   ├── hybrid_search.py          # BM25 + vector hybrid search
 │   ├── background_manager.py     # Heartbeat/Suture/Graph/Graphify rituals
 │   ├── vault_manager.py          # Multi-vault management
 │   ├── turboquant_engine.py      # LLM optimization
-│   ├── wiki.py                   # Wiki SQLite operations
+│   ├── turboquant_config.py      # TurboQuant configuration
+│   ├── turboquant_modes.py       # Per-mode TurboQuant presets
+│   ├── wiki/                     # Wiki package (modularized)
+│   │   ├── base.py               # Wiki base class
+│   │   ├── ingest.py             # Ingestion pipeline (URL, YouTube, PDF)
+│   │   ├── obsidian.py           # Obsidian vault read/write + raw sources
+│   │   ├── reader.py             # Wiki reader for dashboard
+│   │   └── search.py             # Wiki search operations
+│   ├── wiki_engine.py            # Wiki engine (legacy compat)
 │   ├── wiki_healer.py            # Orphan detection/repair
 │   ├── graph_builder.py          # Vector relationships
 │   ├── graphify_integration.py   # Graphify CLI wrapper (extract/query/export)
 │   ├── stt.py                    # Speech-to-text (Whisper)
 │   ├── vision.py                 # Vision/OCR analysis
-│   ├── cache.py                  # File-based query cache with TTL
+│   ├── cache.py                  # File-based + LRU in-memory cache with TTL
 │   ├── rate_limiter.py           # Token bucket rate limiter
 │   ├── backup_manager.py         # Auto-backup with rotation & restore
 │   ├── live_activity.py          # Live activity tracker
 │   ├── logging_config.py         # JSON structured logging
+│   ├── bot_logger.py             # Bot-specific structured logger
 │   ├── research_scheduler.py     # Scheduled research jobs
 │   ├── dashboard_logic.py        # Metrics
 │   ├── runtime_harness.py        # LIFE-HARNESS 4-layer runtime harness (arXiv:2605.22166)
-│   └── skill_programs.py         # HASP Program Functions (arXiv:2605.22306)
+│   ├── skill_programs.py         # HASP Program Functions (arXiv:2605.22306)
+│   ├── circuit_breaker.py        # Circuit breaker for Ollama/Gemini
+│   ├── input_sanitizer.py        # Input sanitization + prompt injection detection
+│   ├── audit_logger.py           # Audit logger for sensitive operations
+│   ├── di.py                     # Dependency injection container
+│   ├── settings.py               # Pydantic-settings with validation
+│   ├── type_defs.py              # 20+ TypedDicts (MessageDict, LLMResponse, etc.)
+│   ├── session_db.py             # SQLite session persistence
+│   ├── command_history.py        # Command history tracking
+│   ├── feed_tracker.py           # RSS feed tracker with alerts
+│   ├── librarian.py              # Library management utilities
+│   ├── skill_registry.py         # Skill registry for agent tool-calling
+│   └── banner.py                 # Startup banner display
 ├── interface/
 │   ├── telegram_bot.py           # Bot entrypoint
 │   └── handlers/                 # Modular command handlers
 │       ├── comandos.py           # /start, /status, /manual, /reporte, /model
-│       ├── wiki.py               # /query, /hubs, /clusters, /lint, /quality, /queryhybrid
+│       ├── wiki.py               # /query, /hubs, /clusters, /lint, /quality, /queryhybrid, /sync_obsidian
 │       ├── busqueda.py           # /ingest, /investigar
 │       ├── chat.py               # /charlar (5 modes)
-│       ├── agente.py             # /agente, /rate, /calidad
+│       ├── agente.py             # /agente, /rate, /calidad, /query_vectorial
 │       ├── hmem_commands.py      # H-Mem system handlers (6 commands)
 │       ├── graphify_handler.py   # Graphify knowledge graph handlers (7 commands)
 │       ├── scheduled_research.py # Scheduled research handlers (4 commands)
 │       ├── vision.py             # Vision and OCR handlers (2 commands)
 │       ├── backup.py             # Backup and restore handlers (5 commands)
-│       └── vault.py              # Vault management (9 commands)
+│       ├── vault.py              # Vault management (9 commands)
+│       ├── harness_commands.py   # LIFE-HARNESS/HASP handlers (4 commands)
+│       ├── error_handler.py      # Centralized error handling decorator
+│       ├── keyboards.py          # Inline keyboard builders
+│       └── validators.py         # Input validation utilities
 ├── skills/
 │   ├── default_skills.py         # 44 operational skills (39 + 5 LIFE-HARNESS/HASP)
 │   ├── vault_skills.py           # 8 vault management skills
 │   └── optimize_llm.py           # 5 TurboQuant skills
 ├── index/rag.py                  # FAISS + sentence-transformers
-├── tests/                        # 328+ passing across 18 test files + 30 evaluation scenarios
+├── tests/                        # 358 tests across 29 test files + 30 evaluation scenarios
 └── data/                         # SQLite, FAISS index, logs
 ```
 
@@ -85,7 +132,7 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 
 **Required**: `TELEGRAM_TOKEN`, `OLLAMA_BASE_URL`. Others optional.
 
-## Telegram Bot Commands (53 total)
+## Telegram Bot Commands (59 total)
 
 ### Basic & System Commands (5)
 | Command | Description |
@@ -104,7 +151,7 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/rate <1-5>` | Manually rate the precision of the last response |
 | `/calidad` | Show rating and evaluation statistics (accuracy, si/no/ms counts) |
 
-### Wiki & Search Commands (9)
+### Wiki & Search Commands (11)
 | Command | Description |
 |---------|-------------|
 | `/ingest <url\|path>` | Ingest web URL, YouTube video, local file, or attached PDF/Image |
@@ -116,6 +163,8 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/clusters` | Show thematic communities of the wiki |
 | `/lint` | Wiki health diagnostics (health score, orphan notes, broken links) |
 | `/quality [limit]` | Run quality diagnostics on recent ingests |
+| `/sync_obsidian` | Sync wiki notes to external Obsidian vault |
+| `/indexar_wiki` | Rebuild FAISS vector index from wiki |
 
 ### Chat & Agent Commands (2)
 | Command | Description |
@@ -123,7 +172,7 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/charlar <mode> <topic>` | Chat in 5 modes (libre, consultor, devil, socratico, lateral) |
 | `/agente <task>` | Autonomous reasoning with tool execution (skills) |
 
-### H-Mem Commands (5)
+### H-Mem Commands (6)
 | Command | Description |
 |---------|-------------|
 | `/memoria` | H-Mem system status (tree + graph stats) |
@@ -131,6 +180,7 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/pensar <pregunta>` | Query H-Mem with full retrieval + answer |
 | `/contexto <query>` | Get memory context for prompts |
 | `/entidades` | Show entity knowledge graph hubs |
+| `/recientes` | Show recent H-Mem memories |
 
 ### Graphify (Knowledge Graph) Commands (7)
 | Command | Description |
@@ -166,7 +216,7 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/backup_stats` | Show backup statistics (size, count) |
 | `/backup_clear` | Delete all backups |
 
-### Vault Management Commands (6)
+### Vault Management Commands (9)
 | Command | Description |
 |---------|-------------|
 | `/vaults` | List all vaults, their databases and active one |
@@ -175,6 +225,9 @@ OBSIDIAN_PATH=C:\Obsidian  # External Obsidian vault
 | `/vault_info` | Show active vault details |
 | `/vault_delete <nombre>` | Delete a vault (with backup) |
 | `/vault_export [nombre]` | Export vault to JSON |
+| `/vault_import <nombre> <path>` | Import vault from JSON export |
+| `/vault_connect <nombre> <path>` | Connect external folder as vault |
+| `/vault_disconnect <nombre>` | Disconnect vault (keeps data) |
 
 ### Harness Commands (4)
 | Command | Description |
@@ -204,7 +257,7 @@ python -m pytest tests/evaluation/scenarios.py -v
 python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-**Tests**: 179 passing unit/integration tests across 15 test files (including 30 end-to-end evaluation scenarios in `tests/evaluation/`).
+**Tests**: 358 tests across 29 test files (including 30 end-to-end evaluation scenarios in `tests/evaluation/`).
 
 ---
 
@@ -351,7 +404,7 @@ registry.evolve_from_failures(failure_patterns)
 
 ---
 
-## Operational Skills (52 total)
+## Operational Skills (57 total)
 
 - **Archivo**: run_command, read_file, write_file, list_files, search_in_files
 - **Memoria**: remember, recall, get_memories, memory_stats, hmem_remember, hmem_recall, hmem_think, hmem_get_context, hmem_get_stats, hmem_get_recent
@@ -372,7 +425,7 @@ registry.evolve_from_failures(failure_patterns)
 ## Dashboard Tabs (13)
 
 1. **Dashboard** - System telemetry, activity heatmap
-2. **Skills** - 50+ available functions
+2. **Skills** - 57 available functions
 3. **Wiki** - Note inventory, timeline, research proposals
 4. **Raw** - Raw sources (immutable truth layer)
 5. **Grafo** - Vector graph, communities, hubs
