@@ -5,7 +5,7 @@ import logging
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Self
+from typing import Any, Optional, Self
 
 import config
 
