@@ -42,6 +42,7 @@ MANUAL_FILE = DATA_DIR / "manual_agente.md"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.5:4b")
+GRAPHIFY_MODEL = os.getenv("GRAPHIFY_MODEL", OLLAMA_MODEL)  # Usa modelo más ligero para Graphify
 OLLAMA_MODELS = os.getenv("OLLAMA_MODELS", "/mnt/c/Users/Vicente/.ollama/models")
 
 # OCR — modelo Ollama usado para extraer texto de imágenes y PDFs escaneados

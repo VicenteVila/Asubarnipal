@@ -26,7 +26,10 @@ logger = logging.getLogger(__name__)
 
 
 def _get_graph_dir() -> Path:
-    return Path(str(config.OBSIDIAN_PATH)) / "graphify-out"
+    """Get the directory where graphify outputs are stored."""
+    # Graphify genera el grafo en <target_path>/graphify-out
+    # Por defecto, target_path es config.OBSIDIAN_PATH / "wiki"
+    return config.OBSIDIAN_PATH / "wiki" / "graphify-out"
 
 
 def _graph_json() -> Path:
@@ -65,7 +68,7 @@ def _check_graphify() -> bool:
     return os.access(graphify_bin, os.X_OK)
 
 
-def _run_graphify(args: List[str], timeout: int = 600) -> Dict[str, Any]:
+def _run_graphify(args: List[str], timeout: int = 120) -> Dict[str, Any]:
     """Run graphify CLI command and return result."""
     graphify_bin = _get_graphify_bin()
     if not graphify_bin:
@@ -80,8 +83,12 @@ def _run_graphify(args: List[str], timeout: int = 600) -> Dict[str, Any]:
 
     try:
         env = os.environ.copy()
+        # Configurar variables de entorno para Ollama
+        if "OLLAMA_BASE_URL" not in env:
+            env["OLLAMA_BASE_URL"] = config.OLLAMA_BASE_URL
+        # Graphify espera OLLAMA_API_KEY (cualquier valor no vacío) para suprimir warnings
         if "OLLAMA_API_KEY" not in env:
-            env["OLLAMA_API_KEY"] = env.get("OLLAMA_BASE_URL", "ollama")
+            env["OLLAMA_API_KEY"] = "ollama"
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -139,8 +146,11 @@ def build_graph(
             args.append("--update")
         if backend:
             args += ["--backend", backend]
-        if config.OLLAMA_MODEL:
-            args += ["--model", config.OLLAMA_MODEL]
+        if config.GRAPHIFY_MODEL:
+            args += ["--model", config.GRAPHIFY_MODEL]
+        # Para LLMs locales, usar concurrencia 1 para evitar sobrecarga
+        if backend == "ollama":
+            args += ["--max-concurrency", "1"]
         if mode == "deep":
             args += ["--mode", "deep"]
         if no_viz:
@@ -232,7 +242,8 @@ def get_graph_stats() -> Dict[str, Any]:
             graph = json.load(f)
 
         nodes = graph.get("nodes", [])
-        edges = graph.get("edges", [])
+        # Graphify usa "links" en lugar de "edges"
+        edges = graph.get("edges", graph.get("links", []))
 
         stats["nodes"] = len(nodes)
         stats["edges"] = len(edges)

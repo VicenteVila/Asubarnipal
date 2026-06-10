@@ -1,0 +1,37 @@
+[
+  {
+    "id": "q1_bleu_score",
+    "question": "¿Cuál es el BLEU score del Transformer big en WMT 2014 English-to-German?",
+    "expected_claims": ["28.4", "BLEU", "WMT 2014", "English-to-German"],
+    "difficulty": "medium",
+    "trap": "Confundir base (27.3) vs big (28.4) o EN-DE vs EN-FR (41.0)"
+  },
+  {
+    "id": "q2_parameters",
+    "question": "¿Cuántos parámetros tiene el Transformer big comparado con el base?",
+    "expected_claims": ["213 million", "65 million", "parameters"],
+    "difficulty": "medium",
+    "trap": "Invertir números o confundir unidades"
+  },
+  {
+    "id": "q3_architecture",
+    "question": "¿El Transformer usa LSTM, GRU o algún tipo de RNN en su arquitectura?",
+    "expected_claims": ["no", "attention", "dispensing with recurrence"],
+    "difficulty": "easy",
+    "trap": "Afirmar que usa RNN cuando explícitamente no lo hace"
+  },
+  {
+    "id": "q4_methodology",
+    "question": "¿Qué es scaled dot-product attention y cómo se calcula?",
+    "expected_claims": ["Q", "K", "V", "softmax", "sqrt(d_k)"],
+    "difficulty": "hard",
+    "trap": "Omitir el factor de escala sqrt(d_k) o la fórmula exacta"
+  },
+  {
+    "id": "q5_training",
+    "question": "¿Cuánto tiempo tomó entrenar el Transformer base y en qué hardware?",
+    "expected_claims": ["12 hours", "8 GPUs", "P100"],
+    "difficulty": "hard",
+    "trap": "Inventar tiempos o hardware no mencionados"
+  }
+]

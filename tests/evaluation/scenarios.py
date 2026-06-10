@@ -650,5 +650,119 @@ class TestLevel4MaxDifficulty(EvalTestCase):
         self.assertIn("total_evaluated", inner_stats)
 
 
+class TestLevel5Fidelity(EvalTestCase):
+    """Nivel 5: Fidelidad factual en papers académicos.
+    
+    Evalúa si el agente mantiene fidelidad a la fuente original
+    al responder preguntas sobre el paper "Attention Is All You Need".
+    
+    Este nivel requiere:
+    - Paper ingestado en la wiki
+    - FidelityChecker implementado
+    - Queries de evaluación definidas
+    """
+    
+    @classmethod
+    def setUpClass(cls):
+        """Cargar ground truth una sola vez."""
+        super().setUpClass()
+        try:
+            cls.paper_content = cls._load_paper_content()
+            from tests.evaluation.fidelity_checker import FidelityChecker
+            cls.checker = FidelityChecker(cls.paper_content)
+            cls.ground_truth_available = True
+        except Exception as e:
+            print(f"Warning: Could not load paper content: {e}")
+            cls.ground_truth_available = False
+    
+    @classmethod
+    def _load_paper_content(cls) -> str:
+        """Carga el contenido del paper desde la wiki."""
+        import sqlite3
+        wiki_db = Path(__file__).parent.parent.parent / "data" / "wiki.db"
+        
+        if not wiki_db.exists():
+            raise FileNotFoundError(f"Wiki database not found: {wiki_db}")
+        
+        conn = sqlite3.connect(str(wiki_db))
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT content FROM entities 
+            WHERE name = 'Attention Is All You Need'
+        """)
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            raise ValueError("Paper 'Attention Is All You Need' not found in wiki")
+        
+        return row[0]
+    
+    def setUp(self):
+        """Setup para cada test."""
+        super().setUp()
+        if not self.ground_truth_available:
+            self.skipTest("Ground truth not available")
+    
+    def _query_and_check(self, question: str, expected_claims: List[str]) -> None:
+        """Helper: ejecuta query y verifica fidelidad."""
+        from app.service import AsubarnipalService
+        
+        # Ejecutar query al agente
+        service = AsubarnipalService(use_harness=False)
+        response = service.agent_chat(question)
+        
+        # Verificar con FidelityChecker
+        report = self.checker.check_response(question, response)
+        
+        # Assert score >= 70
+        self.assertGreaterEqual(
+            report.score, 70.0,
+            f"Score {report.score:.1f} < 70. Hallucinations: {report.hallucinations}"
+        )
+        
+        # Assert expected_claims presentes
+        response_lower = response.lower()
+        for claim in expected_claims:
+            self.assertIn(
+                claim.lower(), response_lower,
+                f"Expected claim '{claim}' not in response"
+            )
+        
+        # Log resultado
+        print(f"\n{question}")
+        print(report.summary())
+    
+    def test_bleu_score_direct(self):
+        """¿Cuál es el BLEU score del Transformer big en WMT 2014 EN-DE?"""
+        question = "¿Cuál es el BLEU score del Transformer big en WMT 2014 English-to-German?"
+        expected = ["28.4", "BLEU", "WMT 2014"]
+        self._query_and_check(question, expected)
+    
+    def test_parameters_comparison(self):
+        """¿Cuántos parámetros tiene el Transformer big vs el base?"""
+        question = "¿Cuántos parámetros tiene el Transformer big comparado con el base?"
+        expected = ["213", "65", "million"]
+        self._query_and_check(question, expected)
+    
+    def test_architecture_negation(self):
+        """¿El Transformer usa LSTM o GRU?"""
+        question = "¿El Transformer usa LSTM, GRU o algún tipo de RNN?"
+        expected = ["no", "attention", "recurrence"]
+        self._query_and_check(question, expected)
+    
+    def test_methodology_explanation(self):
+        """¿Qué es scaled dot-product attention?"""
+        question = "¿Qué es scaled dot-product attention y cómo se calcula?"
+        expected = ["Q", "K", "V", "softmax", "sqrt"]
+        self._query_and_check(question, expected)
+    
+    def test_training_details(self):
+        """¿Cuánto tiempo tomó entrenar el Transformer base?"""
+        question = "¿Cuánto tiempo tomó entrenar el Transformer base y en qué hardware?"
+        expected = ["12 hours", "8 GPUs", "P100"]
+        self._query_and_check(question, expected)
+
+
 if __name__ == "__main__":
     unittest.main()

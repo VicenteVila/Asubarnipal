@@ -90,18 +90,48 @@ def score_performance(duration_seconds: float, max_allowed: float = 30.0) -> flo
         return 0.0
 
 
+def score_fidelity(response: str, ground_truth_text: str) -> float:
+    """Score 0-100: factual accuracy against source.
+    
+    Args:
+        response: Respuesta del agente
+        ground_truth_text: Texto completo del paper/documento fuente
+    
+    Returns:
+        Score de fidelidad (0-100)
+    """
+    from tests.evaluation.fidelity_checker import FidelityChecker
+    
+    checker = FidelityChecker(ground_truth_text)
+    report = checker.check_response("", response)
+    return report.score
+
+
 def calculate_total(
     functionality: float,
     content: float,
     state: float,
     performance: float,
+    fidelity: float = 100.0,
 ) -> float:
-    """Calculate weighted total score."""
+    """Calculate weighted total score.
+    
+    Args:
+        functionality: Score de funcionalidad (0-100)
+        content: Score de contenido (0-100)
+        state: Score de estado (0-100)
+        performance: Score de performance (0-100)
+        fidelity: Score de fidelidad factual (0-100, default 100 para no penalizar si no se mide)
+    
+    Returns:
+        Score total ponderado (0-100)
+    """
     return (
-        functionality * 0.40
-        + content * 0.25
-        + state * 0.20
-        + performance * 0.15
+        functionality * 0.30
+        + content * 0.20
+        + state * 0.15
+        + performance * 0.10
+        + fidelity * 0.25
     )
 
 

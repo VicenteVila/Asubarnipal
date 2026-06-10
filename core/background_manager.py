@@ -150,6 +150,11 @@ class BackgroundManager:
     def _update_graphify(self) -> None:
         """Update knowledge graph using Graphify."""
         try:
+            # Verificar si Ollama está disponible antes de ejecutar
+            if not self._check_ollama_available():
+                logger.warning("⚠️ Graphify skipped: Ollama not available. Start Ollama with: ollama serve")
+                return
+            
             from core.graphify_integration import build_graph, get_graph_stats
             
             result = build_graph(backend="ollama", no_viz=False)
@@ -171,6 +176,19 @@ class BackgroundManager:
             logger.debug("Graphify not available")
         except Exception as e:
             logger.error(f"Graphify update error: {e}")
+    
+    def _check_ollama_available(self) -> bool:
+        """Check if Ollama is running and accessible."""
+        import urllib.request
+        import urllib.error
+        
+        try:
+            url = f"{config.OLLAMA_BASE_URL}/api/tags"
+            req = urllib.request.Request(url, method='GET')
+            with urllib.request.urlopen(req, timeout=3) as response:
+                return response.status == 200
+        except (urllib.error.URLError, urllib.error.HTTPError, Exception):
+            return False
     
     def _update_heartbeat(self) -> None:
         """Update heartbeat.json."""

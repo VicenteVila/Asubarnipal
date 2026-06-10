@@ -235,7 +235,7 @@ async def handle_message(update: Update, context: CallbackContext):
 
     # Handle sí/no/ms evaluation feedback
     fb = text.lower().strip()
-    if fb in ["sí", "si", "si", "yes", "y", "no", "n", "ms", "más o menos", "mas o menos", "maybe"]:
+    if PENDING_RESTORE.get(user_id) != "waiting" and fb in ["sí", "si", "si", "yes", "y", "no", "n", "ms", "más o menos", "mas o menos", "maybe"]:
         from skills.default_skills import record_eval_feedback
         result = record_eval_feedback(text)
         if result.get("success"):

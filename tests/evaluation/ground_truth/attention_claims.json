@@ -1,0 +1,49 @@
+{
+  "paper": "Attention Is All You Need",
+  "authors": "Vaswani et al.",
+  "year": 2017,
+  "key_claims": {
+    "numeric": {
+      "bleu_en_de_base": 27.3,
+      "bleu_en_de_big": 28.4,
+      "bleu_en_fr_base": 38.1,
+      "bleu_en_fr_big": 41.0,
+      "params_base": 65000000,
+      "params_big": 213000000,
+      "num_heads": 8,
+      "d_model": 512,
+      "d_ff": 2048,
+      "num_layers": 6,
+      "training_hours_base": 12,
+      "training_days_big": 3.5,
+      "gpus": 8,
+      "gpu_type": "P100"
+    },
+    "architecture": {
+      "uses_rnn": false,
+      "uses_lstm": false,
+      "uses_gru": false,
+      "uses_convolution": false,
+      "uses_attention": true,
+      "architecture_type": "encoder-decoder",
+      "key_components": [
+        "multi-head attention",
+        "scaled dot-product attention",
+        "positional encoding",
+        "feed-forward networks",
+        "layer normalization"
+      ]
+    },
+    "key_quotes": [
+      "allows for significantly more parallelization",
+      "reduces training time to as little as twelve hours",
+      "entirely dispensing with recurrence and convolutions"
+    ],
+    "methodology": {
+      "attention_formula": "softmax(QK^T / sqrt(d_k))V",
+      "position_encoding": "sinusoidal",
+      "optimizer": "Adam",
+      "learning_rate_schedule": "warmup then decay"
+    }
+  }
+}
