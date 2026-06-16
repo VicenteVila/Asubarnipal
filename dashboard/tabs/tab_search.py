@@ -1,9 +1,7 @@
 """Search dashboard tab - hybrid search telemetry and analytics."""
 
-import time
 import pandas as pd
 import streamlit as st
-from datetime import datetime, timedelta
 
 
 def _render_search_stats(telemetry):
@@ -101,7 +99,7 @@ def render_tab_search():
     st.divider()
     st.subheader("Classifier Weights")
     try:
-        from core.search.ensemble import EnsembleClassifier, DEFAULT_WEIGHTS
+        from core.search.ensemble import DEFAULT_WEIGHTS
         st.code(
             "\n".join(f"{k}: {v:.2f}" for k, v in DEFAULT_WEIGHTS.items()),
             language="text",

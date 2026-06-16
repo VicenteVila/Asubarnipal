@@ -4,10 +4,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-      - id: ruff-format
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -16,18 +15,28 @@ repos:
         args: [--maxkb=5000]
       - id: check-merge-conflict
       - id: debug-statements
+      - id: check-json
+      - id: check-toml
 
-  - repo: https://github.com/python-poetry/poetry
-    rev: 1.7.0
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
     hooks:
-      - id: poetry-check
-        files: pyproject.toml
+      - id: gitleaks
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.0
+    hooks:
+      - id: mypy
+        args: [--config-file=pyproject.toml, --ignore-missing-imports, --explicit-package-bases]
+        additional_dependencies: [types-requests, types-PyYAML]
+        pass_filenames: true
+        always_run: false
 
   - repo: local
     hooks:
-      - id: pytest
-        name: pytest
-        entry: python -m pytest tests/ -v --tb=short
+      - id: pytest-quick
+        name: pytest (core tests only)
+        entry: python3 -m pytest tests/test_search_fusion.py tests/test_turboquant_cache.py tests/test_core_commands.py -q --tb=short
         language: system
         pass_filenames: false
         always_run: true

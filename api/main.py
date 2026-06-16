@@ -1,22 +1,24 @@
 """API REST para Asubarnipal - Endpoints externos."""
 
+import contextlib
 import json
 import logging
 import signal
 import sys
 import time
-from collections import defaultdict
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-import config
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from api.middleware import RateLimitMiddleware, MetricsMiddleware, init_metrics, get_metrics_middleware
+import config
+from api.middleware import (
+    RateLimitMiddleware,
+    init_metrics,
+)
 from core.circuit_breaker import get_all_circuit_breaker_stats
 
 logger = logging.getLogger(__name__)
@@ -59,7 +61,7 @@ signal.signal(signal.SIGINT, _graceful_shutdown)
 
 class CommandRequest(BaseModel):
     command: str
-    user_id: Optional[str] = None
+    user_id: str | None = None
 
 
 class CommandResponse(BaseModel):
@@ -126,14 +128,14 @@ async def liveness():
 async def readiness():
     """Readiness probe - are dependencies available?"""
     checks = {}
-    
+
     try:
         import requests
         resp = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=3)
         checks["ollama"] = {"status": "up", "status_code": resp.status_code}
     except Exception as e:
         checks["ollama"] = {"status": "down", "error": str(e)}
-    
+
     try:
         checks["data_dir"] = {
             "status": "up" if config.DATA_DIR.exists() else "down",
@@ -141,9 +143,33 @@ async def readiness():
         }
     except Exception as e:
         checks["data_dir"] = {"status": "error", "error": str(e)}
-    
+
+    try:
+        index_exists = any(config.DATA_DIR.glob("index_*.faiss"))
+        checks["faiss_index"] = {"status": "up" if index_exists else "missing", "path": str(config.DATA_DIR)}
+    except Exception as e:
+        checks["faiss_index"] = {"status": "error", "error": str(e)}
+
+    try:
+        db_path = config.DATA_DIR / "wiki.db"
+        checks["sqlite"] = {"status": "up" if db_path.exists() else "missing", "path": str(db_path)}
+    except Exception as e:
+        checks["sqlite"] = {"status": "error", "error": str(e)}
+
+    try:
+        from core.vault_manager import get_vault_manager
+        vm = get_vault_manager()
+        active = vm.get_active()
+        if active and active.get("path"):
+            obsidian_path = active["path"]
+            checks["obsidian"] = {"status": "up", "vault": active.get("name"), "path": obsidian_path}
+        else:
+            checks["obsidian"] = {"status": "inactive", "detail": "No active vault"}
+    except Exception as e:
+        checks["obsidian"] = {"status": "error", "error": str(e)}
+
     all_up = all(c.get("status") == "up" for c in checks.values())
-    
+
     return {
         "status": "ready" if all_up else "degraded",
         "checks": checks,
@@ -207,16 +233,12 @@ async def get_status():
     heartbeat = {}
 
     if state_file.exists():
-        try:
+        with contextlib.suppress(Exception):
             state = json.loads(state_file.read_text())
-        except Exception:
-            pass
 
     if heartbeat_file.exists():
-        try:
+        with contextlib.suppress(Exception):
             heartbeat = json.loads(heartbeat_file.read_text())
-        except Exception:
-            pass
 
     return {
         "alive": state.get("alive", False),
@@ -362,7 +384,7 @@ async def get_command_history(limit: int = 50):
 
 
 @app.post("/history/add")
-async def add_to_history(command: str, user_id: Optional[str] = None):
+async def add_to_history(command: str, user_id: str | None = None):
     from core.command_history import CommandHistory
 
     history = CommandHistory()
@@ -375,21 +397,20 @@ async def add_to_history(command: str, user_id: Optional[str] = None):
 
 
 @app.get("/logs")
-async def get_logs(lines: int = 100, level: Optional[str] = None):
+async def get_logs(lines: int = 100, level: str | None = None):
     log_file = config.LOG_FILE
 
     if not log_file.exists():
         return {"logs": [], "timestamp": datetime.now().isoformat()}
 
     try:
-        with open(log_file, "r", encoding="utf-8") as f:
+        with open(log_file, encoding="utf-8") as f:
             all_logs = f.readlines()[-lines:]
 
         logs = []
         for line in all_logs:
-            if line.strip():
-                if level is None or level.upper() in line.upper():
-                    logs.append(line.strip())
+            if line.strip() and (level is None or level.upper() in line.upper()):
+                logs.append(line.strip())
 
         return {
             "logs": logs,

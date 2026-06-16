@@ -1,16 +1,17 @@
 """Wiki commands handlers (/query, /hubs, /clusters, /lint, /sync_obsidian)."""
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import config
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
 
 from core.bot_logger import logger
-from .validators import validate_query
+
 from .keyboards import build_query_mode_keyboard
+from .validators import validate_query
 
 
 async def query_cmd(update: Update, context: CallbackContext):
@@ -114,7 +115,7 @@ Genera AMBOS modos de propuesta. Se preciso y accionable."""
                 fail in answer for fail in ["⚠️ Fallo crítico", "No puedo responder", "no tengo información"]
             ):
                 await update.message.reply_text(answer[:4000])
-                logger.success(f"Query completado con respuesta")
+                logger.success("Query completado con respuesta")
 
                 refs = summary_data.get("refs", [])
 
@@ -217,36 +218,19 @@ async def _query_vectorial(update: Update, context: CallbackContext, query: str)
 
 
 async def _query_hybrid(update: Update, context: CallbackContext, query: str) -> None:
-    """Query using hybrid search (dense + sparse + rerank + ensemble)."""
-    import time
-    t0 = time.perf_counter()
-
+    """Query using unified SearchService (RAG + ensemble re-ranking)."""
     try:
-        from index.rag import get_rag_engine
-        from core.search.ensemble import EnsembleClassifier
-        from core.search.telemetry import get_telemetry
+        from core.search.service import get_search_service
 
-        rag = get_rag_engine()
-        raw_results = rag.search(query, top_k=10)
+        svc = get_search_service()
+        results = svc.search_rag(query, top_k=5)
 
-        if not raw_results:
+        if not results:
             await update.message.reply_text(f"No encontre resultados hibridos para: {query}")
             return
 
-        ensemble = EnsembleClassifier(use_faiss=False, use_graphify=False, use_fidelity=False)
-        ensemble.fit_bm25(raw_results)
-        reranked = ensemble.classify(query, raw_results)
-
-        elapsed = (time.perf_counter() - t0) * 1000
-        get_telemetry().record(
-            query=query,
-            results=[r.to_dict() for r in reranked],
-            timing={"total_ms": elapsed},
-            method="hybrid_ensemble",
-        )
-
         text = f"*Resultados hibridos (ensemble) para: {query}*\n\n"
-        for i, r in enumerate(reranked[:5], 1):
+        for i, r in enumerate(results, 1):
             score = r.score_ensemble
             content = r.content[:200]
             source = r.id
@@ -390,8 +374,8 @@ async def lint_cmd(update: Update, context: CallbackContext):
 
 async def quality_cmd(update: Update, context: CallbackContext):
     """Quality check for recent ingests."""
+
     from core.wiki import Wiki
-    import logging as _logger
 
     logger.incoming("/quality")
     wiki = Wiki()
@@ -454,9 +438,6 @@ async def sync_obsidian_cmd(update: Update, context: CallbackContext):
 
 async def queryhybrid_cmd(update: Update, context: CallbackContext):
     """Hybrid search - queries both SQLite and Obsidian vault with ensemble."""
-    import time
-    t0 = time.perf_counter()
-
     query = " ".join(context.args)
 
     if not query:
@@ -471,33 +452,31 @@ async def queryhybrid_cmd(update: Update, context: CallbackContext):
     query = query.strip().strip('<>').strip()
     logger.incoming(f"/queryhybrid {query}")
 
-    await update.message.reply_text(f"🔍 Buscando en SQLite + Obsidian...")
+    await update.message.reply_text("🔍 Buscando en SQLite + Obsidian...")
 
     try:
-        from core.hybrid_search import get_hybrid_search
-        from core.search.ensemble import EnsembleClassifier
-        from core.search.telemetry import get_telemetry
         from app.service import AgentService
+        from core.search.service import get_search_service
 
-        hs = get_hybrid_search()
-        search_results = hs.search(query, limit=10)
-        sqlite_results = search_results.get("sqlite_results", [])
-        obsidian_results = search_results.get("obsidian_results", [])
-        all_results = sqlite_results + obsidian_results
+        svc = get_search_service()
+        results = svc.search_hybrid(query, top_k=10)
 
-        if not all_results:
+        if not results:
             await update.message.reply_text(f"No encontré información sobre: {query}")
             return
 
-        ensemble = EnsembleClassifier(use_faiss=False, use_graphify=False, use_fidelity=False)
-        ensemble.fit_bm25(all_results)
-        reranked = ensemble.classify(query, all_results)
-
         context_parts = []
-        for r in reranked[:5]:
+        n_sqlite = 0
+        n_obsidian = 0
+        for r in results[:5]:
             src = r.id
             content = r.content[:600]
             score = r.score_ensemble
+            src_type = r.metadata.get("source_type", "unknown")
+            if src_type == "sqlite":
+                n_sqlite += 1
+            elif src_type == "obsidian":
+                n_obsidian += 1
             context_parts.append(f"[{src}] (score={score:.2f}):\n{content}")
         context_text = "\n\n".join(context_parts)
 
@@ -513,24 +492,14 @@ Responde de forma clara y detallada. Indica de qué fuente obtuviste cada inform
 
         answer = service.llm.generate(prompt)
 
-        elapsed = (time.perf_counter() - t0) * 1000
-        get_telemetry().record(
-            query=query,
-            results=[r.to_dict() for r in reranked],
-            timing={"total_ms": elapsed},
-            method="queryhybrid_ensemble",
-        )
-
         if answer and len(answer) > 20:
-            stats = f"\n\n📊 *Estadísticas de búsqueda (ensemble):*\n"
-            stats += f"• SQLite: {len(sqlite_results)} resultados\n"
-            stats += f"• Obsidian: {len(obsidian_results)} resultados\n"
-            stats += f"• Re-rank: {len(reranked)} resultados\n"
-            if search_results.get('vault_active'):
-                stats += f"• Vault activa: `{search_results.get('vault_active')}`"
+            stats = "\n\n📊 *Estadísticas de búsqueda (SearchService):*\n"
+            stats += f"• SQLite: {n_sqlite} resultados\n"
+            stats += f"• Obsidian: {n_obsidian} resultados\n"
+            stats += f"• Total re-rank: {len(results)} resultados"
 
             await update.message.reply_text(answer[:3500] + stats, parse_mode="Markdown")
-            logger.success(f"Hybrid query completed")
+            logger.success("Hybrid query completed")
         else:
             await update.message.reply_text(f"No pude generar respuesta para: {query}")
 

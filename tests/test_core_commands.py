@@ -4,11 +4,11 @@ Covers: /status, /queryhybrid, /memoria, /recordar, /vaults, /vault_use,
         /backup, /graphify, /graph_query, /graph_stats
 """
 
+import asyncio
 import os
 import sys
 import unittest
-from unittest.mock import Mock, patch, MagicMock
-import asyncio
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -90,6 +90,7 @@ class TestStatusCommand(unittest.TestCase):
         import json
         import tempfile
         from pathlib import Path
+
         from interface.handlers.comandos import status_cmd
 
         mock_psutil.cpu_percent.return_value = 10.0
@@ -132,14 +133,10 @@ class TestQueryHybridCommand(unittest.TestCase):
     def test_queryhybrid_with_args_no_results(self, mock_logger):
         from interface.handlers.wiki import queryhybrid_cmd
 
-        with patch("core.hybrid_search.get_hybrid_search") as mock_hs_get:
-            mock_hs = Mock()
-            mock_hs.search.return_value = {
-                "sqlite_results": [],
-                "obsidian_results": [],
-                "vault_active": None,
-            }
-            mock_hs_get.return_value = mock_hs
+        with patch("core.search.service.get_search_service") as mock_svc_get:
+            mock_svc = Mock()
+            mock_svc.search_hybrid.return_value = []
+            mock_svc_get.return_value = mock_svc
 
             update = MockUpdate(args=["test", "query"])
             context = MockContext(args=["test", "query"])

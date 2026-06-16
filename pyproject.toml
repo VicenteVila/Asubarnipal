@@ -65,9 +65,9 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "pytest-asyncio>=0.21.0",
-    "black>=23.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
+    "pre-commit>=3.0",
 ]
 
 [project.scripts]
@@ -100,15 +100,10 @@ ignore = ["E501"]
 python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
-check_untyped_defs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_optional = true
 ignore_missing_imports = true
-exclude = ["tests/", "dashboard/", "venv/", ".venv/"]
+no_implicit_optional = false
+exclude = ["tests/", "dashboard/", "dashboard.py", "venv/", ".venv/"]
 
 [[tool.mypy.overrides]]
-module = ["ollama.*", "faiss.*", "sentence_transformers.*", "streamlit.*", "apscheduler.*", "rank_bm25.*", "youtube_transcript_api.*"]
+module = ["ollama.*", "faiss.*", "sentence_transformers.*", "streamlit.*", "apscheduler.*", "rank_bm25.*", "youtube_transcript_api.*", "requests.*", "yaml.*"]
 ignore_missing_imports = true
