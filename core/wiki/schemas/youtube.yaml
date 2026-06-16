@@ -1,0 +1,378 @@
+# Esquema de validación para ingesta de videos de YouTube
+# Versión: 1.0
+# Última actualización: 2026-06-10
+
+schema_version: "1.0"
+type: "youtube"
+description: "Esquema para validación de metadatos de videos de YouTube"
+
+# Definición de campos
+fields:
+  url:
+    type: string
+    required: true
+    description: "URL completa del video de YouTube"
+    validations:
+      - type: format
+        format: url
+        message: "Debe ser una URL válida"
+      - type: pattern
+        pattern: "^(https?://)?(www\\.)?(youtube\\.com|youtu\\.be)/.+$"
+        message: "Debe ser una URL válida de YouTube (youtube.com o youtu.be)"
+      - type: max_length
+        value: 512
+        message: "La URL no puede exceder 512 caracteres"
+    example: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+  video_id:
+    type: string
+    required: false
+    description: "ID único del video en YouTube (auto-extraído de la URL)"
+    validations:
+      - type: pattern
+        pattern: "^[a-zA-Z0-9_-]{11}$"
+        message: "Debe ser un ID válido de YouTube (11 caracteres alfanuméricos)"
+    default: "auto"
+    auto_generate: true
+    example: "dQw4w9WgXcQ"
+
+  titulo:
+    type: string
+    required: true
+    description: "Título del video"
+    validations:
+      - type: min_length
+        value: 3
+        message: "El título debe tener al menos 3 caracteres"
+      - type: max_length
+        value: 500
+        message: "El título no puede exceder 500 caracteres"
+    example: "Attention Is All You Need - Paper Review"
+
+  canal:
+    type: string
+    required: false
+    description: "Nombre del canal de YouTube"
+    validations:
+      - type: max_length
+        value: 200
+        message: "El nombre del canal no puede exceder 200 caracteres"
+    default: "Desconocido"
+    example: "Yannic Kilcher"
+
+  fecha_publicacion:
+    type: date
+    required: false
+    description: "Fecha de publicación del video (YYYY-MM-DD)"
+    validations:
+      - type: format
+        format: date
+        message: "Debe tener formato YYYY-MM-DD"
+      - type: max_date
+        value: today
+        message: "La fecha no puede ser futura"
+    default: null
+    example: "2020-05-15"
+
+  fecha_ingesta:
+    type: datetime
+    required: false
+    description: "Fecha y hora de ingesta al sistema (auto-generado)"
+    validations:
+      - type: format
+        format: datetime
+        message: "Debe tener formato ISO 8601"
+    default: "auto"
+    auto_generate: true
+    example: "2026-06-10T14:30:00Z"
+
+  duracion:
+    type: integer
+    required: false
+    description: "Duración del video en segundos (auto-extraído)"
+    validations:
+      - type: min_value
+        value: 1
+        message: "La duración debe ser al menos 1 segundo"
+      - type: max_value
+        value: 86400
+        message: "La duración no puede exceder 24 horas (86400 segundos)"
+    default: "auto"
+    auto_generate: true
+    example: 1800
+
+  duracion_formateada:
+    type: string
+    required: false
+    description: "Duración formateada (HH:MM:SS o MM:SS)"
+    validations:
+      - type: pattern
+        pattern: "^(\\d{1,2}:)?[0-5]?\\d:[0-5]\\d$"
+        message: "Debe tener formato HH:MM:SS o MM:SS"
+    default: "auto"
+    auto_generate: true
+    example: "30:00"
+
+  idioma:
+    type: string
+    required: false
+    description: "Idioma principal del video (código ISO 639-1)"
+    validations:
+      - type: pattern
+        pattern: "^[a-z]{2}$"
+        message: "Debe ser un código de idioma de 2 letras (ej: es, en, fr)"
+    default: "es"
+    example: "en"
+
+  tags:
+    type: array
+    required: false
+    description: "Lista de etiquetas para categorización"
+    item_type: string
+    validations:
+      - type: min_items
+        value: 0
+        message: "Puede tener 0 o más tags"
+      - type: max_items
+        value: 20
+        message: "No puede tener más de 20 tags"
+    item_validations:
+      - type: max_length
+        value: 50
+        message: "Cada tag no puede exceder 50 caracteres"
+    default: []
+    example: ["machine-learning", "transformers", "paper-review", "nlp"]
+
+  descripcion:
+    type: string
+    required: false
+    description: "Descripción del video (extraída de YouTube)"
+    validations:
+      - type: max_length
+        value: 5000
+        message: "La descripción no puede exceder 5000 caracteres"
+    default: ""
+    example: "Review detallado del paper 'Attention Is All You Need'..."
+
+  thumbnail_url:
+    type: string
+    required: false
+    description: "URL de la miniatura del video (auto-extraída)"
+    validations:
+      - type: format
+        format: url
+        message: "Debe ser una URL válida"
+      - type: max_length
+        value: 512
+        message: "La URL no puede exceder 512 caracteres"
+    default: "auto"
+    auto_generate: true
+    example: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
+
+  vistas:
+    type: integer
+    required: false
+    description: "Número de vistas del video (auto-extraído)"
+    validations:
+      - type: min_value
+        value: 0
+        message: "No puede ser negativo"
+    default: "auto"
+    auto_generate: true
+    example: 1500000
+
+  likes:
+    type: integer
+    required: false
+    description: "Número de likes del video (auto-extraído)"
+    validations:
+      - type: min_value
+        value: 0
+        message: "No puede ser negativo"
+    default: "auto"
+    auto_generate: true
+    example: 50000
+
+  tiene_subtitulos:
+    type: boolean
+    required: false
+    description: "Indica si el video tiene subtítulos disponibles"
+    default: false
+    example: true
+
+  subtitulos_extraidos:
+    type: boolean
+    required: false
+    description: "Indica si los subtítulos fueron extraídos exitosamente"
+    default: false
+    auto_generate: true
+    example: true
+
+  ruta_subtitulos:
+    type: string
+    required: false
+    description: "Ruta local al archivo de subtítulos extraídos"
+    validations:
+      - type: max_length
+        value: 1024
+        message: "La ruta no puede exceder 1024 caracteres"
+    default: null
+    auto_generate: true
+    example: "/mnt/c/Asubarnipal/subtitles/dQw4w9WgXcQ.srt"
+
+  ruta_audio:
+    type: string
+    required: false
+    description: "Ruta local al archivo de audio extraído"
+    validations:
+      - type: max_length
+        value: 1024
+        message: "La ruta no puede exceder 1024 caracteres"
+    default: null
+    auto_generate: true
+    example: "/mnt/c/Asubarnipal/audio/dQw4w9WgXcQ.mp3"
+
+  transcripcion:
+    type: string
+    required: false
+    description: "Transcripción completa del audio del video"
+    validations:
+      - type: max_length
+        value: 100000
+        message: "La transcripción no puede exceder 100000 caracteres"
+    default: null
+    auto_generate: true
+
+  content_length:
+    type: integer
+    required: false
+    description: "Longitud del contenido (transcripción + descripción) en caracteres"
+    validations:
+      - type: min_value
+        value: 0
+        message: "No puede ser negativo"
+    default: "auto"
+    auto_generate: true
+    example: 25000
+
+  score_calidad:
+    type: float
+    required: false
+    description: "Score de calidad calculado (0-100)"
+    validations:
+      - type: min_value
+        value: 0
+        message: "No puede ser menor que 0"
+      - type: max_value
+        value: 100
+        message: "No puede ser mayor que 100"
+    default: "auto"
+    auto_generate: true
+    example: 88.0
+
+  citas_extraidas:
+    type: array
+    required: false
+    description: "Lista de citas extraídas de la transcripción"
+    item_type: object
+    default: []
+    auto_generate: true
+
+  citas_verificadas:
+    type: array
+    required: false
+    description: "Lista de citas verificadas exitosamente"
+    item_type: object
+    default: []
+    auto_generate: true
+
+# Validaciones cruzadas entre campos
+cross_validations:
+  - name: "fecha_consistente"
+    description: "Si hay fecha de publicación, debe ser anterior a fecha de ingesta"
+    condition: "fecha_publicacion AND fecha_ingesta"
+    rule: "fecha_publicacion <= fecha_ingesta"
+    message: "La fecha de publicación no puede ser posterior a la fecha de ingesta"
+  
+  - name: "duracion_consistente"
+    description: "La duración formateada debe coincidir con la duración en segundos"
+    condition: "duracion AND duracion_formateada"
+    rule: "duracion_formateada == format_seconds(duracion)"
+    severity: "warning"
+    message: "La duración formateada no coincide con la duración en segundos"
+  
+  - name: "subtitulos_completos"
+    description: "Si tiene subtítulos, debe haber ruta de subtítulos"
+    condition: "tiene_subtitulos == true"
+    rule: "ruta_subtitulos IS NOT NULL"
+    severity: "warning"
+    message: "El video tiene subtítulos pero no se especificó la ruta"
+
+# Configuración de calidad
+quality_config:
+  # Factores para calcular score_calidad
+  factors:
+    - name: "metadata_completeness"
+      weight: 0.25
+      description: "Completitud de metadatos obligatorios y opcionales"
+      fields: ["titulo", "canal", "fecha_publicacion", "duracion", "idioma", "tags", "descripcion"]
+    
+    - name: "content_availability"
+      weight: 0.3
+      description: "Disponibilidad de contenido (transcripción, subtítulos)"
+      formula: "(transcripcion ? 50 : 0) + (tiene_subtitulos ? 30 : 0) + (subtitulos_extraidos ? 20 : 0)"
+    
+    - name: "content_length"
+      weight: 0.2
+      description: "Longitud del contenido extraído"
+      thresholds:
+        excellent: 20000  # >= 20000 chars
+        good: 10000       # >= 10000 chars
+        acceptable: 3000  # >= 3000 chars
+        poor: 0           # < 3000 chars
+    
+    - name: "engagement_metrics"
+      weight: 0.15
+      description: "Métricas de engagement (vistas, likes)"
+      formula: "min(log10(max(vistas, 1)) / 6, 1) * 70 + min(likes / max(vistas, 1) * 100, 1) * 30"
+    
+    - name: "citation_quality"
+      weight: 0.1
+      description: "Calidad y verificación de citas"
+      formula: "(citas_verificadas / max(citas_extraidas, 1)) * 100"
+
+  # Umbral mínimo de calidad
+  min_score: 50
+  recommended_score: 80
+
+# Ejemplo completo de documento válido
+example_document:
+  url: "https://www.youtube.com/watch?v=iD7wdXR3Tg0"
+  video_id: "iD7wdXR3Tg0"
+  titulo: "Attention Is All You Need - Paper Review and Explanation"
+  canal: "Yannic Kilcher"
+  fecha_publicacion: "2020-05-15"
+  fecha_ingesta: "2026-06-10T14:30:00Z"
+  duracion: 1800
+  duracion_formateada: "30:00"
+  idioma: "en"
+  tags: ["transformers", "attention-mechanism", "paper-review", "nlp", "deep-learning"]
+  descripcion: "Detailed review and explanation of the seminal paper 'Attention Is All You Need' by Vaswani et al. This video explains the Transformer architecture, self-attention mechanisms, and why it revolutionized NLP."
+  thumbnail_url: "https://i.ytimg.com/vi/iD7wdXR3Tg0/maxresdefault.jpg"
+  vistas: 1500000
+  likes: 50000
+  tiene_subtitulos: true
+  subtitulos_extraidos: true
+  ruta_subtitulos: "/mnt/c/Asubarnipal/subtitles/iD7wdXR3Tg0.srt"
+  ruta_audio: "/mnt/c/Asubarnipal/audio/iD7wdXR3Tg0.mp3"
+  transcripcion: "Today we're going to look at the paper 'Attention Is All You Need'..."
+  content_length: 25000
+  score_calidad: 92.5
+  citas_extraidas:
+    - texto: "Vaswani et al., 2017"
+      contexto: "As shown in the original paper by Vaswani et al..."
+      timestamp: "05:30"
+  citas_verificadas:
+    - texto: "Vaswani et al., 2017"
+      verificado: true
+      fuente: "youtube_description"

@@ -134,7 +134,11 @@ class TestQueryHybridCommand(unittest.TestCase):
 
         with patch("core.hybrid_search.get_hybrid_search") as mock_hs_get:
             mock_hs = Mock()
-            mock_hs.get_context_for_llm.return_value = "No se encontró información"
+            mock_hs.search.return_value = {
+                "sqlite_results": [],
+                "obsidian_results": [],
+                "vault_active": None,
+            }
             mock_hs_get.return_value = mock_hs
 
             update = MockUpdate(args=["test", "query"])

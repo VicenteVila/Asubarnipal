@@ -1,0 +1,311 @@
+# Esquema de validación para ingesta de PDFs
+# Versión: 1.0
+# Última actualización: 2026-06-10
+
+schema_version: "1.0"
+type: "pdf"
+description: "Esquema para validación de metadatos de documentos PDF (papers, libros, reportes)"
+
+# Definición de campos
+fields:
+  ruta_archivo:
+    type: string
+    required: true
+    description: "Ruta local al archivo PDF"
+    validations:
+      - type: file_exists
+        message: "El archivo debe existir en el sistema"
+      - type: file_extension
+        extension: ".pdf"
+        message: "El archivo debe tener extensión .pdf"
+      - type: max_length
+        value: 1024
+        message: "La ruta no puede exceder 1024 caracteres"
+    example: "/mnt/c/Asubarnipal/pdfs/attention_is_all_you_need.pdf"
+
+  titulo:
+    type: string
+    required: true
+    description: "Título del documento PDF"
+    validations:
+      - type: min_length
+        value: 5
+        message: "El título debe tener al menos 5 caracteres"
+      - type: max_length
+        value: 500
+        message: "El título no puede exceder 500 caracteres"
+    example: "Attention Is All You Need"
+
+  autor:
+    type: string
+    required: false
+    description: "Autor o autores del documento"
+    validations:
+      - type: max_length
+        value: 500
+        message: "El autor no puede exceder 500 caracteres"
+    default: "Desconocido"
+    example: "Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł., Polosukhin, I."
+
+  fecha_publicacion:
+    type: date
+    required: false
+    description: "Fecha de publicación del documento (YYYY-MM-DD)"
+    validations:
+      - type: format
+        format: date
+        message: "Debe tener formato YYYY-MM-DD"
+      - type: max_date
+        value: today
+        message: "La fecha no puede ser futura"
+    default: null
+    example: "2017-06-12"
+
+  fecha_ingesta:
+    type: datetime
+    required: false
+    description: "Fecha y hora de ingesta al sistema (auto-generado)"
+    validations:
+      - type: format
+        format: datetime
+        message: "Debe tener formato ISO 8601"
+    default: "auto"
+    auto_generate: true
+    example: "2026-06-10T14:30:00Z"
+
+  editorial:
+    type: string
+    required: false
+    description: "Editorial o publisher del documento"
+    validations:
+      - type: max_length
+        value: 200
+        message: "La editorial no puede exceder 200 caracteres"
+    default: null
+    example: "NeurIPS"
+
+  doi:
+    type: string
+    required: false
+    description: "Digital Object Identifier (DOI)"
+    validations:
+      - type: pattern
+        pattern: "^10\\.\\d{4,9}/[^\\s]+$"
+        message: "Debe ser un DOI válido (ej: 10.1234/example)"
+      - type: max_length
+        value: 255
+        message: "El DOI no puede exceder 255 caracteres"
+    default: null
+    example: "10.48550/arXiv.1706.03762"
+
+  isbn:
+    type: string
+    required: false
+    description: "International Standard Book Number (ISBN-10 o ISBN-13)"
+    validations:
+      - type: pattern
+        pattern: "^(?:\\d{9}[\\dX]|\\d{13})$"
+        message: "Debe ser un ISBN válido (10 o 13 dígitos)"
+    default: null
+    example: "9781234567897"
+
+  paginas:
+    type: integer
+    required: false
+    description: "Número total de páginas del documento"
+    validations:
+      - type: min_value
+        value: 1
+        message: "Debe tener al menos 1 página"
+      - type: max_value
+        value: 10000
+        message: "No puede tener más de 10000 páginas"
+    default: "auto"
+    auto_generate: true
+    example: 15
+
+  idioma:
+    type: string
+    required: false
+    description: "Idioma del documento (código ISO 639-1)"
+    validations:
+      - type: pattern
+        pattern: "^[a-z]{2}$"
+        message: "Debe ser un código de idioma de 2 letras (ej: es, en, fr)"
+    default: "es"
+    example: "en"
+
+  tags:
+    type: array
+    required: false
+    description: "Lista de etiquetas para categorización"
+    item_type: string
+    validations:
+      - type: min_items
+        value: 0
+        message: "Puede tener 0 o más tags"
+      - type: max_items
+        value: 20
+        message: "No puede tener más de 20 tags"
+    item_validations:
+      - type: max_length
+        value: 50
+        message: "Cada tag no puede exceder 50 caracteres"
+    default: []
+    example: ["machine-learning", "transformers", "nlp", "attention"]
+
+  descripcion:
+    type: string
+    required: false
+    description: "Descripción o abstract del documento"
+    validations:
+      - type: max_length
+        value: 3000
+        message: "La descripción no puede exceder 3000 caracteres"
+    default: ""
+    example: "Artículo seminal que introduce la arquitectura Transformer..."
+
+  tipo_documento:
+    type: string
+    required: false
+    description: "Tipo de documento PDF"
+    validations:
+      - type: enum
+        values: ["paper", "libro", "reporte", "tesis", "presentacion", "otro"]
+        message: "Debe ser uno de: paper, libro, reporte, tesis, presentacion, otro"
+    default: "paper"
+    example: "paper"
+
+  content_length:
+    type: integer
+    required: false
+    description: "Longitud del contenido extraído en caracteres (auto-calculado)"
+    validations:
+      - type: min_value
+        value: 0
+        message: "No puede ser negativo"
+    default: "auto"
+    auto_generate: true
+    example: 45000
+
+  score_calidad:
+    type: float
+    required: false
+    description: "Score de calidad calculado (0-100)"
+    validations:
+      - type: min_value
+        value: 0
+        message: "No puede ser menor que 0"
+      - type: max_value
+        value: 100
+        message: "No puede ser mayor que 100"
+    default: "auto"
+    auto_generate: true
+    example: 92.5
+
+  citas_extraidas:
+    type: array
+    required: false
+    description: "Lista de citas extraídas del documento"
+    item_type: object
+    default: []
+    auto_generate: true
+
+  citas_verificadas:
+    type: array
+    required: false
+    description: "Lista de citas verificadas exitosamente"
+    item_type: object
+    default: []
+    auto_generate: true
+
+  referencias_bibliograficas:
+    type: array
+    required: false
+    description: "Lista de referencias bibliográficas extraídas"
+    item_type: object
+    default: []
+    auto_generate: true
+
+# Validaciones cruzadas entre campos
+cross_validations:
+  - name: "fecha_consistente"
+    description: "Si hay fecha de publicación, debe ser anterior a fecha de ingesta"
+    condition: "fecha_publicacion AND fecha_ingesta"
+    rule: "fecha_publicacion <= fecha_ingesta"
+    message: "La fecha de publicación no puede ser posterior a la fecha de ingesta"
+  
+  - name: "doi_o_isbn"
+    description: "Para papers y libros, se recomienda tener DOI o ISBN"
+    condition: "tipo_documento IN ['paper', 'libro']"
+    rule: "doi OR isbn"
+    severity: "warning"
+    message: "Se recomienda proporcionar DOI o ISBN para papers y libros"
+
+# Configuración de calidad
+quality_config:
+  # Factores para calcular score_calidad
+  factors:
+    - name: "metadata_completeness"
+      weight: 0.25
+      description: "Completitud de metadatos obligatorios y opcionales"
+      fields: ["titulo", "autor", "fecha_publicacion", "editorial", "doi", "isbn", "paginas", "idioma", "tags", "descripcion"]
+    
+    - name: "content_length"
+      weight: 0.2
+      description: "Longitud del contenido extraído"
+      thresholds:
+        excellent: 30000  # >= 30000 chars
+        good: 15000       # >= 15000 chars
+        acceptable: 5000  # >= 5000 chars
+        poor: 0           # < 5000 chars
+    
+    - name: "citation_quality"
+      weight: 0.3
+      description: "Calidad y verificación de citas"
+      formula: "(citas_verificadas / max(citas_extraidas, 1)) * 100"
+    
+    - name: "academic_identifiers"
+      weight: 0.15
+      description: "Presencia de identificadores académicos (DOI, ISBN)"
+      formula: "(doi ? 50 : 0) + (isbn ? 50 : 0)"
+    
+    - name: "document_structure"
+      weight: 0.1
+      description: "Estructura del documento (páginas, secciones)"
+      formula: "min(paginas / 10, 1) * 100"
+
+  # Umbral mínimo de calidad
+  min_score: 50
+  recommended_score: 80
+
+# Ejemplo completo de documento válido
+example_document:
+  ruta_archivo: "/mnt/c/Asubarnipal/pdfs/attention_is_all_you_need.pdf"
+  titulo: "Attention Is All You Need"
+  autor: "Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł., Polosukhin, I."
+  fecha_publicacion: "2017-06-12"
+  fecha_ingesta: "2026-06-10T14:30:00Z"
+  editorial: "NeurIPS"
+  doi: "10.48550/arXiv.1706.03762"
+  isbn: null
+  paginas: 15
+  idioma: "en"
+  tags: ["transformers", "attention-mechanism", "neural-networks", "nlp", "machine-translation"]
+  descripcion: "Artículo seminal que introduce la arquitectura Transformer, basada únicamente en mecanismos de atención, eliminando la necesidad de recurrencia y convoluciones. El modelo logra state-of-the-art en traducción automática inglés-alemán e inglés-francés."
+  tipo_documento: "paper"
+  content_length: 45000
+  score_calidad: 95.5
+  citas_extraidas:
+    - texto: "Bahdanau et al., 2014"
+      contexto: "Attention mechanisms have become integral..."
+      pagina: 2
+  citas_verificadas:
+    - texto: "Bahdanau et al., 2014"
+      verificado: true
+      fuente: "crossref"
+      doi: "10.48550/arXiv.1409.0473"
+  referencias_bibliograficas:
+    - texto_completo: "Bahdanau, D., Cho, K., & Bengio, Y. (2014). Neural machine translation by jointly learning to align and translate. arXiv preprint arXiv:1409.0473."
+      doi: "10.48550/arXiv.1409.0473"
+      verificado: true

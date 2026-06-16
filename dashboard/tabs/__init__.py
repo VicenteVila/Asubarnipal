@@ -13,6 +13,8 @@ from dashboard.tabs.tab_feeds import render_tab_feeds
 from dashboard.tabs.tab_analytics import render_tab_analytics
 from dashboard.tabs.tab_hmem import render_tab_hmem
 from dashboard.tabs.tab_harness import render_tab_harness
+from dashboard.tabs.tab_calidad import render_tab_calidad
+from dashboard.tabs.tab_search import render_tab_search
 
 __all__ = [
     "render_tab_dashboard",
@@ -28,4 +30,6 @@ __all__ = [
     "render_tab_analytics",
     "render_tab_hmem",
     "render_tab_harness",
+    "render_tab_calidad",
+    "render_tab_search",
 ]

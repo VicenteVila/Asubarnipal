@@ -18,6 +18,7 @@ from dashboard.app_config import AppConfig
 from dashboard.components.avatar import find_avatar_image, render_agente_avatar, render_header
 from dashboard.tabs import (
     render_tab_analytics,
+    render_tab_calidad,
     render_tab_dashboard,
     render_tab_feeds,
     render_tab_grafico,
@@ -28,6 +29,7 @@ from dashboard.tabs import (
     render_tab_raw,
     render_tab_salud,
     render_tab_schema,
+    render_tab_search,
     render_tab_skills,
     render_tab_wiki,
 )
@@ -45,8 +47,10 @@ TAB_NAMES = [
     "Latido",
     "Feeds",
     "Analytics",
+    "Search",
     "H-Mem",
     "Harness",
+    "Calidad",
 ]
 
 
@@ -325,9 +329,13 @@ def main() -> None:
     elif selected == 10:
         render_tab_analytics(cfg)
     elif selected == 11:
-        render_tab_hmem()
+        render_tab_search()
     elif selected == 12:
+        render_tab_hmem()
+    elif selected == 13:
         render_tab_harness()
+    elif selected == 14:
+        render_tab_calidad()
 
     st.divider()
     st.caption(

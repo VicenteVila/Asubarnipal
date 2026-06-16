@@ -1,0 +1,237 @@
+# Esquema de validación para ingesta de URLs
+# Versión: 1.0
+# Última actualización: 2026-06-10
+
+schema_version: "1.0"
+type: "url"
+description: "Esquema para validación de metadatos de páginas web y artículos online"
+
+# Definición de campos
+fields:
+  url:
+    type: string
+    required: true
+    description: "URL completa de la página web"
+    validations:
+      - type: format
+        format: url
+        message: "Debe ser una URL válida (http:// o https://)"
+      - type: max_length
+        value: 2048
+        message: "La URL no puede exceder 2048 caracteres"
+    example: "https://arxiv.org/abs/2301.00001"
+
+  titulo:
+    type: string
+    required: true
+    description: "Título del artículo o página web"
+    validations:
+      - type: min_length
+        value: 5
+        message: "El título debe tener al menos 5 caracteres"
+      - type: max_length
+        value: 500
+        message: "El título no puede exceder 500 caracteres"
+    example: "Attention Is All You Need"
+
+  autor:
+    type: string
+    required: false
+    description: "Autor o autores del contenido"
+    validations:
+      - type: max_length
+        value: 300
+        message: "El autor no puede exceder 300 caracteres"
+    default: "Desconocido"
+    example: "Vaswani, A., Shazeer, N., Parmar, N., et al."
+
+  fecha_publicacion:
+    type: date
+    required: false
+    description: "Fecha de publicación del contenido (YYYY-MM-DD)"
+    validations:
+      - type: format
+        format: date
+        message: "Debe tener formato YYYY-MM-DD"
+      - type: max_date
+        value: today
+        message: "La fecha no puede ser futura"
+    default: null
+    example: "2017-06-12"
+
+  fecha_ingesta:
+    type: datetime
+    required: false
+    description: "Fecha y hora de ingesta al sistema (auto-generado)"
+    validations:
+      - type: format
+        format: datetime
+        message: "Debe tener formato ISO 8601"
+    default: "auto"
+    auto_generate: true
+    example: "2026-06-10T14:30:00Z"
+
+  idioma:
+    type: string
+    required: false
+    description: "Idioma del contenido (código ISO 639-1)"
+    validations:
+      - type: pattern
+        pattern: "^[a-z]{2}$"
+        message: "Debe ser un código de idioma de 2 letras (ej: es, en, fr)"
+    default: "es"
+    example: "en"
+
+  tags:
+    type: array
+    required: false
+    description: "Lista de etiquetas para categorización"
+    item_type: string
+    validations:
+      - type: min_items
+        value: 0
+        message: "Puede tener 0 o más tags"
+      - type: max_items
+        value: 20
+        message: "No puede tener más de 20 tags"
+    item_validations:
+      - type: max_length
+        value: 50
+        message: "Cada tag no puede exceder 50 caracteres"
+    default: []
+    example: ["machine-learning", "transformers", "nlp"]
+
+  descripcion:
+    type: string
+    required: false
+    description: "Descripción o resumen del contenido"
+    validations:
+      - type: max_length
+        value: 2000
+        message: "La descripción no puede exceder 2000 caracteres"
+    default: ""
+    example: "Artículo seminal que introduce la arquitectura Transformer..."
+
+  dominio:
+    type: string
+    required: false
+    description: "Dominio de la URL (auto-extraído)"
+    validations:
+      - type: max_length
+        value: 255
+        message: "El dominio no puede exceder 255 caracteres"
+    default: "auto"
+    auto_generate: true
+    example: "arxiv.org"
+
+  content_length:
+    type: integer
+    required: false
+    description: "Longitud del contenido extraído en caracteres (auto-calculado)"
+    validations:
+      - type: min_value
+        value: 0
+        message: "No puede ser negativo"
+    default: "auto"
+    auto_generate: true
+    example: 45000
+
+  score_calidad:
+    type: float
+    required: false
+    description: "Score de calidad calculado (0-100)"
+    validations:
+      - type: min_value
+        value: 0
+        message: "No puede ser menor que 0"
+      - type: max_value
+        value: 100
+        message: "No puede ser mayor que 100"
+    default: "auto"
+    auto_generate: true
+    example: 85.5
+
+  citas_extraidas:
+    type: array
+    required: false
+    description: "Lista de citas extraídas del contenido"
+    item_type: object
+    default: []
+    auto_generate: true
+
+  citas_verificadas:
+    type: array
+    required: false
+    description: "Lista de citas verificadas exitosamente"
+    item_type: object
+    default: []
+    auto_generate: true
+
+# Validaciones cruzadas entre campos
+cross_validations:
+  - name: "fecha_consistente"
+    description: "Si hay fecha de publicación, debe ser anterior a fecha de ingesta"
+    condition: "fecha_publicacion AND fecha_ingesta"
+    rule: "fecha_publicacion <= fecha_ingesta"
+    message: "La fecha de publicación no puede ser posterior a la fecha de ingesta"
+
+# Configuración de calidad
+quality_config:
+  # Factores para calcular score_calidad
+  factors:
+    - name: "metadata_completeness"
+      weight: 0.3
+      description: "Completitud de metadatos obligatorios y opcionales"
+      fields: ["titulo", "autor", "fecha_publicacion", "idioma", "tags", "descripcion"]
+    
+    - name: "content_length"
+      weight: 0.25
+      description: "Longitud del contenido extraído"
+      thresholds:
+        excellent: 10000  # >= 10000 chars
+        good: 5000        # >= 5000 chars
+        acceptable: 1000  # >= 1000 chars
+        poor: 0           # < 1000 chars
+    
+    - name: "citation_quality"
+      weight: 0.25
+      description: "Calidad y verificación de citas"
+      formula: "(citas_verificadas / max(citas_extraidas, 1)) * 100"
+    
+    - name: "domain_authority"
+      weight: 0.2
+      description: "Autoridad del dominio (basado en lista de dominios confiables)"
+      trusted_domains:
+        - "arxiv.org"
+        - "nature.com"
+        - "science.org"
+        - "ieee.org"
+        - "acm.org"
+        - "github.com"
+        - "medium.com"
+        - "towardsdatascience.com"
+
+  # Umbral mínimo de calidad
+  min_score: 50
+  recommended_score: 80
+
+# Ejemplo completo de documento válido
+example_document:
+  url: "https://arxiv.org/abs/1706.03762"
+  titulo: "Attention Is All You Need"
+  autor: "Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł., Polosukhin, I."
+  fecha_publicacion: "2017-06-12"
+  fecha_ingesta: "2026-06-10T14:30:00Z"
+  idioma: "en"
+  tags: ["transformers", "attention-mechanism", "neural-networks", "nlp", "machine-translation"]
+  descripcion: "Artículo seminal que introduce la arquitectura Transformer, basada únicamente en mecanismos de atención, eliminando la necesidad de recurrencia y convoluciones."
+  dominio: "arxiv.org"
+  content_length: 45000
+  score_calidad: 95.5
+  citas_extraidas:
+    - texto: "Bahdanau et al., 2014"
+      contexto: "Attention mechanisms have become integral..."
+  citas_verificadas:
+    - texto: "Bahdanau et al., 2014"
+      verificado: true
+      fuente: "crossref"
